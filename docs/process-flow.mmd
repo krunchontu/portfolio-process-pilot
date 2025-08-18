@@ -1,0 +1,55 @@
+flowchart LR
+  %% ProcessPilot - Multi-step Approval (Mermaid)
+  %% Lanes simulated via subgraphs for readability
+
+  subgraph Emp["Employee"]
+    A([Start])
+    B[Submit Request]
+  end
+
+  subgraph Sys["System"]
+    C{Validate Input?}
+    D[Create Request Record]
+    E{Flow Config? (1 or 2 steps)}
+  end
+
+  subgraph Mgr["Manager"]
+    F[Approve/Reject - Step 1]
+  end
+
+  subgraph Adm["Admin/Second Approver"]
+    G[Approve/Reject - Step 2]
+  end
+
+  subgraph Notif["System Notifications"]
+    N1[Notify Applicant]
+    N2[Notify Approvers]
+  end
+
+  subgraph EndStates["End States"]
+    H((Approved))
+    I((Rejected))
+  end
+
+  A --> B --> C
+  C -- Valid --> D --> N2 --> E
+  C -- Invalid --> B
+
+  E -- "1-step" --> F
+  E -- "2-steps" --> F
+
+  F -- Approve --> G
+  F -- Reject  --> I
+
+  G -- Approve --> H
+  G -- Reject  --> I
+
+  H --> N1
+  I --> N1
+
+  %% Optional: SLA Escalation
+  subgraph SLA["SLA / Escalation"]
+    S1[Timer: Pending > 48h]
+    S2[Escalate to Admin]
+  end
+  F -. no action .-> S1 -.-> S2 -.-> G

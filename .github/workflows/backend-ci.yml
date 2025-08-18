@@ -1,0 +1,127 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: process_pilot_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+    
+    - name: Create logs directory
+      working-directory: ./backend
+      run: mkdir -p logs
+    
+    - name: Run database migrations
+      working-directory: ./backend
+      run: npm run db:migrate
+      env:
+        NODE_ENV: test
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_NAME: process_pilot_test
+        DB_USER: postgres
+        DB_PASSWORD: test_password
+        JWT_SECRET: test-jwt-secret-key-for-testing-purposes-only-32-chars-min
+    
+    - name: Run linting
+      working-directory: ./backend
+      run: npm run lint
+    
+    - name: Run unit tests
+      working-directory: ./backend
+      run: npm run test:unit
+      env:
+        NODE_ENV: test
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_NAME: process_pilot_test
+        DB_USER: postgres
+        DB_PASSWORD: test_password
+        JWT_SECRET: test-jwt-secret-key-for-testing-purposes-only-32-chars-min
+        JWT_REFRESH_SECRET: test-refresh-token-secret-key-for-testing
+    
+    - name: Run integration tests
+      working-directory: ./backend
+      run: npm run test:integration
+      env:
+        NODE_ENV: test
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_NAME: process_pilot_test
+        DB_USER: postgres
+        DB_PASSWORD: test_password
+        JWT_SECRET: test-jwt-secret-key-for-testing-purposes-only-32-chars-min
+        JWT_REFRESH_SECRET: test-refresh-token-secret-key-for-testing
+    
+    - name: Run full test suite with coverage
+      working-directory: ./backend
+      run: npm run test:ci
+      env:
+        NODE_ENV: test
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_NAME: process_pilot_test
+        DB_USER: postgres
+        DB_PASSWORD: test_password
+        JWT_SECRET: test-jwt-secret-key-for-testing-purposes-only-32-chars-min
+        JWT_REFRESH_SECRET: test-refresh-token-secret-key-for-testing
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        directory: ./backend/coverage
+        flags: backend
+        name: backend-coverage
+        fail_ci_if_error: false
+    
+    - name: Archive test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-node-${{ matrix.node-version }}
+        path: |
+          backend/coverage/
+          backend/logs/

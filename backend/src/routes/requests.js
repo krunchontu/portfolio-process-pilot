@@ -1,0 +1,187 @@
+const express = require('express');
+const Request = require('../models/Request');
+const RequestHistory = require('../models/RequestHistory');
+const Workflow = require('../models/Workflow');
+const { authenticateToken, requireRole, canActOnRequest } = require('../middleware/auth');
+const { validateRequest, validateQuery, validateParams } = require('../middleware/validation');
+const { catchAsync, AppError } = require('../middleware/errorHandler');
+
+const router = express.Router();
+
+// All routes require authentication
+router.use(authenticateToken);
+
+// Create new request
+router.post('/', catchAsync(async (req, res) => {
+  const { type, workflow_id, payload } = req.body;
+  
+  // Get workflow configuration
+  const workflow = workflow_id 
+    ? await Workflow.findById(workflow_id)
+    : await Workflow.findByFlowId(type);
+    
+  if (!workflow) {
+    throw new AppError('Workflow not found', 404, 'WORKFLOW_NOT_FOUND');
+  }
+  
+  // Prepare steps from workflow
+  let steps = [...workflow.steps];
+  
+  // Handle optional steps (like two-step approval)
+  if (payload?.twoStep) {
+    steps = steps.filter(step => step.required !== false);
+  } else {
+    steps = steps.filter(step => step.required !== false);
+  }
+  
+  if (steps.length === 0) {
+    throw new AppError('No workflow steps configured', 400, 'NO_WORKFLOW_STEPS');
+  }
+  
+  const request = await Request.create({
+    type,
+    workflow_id: workflow.id,
+    created_by: req.user.id,
+    payload,
+    steps
+  });
+  
+  res.status(201).json({
+    message: 'Request created successfully',
+    request: await Request.findById(request.id)
+  });
+}));
+
+// List requests (with filters)
+router.get('/', catchAsync(async (req, res) => {
+  const filters = { ...req.query };
+  
+  // Users can only see their own requests unless they're managers/admins
+  if (req.user.role === 'employee') {
+    filters.created_by = req.user.id;
+  } else if (req.user.role === 'manager') {
+    // Managers can see requests pending for their role or their own requests
+    if (!filters.created_by && !filters.pending_for_role) {
+      filters.pending_for_role = 'manager';
+    }
+  }
+  // Admins can see all requests (no additional filters)
+  
+  const requests = await Request.list(filters);
+  
+  res.json({
+    requests,
+    filters: req.query,
+    count: requests.length
+  });
+}));
+
+// Get specific request
+router.get('/:id', validateParams({ id: require('../middleware/validation').uuid() }), canActOnRequest, catchAsync(async (req, res) => {
+  res.json({
+    request: req.targetRequest
+  });
+}));
+
+// Take action on request (approve/reject)
+router.post('/:id/action', validateParams({ id: require('../middleware/validation').uuid() }), canActOnRequest, catchAsync(async (req, res) => {
+  const { action, comment = '' } = req.body;
+  const request = req.targetRequest;
+  
+  if (request.status !== 'pending') {
+    throw new AppError(`Request is already ${request.status}`, 409, 'REQUEST_NOT_PENDING');
+  }
+  
+  const currentStep = Request.getCurrentStep(request);
+  if (!currentStep) {
+    throw new AppError('No active step for this request', 400, 'NO_ACTIVE_STEP');
+  }
+  
+  // Validate action
+  if (!currentStep.actions.includes(action)) {
+    throw new AppError(`Invalid action. Allowed: ${currentStep.actions.join(', ')}`, 400, 'INVALID_ACTION');
+  }
+  
+  // Check authorization
+  const expectedRole = currentStep.escalatedTo || currentStep.role;
+  if (req.user.role !== 'admin' && req.user.role !== expectedRole) {
+    throw new AppError(`Role ${req.user.role} cannot perform this action`, 403, 'INSUFFICIENT_ROLE');
+  }
+  
+  // Record the action in history
+  await RequestHistory.create({
+    request_id: request.id,
+    actor_id: req.user.id,
+    action: action.toUpperCase(),
+    step_id: currentStep.stepId,
+    comment
+  });
+  
+  let updatedRequest;
+  
+  if (action === 'reject') {
+    // Reject the request
+    updatedRequest = await Request.updateStatus(request.id, 'rejected', null, new Date());
+  } else if (action === 'approve') {
+    // Check if this is the final step
+    if (Request.isFinalStep(request)) {
+      updatedRequest = await Request.updateStatus(request.id, 'approved', null, new Date());
+    } else {
+      // Move to next step
+      const nextStepIndex = request.current_step_index + 1;
+      updatedRequest = await Request.updateStatus(request.id, 'pending', nextStepIndex);
+    }
+  }
+  
+  const fullRequest = await Request.findById(request.id);
+  
+  res.json({
+    message: `Request ${action}d successfully`,
+    request: fullRequest
+  });
+}));
+
+// Cancel request (requestor only)
+router.post('/:id/cancel', validateParams({ id: require('../middleware/validation').uuid() }), catchAsync(async (req, res) => {
+  const request = await Request.findById(req.params.id);
+  
+  if (!request) {
+    throw new AppError('Request not found', 404, 'REQUEST_NOT_FOUND');
+  }
+  
+  // Only the requestor or admin can cancel
+  if (request.created_by !== req.user.id && req.user.role !== 'admin') {
+    throw new AppError('You can only cancel your own requests', 403, 'CANCEL_NOT_ALLOWED');
+  }
+  
+  if (request.status !== 'pending') {
+    throw new AppError(`Cannot cancel request with status: ${request.status}`, 409, 'CANNOT_CANCEL');
+  }
+  
+  // Record cancellation
+  await RequestHistory.create({
+    request_id: request.id,
+    actor_id: req.user.id,
+    action: 'cancel',
+    comment: req.body.comment || 'Request cancelled by requestor'
+  });
+  
+  const updatedRequest = await Request.updateStatus(request.id, 'cancelled', null, new Date());
+  
+  res.json({
+    message: 'Request cancelled successfully',
+    request: await Request.findById(request.id)
+  });
+}));
+
+// Get request history
+router.get('/:id/history', validateParams({ id: require('../middleware/validation').uuid() }), canActOnRequest, catchAsync(async (req, res) => {
+  const history = await RequestHistory.findByRequestId(req.params.id);
+  
+  res.json({
+    request_id: req.params.id,
+    history
+  });
+}));
+
+module.exports = router;

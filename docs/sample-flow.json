@@ -1,0 +1,29 @@
+{
+  "flowId": "leave-approval",
+  "name": "Leave Request Approval",
+  "description": "Approval workflow for employee leave requests",
+  "steps": [
+    {
+      "stepId": "mgr-approval",
+      "order": 1,
+      "role": "Manager",
+      "actions": ["approve", "reject"],
+      "slaHours": 48,
+      "onTimeout": {
+        "escalateTo": "Admin"
+      }
+    },
+    {
+      "stepId": "admin-approval",
+      "order": 2,
+      "role": "Admin",
+      "actions": ["approve", "reject"],
+      "required": false
+    }
+  ],
+  "notifications": {
+    "onSubmit": ["Manager"],
+    "onApprove": ["Employee"],
+    "onReject": ["Employee", "Manager"]
+  }
+}
