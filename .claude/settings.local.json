@@ -18,7 +18,8 @@
       "Bash(node:*)",
       "Bash(timeout 30 npm test RequestDetailPage.test.jsx -- --run)",
       "Bash(timeout 20 npm test RequestDetailPage.test.jsx -- --run)",
-      "Bash(timeout 15 npm test RequestDetailPage.test.jsx -- --run)"
+      "Bash(timeout 15 npm test RequestDetailPage.test.jsx -- --run)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
