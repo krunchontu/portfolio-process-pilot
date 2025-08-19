@@ -1,4 +1,3 @@
-import React from 'react'
 import { BrowserRouter as Router } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { ReactQueryDevtools } from 'react-query/devtools'
@@ -23,12 +22,12 @@ const queryClient = new QueryClient({
       staleTime: 5 * 60 * 1000, // 5 minutes
       cacheTime: 10 * 60 * 1000, // 10 minutes
       refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
+      refetchOnReconnect: true
     },
     mutations: {
-      retry: false,
-    },
-  },
+      retry: false
+    }
+  }
 })
 
 function App() {
@@ -41,7 +40,7 @@ function App() {
               <div className="min-h-screen bg-secondary-50">
                 <AppRoutes />
               </div>
-              
+
               {/* Global Toast Notifications */}
               <Toaster
                 position="top-right"
@@ -52,29 +51,29 @@ function App() {
                     color: '#374151',
                     borderRadius: '12px',
                     padding: '16px',
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
                   },
                   success: {
                     iconTheme: {
                       primary: '#22c55e',
-                      secondary: '#fff',
-                    },
+                      secondary: '#fff'
+                    }
                   },
                   error: {
                     iconTheme: {
                       primary: '#ef4444',
-                      secondary: '#fff',
-                    },
+                      secondary: '#fff'
+                    }
                   },
                   loading: {
                     iconTheme: {
                       primary: '#3b82f6',
-                      secondary: '#fff',
-                    },
-                  },
+                      secondary: '#fff'
+                    }
+                  }
                 }}
               />
-              
+
               {/* React Query DevTools (only in development) */}
               {import.meta.env.DEV && (
                 <ReactQueryDevtools

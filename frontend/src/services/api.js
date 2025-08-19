@@ -6,8 +6,8 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
-  },
+    'Content-Type': 'application/json'
+  }
 })
 
 // Token management
@@ -40,13 +40,13 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
-    
+
     // Add request ID for debugging
-    config.metadata = { 
+    config.metadata = {
       requestStartedAt: new Date().getTime(),
       requestId: Math.random().toString(36).substring(7)
     }
-    
+
     return config
   },
   (error) => {
@@ -65,26 +65,26 @@ api.interceptors.response.use(
         `🚀 ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status} (${responseTime}ms)`
       )
     }
-    
+
     return response
   },
   async (error) => {
     const originalRequest = error.config
-    
+
     // Handle token expiration
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
-      
+
       // If already refreshing token, wait for it
       if (tokenRefreshPromise) {
         await tokenRefreshPromise
         return api(originalRequest)
       }
-      
+
       const refreshToken = getRefreshToken()
       if (refreshToken) {
         tokenRefreshPromise = refreshAccessToken(refreshToken)
-        
+
         try {
           const newToken = await tokenRefreshPromise
           originalRequest.headers.Authorization = `Bearer ${newToken}`
@@ -103,7 +103,7 @@ api.interceptors.response.use(
         window.location.href = '/login'
       }
     }
-    
+
     // Handle different error types
     if (error.code === 'ECONNABORTED') {
       toast.error('Request timeout. Please check your connection.')
@@ -114,7 +114,7 @@ api.interceptors.response.use(
     } else if (!error.response) {
       toast.error('Network error. Please check your connection.')
     }
-    
+
     // Log error in development
     if (import.meta.env.DEV) {
       console.error('API Error:', {
@@ -125,7 +125,7 @@ api.interceptors.response.use(
         message: error.message
       })
     }
-    
+
     return Promise.reject(error)
   }
 )
@@ -136,10 +136,10 @@ const refreshAccessToken = async (refreshToken) => {
     const response = await axios.post('/api/auth/refresh', {
       refresh_token: refreshToken
     })
-    
+
     const { access_token } = response.data
     setTokens(access_token, refreshToken)
-    
+
     return access_token
   } catch (error) {
     clearTokens()
@@ -154,7 +154,7 @@ export const authAPI = {
   logout: () => api.post('/auth/logout'),
   getProfile: () => api.get('/auth/me'),
   changePassword: (data) => api.post('/auth/change-password', data),
-  refreshToken: (refreshToken) => api.post('/auth/refresh', { refresh_token: refreshToken }),
+  refreshToken: (refreshToken) => api.post('/auth/refresh', { refresh_token: refreshToken })
 }
 
 export const requestsAPI = {
@@ -165,7 +165,7 @@ export const requestsAPI = {
   action: (id, action, data) => api.post(`/requests/${id}/action`, { action, ...data }),
   takeAction: (id, data) => api.post(`/requests/${id}/action`, data),
   cancel: (id, data) => api.post(`/requests/${id}/cancel`, data),
-  getHistory: (id) => api.get(`/requests/${id}/history`),
+  getHistory: (id) => api.get(`/requests/${id}/history`)
 }
 
 export const workflowsAPI = {
@@ -173,27 +173,27 @@ export const workflowsAPI = {
   create: (data) => api.post('/workflows', data),
   getById: (id) => api.get(`/workflows/${id}`),
   update: (id, data) => api.put(`/workflows/${id}`, data),
-  delete: (id) => api.delete(`/workflows/${id}`),
+  delete: (id) => api.delete(`/workflows/${id}`)
 }
 
 export const usersAPI = {
   list: (params) => api.get('/users', { params }),
   getById: (id) => api.get(`/users/${id}`),
   update: (id, data) => api.put(`/users/${id}`, data),
-  delete: (id) => api.delete(`/users/${id}`),
+  delete: (id) => api.delete(`/users/${id}`)
 }
 
 export const analyticsAPI = {
   getOverview: (params) => api.get('/analytics/overview', { params }),
   getMetrics: (params) => api.get('/analytics/metrics', { params }),
-  getReports: (params) => api.get('/analytics/reports', { params }),
+  getReports: (params) => api.get('/analytics/reports', { params })
 }
 
 // Utility functions
 export const handleApiError = (error) => {
   const message = error.response?.data?.error || error.message || 'An unexpected error occurred'
   const code = error.response?.data?.code
-  
+
   return {
     message,
     code,

@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
-import { 
+import {
   ArrowLeft,
   Clock,
   User,
@@ -9,15 +9,10 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  MessageSquare,
   Calendar,
   DollarSign,
   Briefcase,
-  MapPin,
-  Tag,
-  Activity,
-  Download,
-  Eye
+  Activity
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { requestsAPI } from '../services/api'
@@ -33,10 +28,10 @@ const RequestDetailPage = () => {
   const [pendingAction, setPendingAction] = useState(null)
 
   // Fetch request details
-  const { 
-    data: requestData, 
-    isLoading, 
-    error 
+  const {
+    data: requestData,
+    isLoading,
+    error
   } = useQuery(
     ['requests', 'detail', id],
     () => requestsAPI.get(id),
@@ -120,7 +115,7 @@ const RequestDetailPage = () => {
   }
 
   const formatRequestType = (type) => {
-    return type?.split('-').map(word => 
+    return type?.split('-').map(word =>
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ')
   }
@@ -294,8 +289,8 @@ const RequestDetailPage = () => {
           <p className="text-secondary-600 mb-4">
             {error.response?.data?.error || 'Request not found'}
           </p>
-          <button 
-            onClick={() => navigate('/requests')} 
+          <button
+            onClick={() => navigate('/requests')}
             className="btn-primary"
           >
             Back to Requests
@@ -317,7 +312,7 @@ const RequestDetailPage = () => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Requests
         </button>
-        
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center space-x-3 mb-2">
@@ -333,7 +328,7 @@ const RequestDetailPage = () => {
               Request ID: {requestData.id}
             </p>
           </div>
-          
+
           {canTakeAction() && (
             <div className="mt-4 sm:mt-0 flex items-center space-x-3">
               <button
@@ -380,26 +375,27 @@ const RequestDetailPage = () => {
                 const isCurrentStep = index === requestData.current_step_index
                 const isCompletedStep = index < requestData.current_step_index
                 const isPendingStep = requestData.status === 'pending' && isCurrentStep
-                
+
                 return (
                   <div
                     key={index}
                     className={`flex items-center space-x-4 p-4 rounded-lg border ${
-                      isCompletedStep 
-                        ? 'bg-success-50 border-success-200' 
+                      isCompletedStep
+                        ? 'bg-success-50 border-success-200'
                         : isPendingStep
-                        ? 'bg-warning-50 border-warning-200'
-                        : 'bg-secondary-50 border-secondary-200'
+                          ? 'bg-warning-50 border-warning-200'
+                          : 'bg-secondary-50 border-secondary-200'
                     }`}
                     data-testid={`workflow-step-${index}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      isCompletedStep 
+                      isCompletedStep
                         ? 'bg-success-200 text-success-800'
                         : isPendingStep
-                        ? 'bg-warning-200 text-warning-800'
-                        : 'bg-secondary-200 text-secondary-600'
-                    }`}>
+                          ? 'bg-warning-200 text-warning-800'
+                          : 'bg-secondary-200 text-secondary-600'
+                    }`}
+                    >
                       {isCompletedStep ? (
                         <CheckCircle className="w-4 h-4" />
                       ) : (
@@ -408,9 +404,9 @@ const RequestDetailPage = () => {
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-secondary-900">
-                        {step.role === 'manager' ? 'Manager' : 
-                         step.role === 'admin' ? 'Administrator' : 
-                         step.role.charAt(0).toUpperCase() + step.role.slice(1)} Approval
+                        {step.role === 'manager' ? 'Manager' :
+                          step.role === 'admin' ? 'Administrator' :
+                            step.role.charAt(0).toUpperCase() + step.role.slice(1)} Approval
                       </p>
                       {step.sla_hours && (
                         <p className="text-sm text-secondary-600">
@@ -455,7 +451,7 @@ const RequestDetailPage = () => {
                       </p>
                       {entry.comment && (
                         <p className="text-sm text-secondary-700 mt-1">
-                          "{entry.comment}"
+                          &ldquo;{entry.comment}&rdquo;
                         </p>
                       )}
                     </div>
@@ -483,7 +479,7 @@ const RequestDetailPage = () => {
                   </span>
                 </div>
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium text-secondary-700">Submitted on</label>
                 <div className="flex items-center space-x-2 mt-1">
@@ -550,7 +546,7 @@ const RequestDetailPage = () => {
             <h3 className="text-lg font-semibold text-secondary-900 mb-4">
               {pendingAction === 'approve' ? 'Approve Request' : 'Reject Request'}
             </h3>
-            
+
             <div className="mb-4">
               <label className="block text-sm font-medium text-secondary-700 mb-2">
                 Comment {pendingAction === 'reject' && <span className="text-error-500">*</span>}

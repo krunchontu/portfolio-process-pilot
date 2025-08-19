@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor, userEvent } from '@/test/test-utils'
+import { render, screen, waitFor, userEvent, setupAuthContextMock } from '../test/test-utils'
 import RequestDetailPage from './RequestDetailPage'
-import * as AuthContext from '../contexts/AuthContext'
 import { requestsAPI } from '../services/api'
 
 // Mock API
@@ -25,9 +24,14 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-// Mock react-query hooks
-const mockInvalidateQueries = vi.fn()
+// Mock react-query
 const mockMutateAsync = vi.fn()
+const mockInvalidateQueries = vi.fn()
+const mockMutation = {
+  mutateAsync: mockMutateAsync,
+  isLoading: false,
+  error: null
+}
 
 vi.mock('react-query', async () => {
   const actual = await vi.importActual('react-query')
@@ -35,9 +39,9 @@ vi.mock('react-query', async () => {
     ...actual,
     useQuery: vi.fn(),
     useMutation: vi.fn(),
-    useQueryClient: vi.fn(() => ({
+    useQueryClient: () => ({
       invalidateQueries: mockInvalidateQueries
-    }))
+    })
   }
 })
 
@@ -174,25 +178,25 @@ describe('RequestDetailPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     mockUseParams.mockReturnValue({ id: 'req-123' })
-    
-    // Mock useQuery
+
+    // Import react-query mocks
     const { useQuery, useMutation } = await import('react-query')
-    
+
     // Default successful query state
     useQuery.mockReturnValue({
-      data: mockLeaveRequest,
+      data: { data: { request: mockLeaveRequest } },
       isLoading: false,
       error: null,
       refetch: vi.fn()
     })
-    
+
     // Default mutation state
     useMutation.mockReturnValue({
       mutateAsync: mockMutateAsync,
       isLoading: false,
       error: null
     })
-    
+
     mockMutateAsync.mockResolvedValue({ data: { success: true } })
   })
 
@@ -200,62 +204,59 @@ describe('RequestDetailPage', () => {
     vi.clearAllMocks()
   })
 
-  const createMockAuthContext = (user = mockEmployee, overrides = {}) => ({
-    user,
-    isManagerOrAdmin: vi.fn(() => ['manager', 'admin'].includes(user?.role)),
-    isAuthenticated: !!user,
-    isLoading: false,
-    error: null,
-    login: vi.fn(),
-    register: vi.fn(),
-    logout: vi.fn(),
-    changePassword: vi.fn(),
-    updateUser: vi.fn(),
-    clearError: vi.fn(),
-    hasRole: vi.fn((role) => user?.role === role),
-    hasAnyRole: vi.fn((roles) => roles.includes(user?.role)),
-    isEmployee: vi.fn(() => user?.role === 'employee'),
-    isManager: vi.fn(() => user?.role === 'manager'),
-    isAdmin: vi.fn(() => user?.role === 'admin'),
-    isSubmitting: false,
-    ...overrides
-  })
 
-  const renderRequestDetailPage = async (user = mockEmployee, request = mockLeaveRequest, authOverrides = {}, queryOverrides = {}) => {
-    const mockAuthContext = createMockAuthContext(user, authOverrides)
-    
-    vi.spyOn(AuthContext, 'useAuth').mockReturnValue(mockAuthContext)
+  const renderRequestDetailPage = async (user = mockEmployee, request = mockLeaveRequest, authOverrides = {}) => {
+    // Setup auth context using test utilities
+    setupAuthContextMock(user, { isAuthenticated: !!user, ...authOverrides })
 
+    // Mock the API call to return the request data
     requestsAPI.get.mockResolvedValue({
       data: { request }
     })
-    
-    // Mock useQuery for this specific test
+
+    // Set up the query mock for this specific request
     const { useQuery } = await import('react-query')
     useQuery.mockReturnValue({
       data: request,
       isLoading: false,
       error: null,
-      refetch: vi.fn(),
-      ...queryOverrides
+      refetch: vi.fn()
     })
 
-    return render(<RequestDetailPage />)
+    return render(<RequestDetailPage />, { user })
   }
 
   describe('Page Loading', () => {
     it('should show loading spinner while fetching request', async () => {
-      requestsAPI.get.mockReturnValue(new Promise(() => {})) // Never resolves
-      await renderRequestDetailPage(mockEmployee, mockLeaveRequest, {}, { isLoading: true })
+      // Mock loading state
+      const { useQuery } = await import('react-query')
+      useQuery.mockReturnValue({
+        data: null,
+        isLoading: true,
+        error: null,
+        refetch: vi.fn()
+      })
+      
+      setupAuthContextMock(mockEmployee)
+      render(<RequestDetailPage />)
 
       expect(screen.getByTestId('loading-spinner')).toBeInTheDocument()
     })
 
     it('should show error state when request fails to load', async () => {
-      requestsAPI.get.mockRejectedValue({
-        response: { data: { error: 'Request not found' } }
+      // Mock error state
+      const { useQuery } = await import('react-query')
+      useQuery.mockReturnValue({
+        data: null,
+        isLoading: false,
+        error: {
+          response: { data: { error: 'Request not found' } }
+        },
+        refetch: vi.fn()
       })
-      renderRequestDetailPage()
+      
+      setupAuthContextMock(mockEmployee)
+      render(<RequestDetailPage />)
 
       await waitFor(() => {
         expect(screen.getByTestId('error-state')).toBeInTheDocument()
@@ -266,8 +267,17 @@ describe('RequestDetailPage', () => {
     })
 
     it('should show generic error message when error response is malformed', async () => {
-      requestsAPI.get.mockRejectedValue(new Error('Network error'))
-      renderRequestDetailPage()
+      // Mock error state
+      const { useQuery } = await import('react-query')
+      useQuery.mockReturnValue({
+        data: null,
+        isLoading: false,
+        error: new Error('Network error'),
+        refetch: vi.fn()
+      })
+      
+      setupAuthContextMock(mockEmployee)
+      render(<RequestDetailPage />)
 
       await waitFor(() => {
         expect(screen.getByTestId('error-state')).toBeInTheDocument()
@@ -280,7 +290,7 @@ describe('RequestDetailPage', () => {
   describe('Navigation', () => {
     it('should navigate back to requests on back button click', async () => {
       const user = userEvent.setup()
-      renderRequestDetailPage()
+      await renderRequestDetailPage()
 
       await waitFor(() => {
         expect(screen.getByTestId('back-button')).toBeInTheDocument()
@@ -294,8 +304,17 @@ describe('RequestDetailPage', () => {
 
     it('should navigate back from error state', async () => {
       const user = userEvent.setup()
-      requestsAPI.get.mockRejectedValue(new Error('Not found'))
-      renderRequestDetailPage()
+      // Mock error state
+      const { useQuery } = await import('react-query')
+      useQuery.mockReturnValue({
+        data: null,
+        isLoading: false,
+        error: new Error('Not found'),
+        refetch: vi.fn()
+      })
+      
+      setupAuthContextMock(mockEmployee)
+      render(<RequestDetailPage />)
 
       await waitFor(() => {
         expect(screen.getByTestId('error-state')).toBeInTheDocument()
@@ -310,7 +329,7 @@ describe('RequestDetailPage', () => {
 
   describe('Request Header', () => {
     it('should display correct request information', async () => {
-      renderRequestDetailPage()
+      await renderRequestDetailPage()
 
       await waitFor(() => {
         expect(screen.getByTestId('page-title')).toHaveTextContent('Leave Request')
@@ -320,7 +339,7 @@ describe('RequestDetailPage', () => {
     })
 
     it('should show action buttons for managers on pending requests', async () => {
-      renderRequestDetailPage(mockManager, mockLeaveRequest)
+      await renderRequestDetailPage(mockManager, mockLeaveRequest)
 
       await waitFor(() => {
         expect(screen.getByTestId('approve-button')).toBeInTheDocument()
@@ -329,7 +348,7 @@ describe('RequestDetailPage', () => {
     })
 
     it('should not show action buttons for employees', async () => {
-      renderRequestDetailPage(mockEmployee, mockLeaveRequest)
+      await renderRequestDetailPage(mockEmployee, mockLeaveRequest)
 
       await waitFor(() => {
         expect(screen.getByTestId('page-title')).toBeInTheDocument()
@@ -340,7 +359,7 @@ describe('RequestDetailPage', () => {
     })
 
     it('should not show action buttons for completed requests', async () => {
-      renderRequestDetailPage(mockManager, mockExpenseRequest)
+      await renderRequestDetailPage(mockManager, mockExpenseRequest)
 
       await waitFor(() => {
         expect(screen.getByTestId('page-title')).toBeInTheDocument()
@@ -353,7 +372,7 @@ describe('RequestDetailPage', () => {
 
   describe('Leave Request Details', () => {
     it('should render leave request specific fields', async () => {
-      renderRequestDetailPage(mockEmployee, mockLeaveRequest)
+      await renderRequestDetailPage(mockEmployee, mockLeaveRequest)
 
       await waitFor(() => {
         expect(screen.getByTestId('request-details')).toBeInTheDocument()
@@ -609,7 +628,7 @@ describe('RequestDetailPage', () => {
       const user = userEvent.setup()
       mockMutateAsync.mockResolvedValue({ data: { success: true } })
 
-      renderRequestDetailPage(mockManager, mockLeaveRequest)
+      await renderRequestDetailPage(mockManager, mockLeaveRequest)
 
       await waitFor(() => {
         expect(screen.getByTestId('approve-button')).toBeInTheDocument()
@@ -669,10 +688,18 @@ describe('RequestDetailPage', () => {
 
     it('should show loading state during action submission', async () => {
       const user = userEvent.setup()
-      mockMutation.isLoading = true
+      
+      // Mock loading mutation state
+      const { useMutation } = await import('react-query')
+      useMutation.mockReturnValue({
+        mutateAsync: mockMutateAsync,
+        isLoading: true,
+        error: null
+      })
+      
       mockMutateAsync.mockImplementation(() => new Promise(() => {})) // Never resolves
 
-      renderRequestDetailPage(mockManager, mockLeaveRequest)
+      await renderRequestDetailPage(mockManager, mockLeaveRequest)
 
       await waitFor(() => {
         expect(screen.getByTestId('approve-button')).toBeInTheDocument()
@@ -695,12 +722,21 @@ describe('RequestDetailPage', () => {
 
     it('should display error message when action fails', async () => {
       const user = userEvent.setup()
-      mockMutation.error = {
+      const mockError = {
         response: { data: { error: 'Action failed due to workflow rules' } }
       }
-      mockMutateAsync.mockRejectedValue(mockMutation.error)
+      
+      // Mock error mutation state
+      const { useMutation } = await import('react-query')
+      useMutation.mockReturnValue({
+        mutateAsync: mockMutateAsync,
+        isLoading: false,
+        error: mockError
+      })
+      
+      mockMutateAsync.mockRejectedValue(mockError)
 
-      renderRequestDetailPage(mockManager, mockLeaveRequest)
+      await renderRequestDetailPage(mockManager, mockLeaveRequest)
 
       await waitFor(() => {
         expect(screen.getByTestId('approve-button')).toBeInTheDocument()
@@ -722,10 +758,19 @@ describe('RequestDetailPage', () => {
 
     it('should show generic error message when error response is malformed', async () => {
       const user = userEvent.setup()
-      mockMutation.error = new Error('Network error')
-      mockMutateAsync.mockRejectedValue(mockMutation.error)
+      const mockError = new Error('Network error')
+      
+      // Mock error mutation state
+      const { useMutation } = await import('react-query')
+      useMutation.mockReturnValue({
+        mutateAsync: mockMutateAsync,
+        isLoading: false,
+        error: mockError
+      })
+      
+      mockMutateAsync.mockRejectedValue(mockError)
 
-      renderRequestDetailPage(mockManager, mockLeaveRequest)
+      await renderRequestDetailPage(mockManager, mockLeaveRequest)
 
       await waitFor(() => {
         expect(screen.getByTestId('approve-button')).toBeInTheDocument()
