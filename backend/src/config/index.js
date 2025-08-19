@@ -18,9 +18,9 @@ const config = {
 
   // JWT
   jwt: {
-    secret: process.env.JWT_SECRET || 'fallback-secret-key-change-in-production',
-    expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret',
+    secret: process.env.JWT_SECRET,
+    expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+    refreshSecret: process.env.JWT_REFRESH_SECRET,
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
   },
 
@@ -61,12 +61,16 @@ const config = {
   }
 }
 
-// Validation
-if (config.nodeEnv === 'production') {
-  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-    throw new Error('JWT_SECRET must be at least 32 characters long in production')
-  }
+// Validation - JWT secrets required in all environments
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET environment variable must be set and at least 32 characters long')
+}
 
+if (!process.env.JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET.length < 32) {
+  throw new Error('JWT_REFRESH_SECRET environment variable must be set and at least 32 characters long')
+}
+
+if (config.nodeEnv === 'production') {
   if (!process.env.DB_PASSWORD) {
     throw new Error('DB_PASSWORD must be set in production')
   }

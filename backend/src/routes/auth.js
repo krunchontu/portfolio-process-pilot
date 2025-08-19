@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken')
 const rateLimit = require('express-rate-limit')
 const User = require('../models/User')
 const config = require('../config')
-const { generateToken, generateRefreshToken, authenticateToken } = require('../middleware/auth')
+const { generateToken, generateRefreshToken, authenticateToken, setTokenCookies, clearTokenCookies } = require('../middleware/auth')
 const { validateRequest } = require('../middleware/validation')
 const { loginSchema, registerSchema, refreshTokenSchema } = require('../schemas/auth')
 
@@ -63,12 +63,17 @@ router.post('/login', authLimiter, validateRequest(loginSchema), async (req, res
     // Update last login
     await User.updateLastLogin(user.id)
 
+    // Set tokens in httpOnly cookies
+    setTokenCookies(res, accessToken, refreshToken)
+
     // Remove sensitive data
     delete user.password_hash
 
     res.json({
+      success: true,
       message: 'Login successful',
       user,
+      // Still provide tokens for API clients that need them
       tokens: {
         access_token: accessToken,
         refresh_token: refreshToken,
@@ -122,12 +127,24 @@ router.post('/register', validateRequest(registerSchema), async (req, res) => {
 })
 
 // Refresh token endpoint
-router.post('/refresh', validateRequest(refreshTokenSchema), async (req, res) => {
+router.post('/refresh', async (req, res) => {
   try {
-    const { refresh_token } = req.body
+    // Try to get refresh token from cookie first, then from body
+    let refreshToken = req.cookies?.refresh_token
+    
+    if (!refreshToken && req.body.refresh_token) {
+      refreshToken = req.body.refresh_token
+    }
+    
+    if (!refreshToken) {
+      return res.status(401).json({
+        error: 'Refresh token required',
+        code: 'MISSING_REFRESH_TOKEN'
+      })
+    }
 
     // Verify refresh token
-    const decoded = jwt.verify(refresh_token, config.jwt.refreshSecret)
+    const decoded = jwt.verify(refreshToken, config.jwt.refreshSecret)
 
     // Get fresh user data
     const user = await User.findById(decoded.userId)
@@ -147,7 +164,11 @@ router.post('/refresh', validateRequest(refreshTokenSchema), async (req, res) =>
 
     const accessToken = generateToken(tokenPayload)
 
+    // Set new access token in cookie
+    setTokenCookies(res, accessToken, refreshToken)
+
     res.json({
+      success: true,
       access_token: accessToken,
       expires_in: config.jwt.expiresIn
     })
@@ -174,13 +195,16 @@ router.get('/me', authenticateToken, async (req, res) => {
   })
 })
 
-// Logout (client-side token removal, but we can log the event)
+// Logout (clear httpOnly cookies)
 router.post('/logout', authenticateToken, async (req, res) => {
-  // In a more sophisticated setup, you might maintain a token blacklist
-  // For now, we just log the logout event
+  // Clear httpOnly cookies
+  clearTokenCookies(res)
+  
+  // Log the logout event
   console.log(`User ${req.user.email} logged out at ${new Date().toISOString()}`)
 
   res.json({
+    success: true,
     message: 'Logged out successfully'
   })
 })

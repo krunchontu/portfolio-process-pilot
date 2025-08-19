@@ -4,11 +4,15 @@ const helmet = require('helmet')
 const compression = require('compression')
 const rateLimit = require('express-rate-limit')
 const morgan = require('morgan')
+const session = require('express-session')
+const cookieParser = require('cookie-parser')
 
 const config = require('./config')
 const { logger, stream } = require('./utils/logger')
 const { globalErrorHandler, notFound } = require('./middleware/errorHandler')
 const { testConnection } = require('./database/connection')
+const csrfProtection = require('./middleware/csrf')
+const { sanitizeInput, preventSqlInjection } = require('./middleware/sanitization')
 
 // Import routes
 const authRoutes = require('./routes/auth')
@@ -45,12 +49,36 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter)
 
+// Cookie parsing middleware
+app.use(cookieParser())
+
+// Session middleware (required for CSRF protection)
+app.use(session({
+  secret: process.env.SESSION_SECRET || process.env.JWT_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}))
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
+// Input sanitization and SQL injection prevention
+app.use(sanitizeInput())
+app.use(preventSqlInjection)
+
 // Logging middleware
 app.use(morgan(config.logging.format, { stream }))
+
+// CSRF protection middleware
+app.use(csrfProtection.generateToken)
+app.use(csrfProtection.validateToken)
+app.use(csrfProtection.addTokenToResponse)
 
 // Health check endpoint (before rate limiting)
 app.get('/health', (req, res) => {

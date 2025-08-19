@@ -4,6 +4,17 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { vi } from 'vitest'
 
+// Create AuthContext mock that matches the real implementation
+const AuthContext = React.createContext()
+
+const useAuth = () => {
+  const context = React.useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}
+
 // Create a custom render function that includes providers
 export function render(ui, options = {}) {
   const {
@@ -13,9 +24,6 @@ export function render(ui, options = {}) {
     ...renderOptions
   } = options
 
-  // Create proper AuthContext mock
-  const AuthContext = React.createContext()
-
   // Mock auth context provider
   const MockAuthProvider = ({ children }) => {
     const mockAuthContext = {
@@ -23,10 +31,10 @@ export function render(ui, options = {}) {
       user: user,
       isLoading: false,
       error: null,
-      login: vi.fn(),
-      register: vi.fn(),
-      logout: vi.fn(),
-      changePassword: vi.fn(),
+      login: vi.fn().mockResolvedValue(user),
+      register: vi.fn().mockResolvedValue(user),
+      logout: vi.fn().mockResolvedValue(),
+      changePassword: vi.fn().mockResolvedValue(),
       updateUser: vi.fn(),
       clearError: vi.fn(),
       hasRole: vi.fn((role) => user?.role === role),

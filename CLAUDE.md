@@ -38,6 +38,7 @@ npm run test:watch          # Watch mode for development
 npm run test:unit           # Models and middleware tests only
 npm run test:integration    # API route tests only
 npm run test:coverage       # Generate coverage report
+npm run test:ci             # CI mode with coverage (no watch)
 npm run lint                # ESLint code checking
 npm run lint:fix            # Auto-fix linting issues
 
@@ -46,6 +47,10 @@ npm run db:migrate          # Run latest migrations
 npm run db:rollback         # Rollback last migration
 npm run db:seed             # Run database seeds
 npm run db:reset            # Rollback, migrate, and seed
+
+# Documentation commands
+npm run docs:generate       # Generate API documentation
+npm run docs:serve          # Serve Swagger documentation
 ```
 
 ### Frontend Commands
@@ -56,9 +61,13 @@ npm run build               # Production build
 npm test                    # Run Vitest tests
 npm run test:coverage       # Generate test coverage
 npm run test:ui             # Run Vitest UI
+npm run test:e2e            # Run Playwright E2E tests
+npm run test:e2e:ui         # Run Playwright with UI
 npm run lint                # ESLint checking
 npm run lint:fix            # Auto-fix linting issues
 npm run type-check          # TypeScript type checking
+npm run format              # Format code with Prettier
+npm run format:check        # Check formatting without changes
 ```
 
 ### Running Individual Tests
@@ -66,10 +75,12 @@ npm run type-check          # TypeScript type checking
 # Backend
 npm test User.test.js               # Specific test file
 npm test -- --grep "auth"          # Tests matching pattern
+npm test tests/models/User.test.js  # Full path to test file
 
 # Frontend  
 npm test RequestDetailPage          # Component tests
 npm test -- --reporter=verbose     # Detailed output
+npm test src/pages/RequestDetailPage.test.jsx  # Full path to test file
 ```
 
 ## Database Architecture

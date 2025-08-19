@@ -19,8 +19,14 @@ const generateRefreshToken = (payload) => {
 // Verify JWT token middleware
 const authenticateToken = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization
-    const token = authHeader && authHeader.split(' ')[1] // Bearer TOKEN
+    // Try to get token from httpOnly cookie first, then fallback to Authorization header
+    let token = req.cookies?.access_token
+    
+    // Fallback to Authorization header for API clients
+    if (!token) {
+      const authHeader = req.headers.authorization
+      token = authHeader && authHeader.split(' ')[1] // Bearer TOKEN
+    }
 
     if (!token) {
       return res.status(401).json({
@@ -148,8 +154,13 @@ const canActOnRequest = async (req, res, next) => {
 // Optional authentication (for public endpoints that benefit from user context)
 const optionalAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization
-    const token = authHeader && authHeader.split(' ')[1]
+    // Try to get token from httpOnly cookie first, then fallback to Authorization header
+    let token = req.cookies?.access_token
+    
+    if (!token) {
+      const authHeader = req.headers.authorization
+      token = authHeader && authHeader.split(' ')[1]
+    }
 
     if (!token) {
       return next() // Continue without user context
@@ -169,11 +180,50 @@ const optionalAuth = async (req, res, next) => {
   }
 }
 
+// Set JWT tokens in httpOnly cookies
+const setTokenCookies = (res, accessToken, refreshToken) => {
+  const isProduction = process.env.NODE_ENV === 'production'
+  
+  // Set access token cookie
+  res.cookie('access_token', accessToken, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'strict',
+    maxAge: 15 * 60 * 1000 // 15 minutes
+  })
+  
+  // Set refresh token cookie
+  if (refreshToken) {
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    })
+  }
+}
+
+// Clear JWT token cookies
+const clearTokenCookies = (res) => {
+  res.clearCookie('access_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  })
+  res.clearCookie('refresh_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  })
+}
+
 module.exports = {
   generateToken,
   generateRefreshToken,
   authenticateToken,
   requireRole,
   canActOnRequest,
-  optionalAuth
+  optionalAuth,
+  setTokenCookies,
+  clearTokenCookies
 }
