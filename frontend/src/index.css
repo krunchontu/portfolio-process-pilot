@@ -116,6 +116,18 @@
   .status-cancelled {
     @apply badge-secondary;
   }
+  
+  .error-message {
+    @apply text-sm text-error-600 mt-1;
+  }
+  
+  .success-message {
+    @apply text-sm text-success-600 mt-1;
+  }
+  
+  .warning-message {
+    @apply text-sm text-warning-600 mt-1;
+  }
 }
 
 /* Utility classes */
