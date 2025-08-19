@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser')
 
 const config = require('./config')
 const { logger, stream } = require('./utils/logger')
+const { apiResponseMiddleware } = require('./utils/apiResponse')
 const { globalErrorHandler, notFound } = require('./middleware/errorHandler')
 const { testConnection } = require('./database/connection')
 const csrfProtection = require('./middleware/csrf')
@@ -80,15 +81,29 @@ app.use(csrfProtection.generateToken)
 app.use(csrfProtection.validateToken)
 app.use(csrfProtection.addTokenToResponse)
 
+// API response standardization middleware
+app.use(apiResponseMiddleware)
+
 // Health check endpoint (before rate limiting)
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: config.nodeEnv,
-    version: process.env.npm_package_version || '1.0.0'
-  })
+app.get('/health', async (req, res) => {
+  try {
+    const { healthCheck } = require('./database/connection')
+    const dbHealth = await healthCheck()
+    
+    const healthData = {
+      status: dbHealth.status === 'healthy' ? 'ok' : 'degraded',
+      uptime: process.uptime(),
+      environment: config.nodeEnv,
+      version: process.env.npm_package_version || '1.0.0',
+      database: dbHealth,
+      timestamp: new Date().toISOString()
+    }
+
+    const statusCode = dbHealth.status === 'healthy' ? 200 : 503
+    res.success(statusCode, 'Health check completed', healthData)
+  } catch (error) {
+    res.internalError('Health check failed', error)
+  }
 })
 
 // API routes
@@ -100,7 +115,7 @@ app.use('/api/analytics', analyticsRoutes)
 
 // API info endpoint
 app.get('/api', (req, res) => {
-  res.json({
+  const apiInfo = {
     name: 'ProcessPilot API',
     version: '1.0.0',
     description: 'Workflow & Approval Engine API',
@@ -113,7 +128,9 @@ app.get('/api', (req, res) => {
     },
     documentation: '/api/docs',
     health: '/health'
-  })
+  }
+  
+  res.success(200, 'API information retrieved', apiInfo)
 })
 
 // Handle unmatched routes

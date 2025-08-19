@@ -5,6 +5,12 @@ const Workflow = require('../models/Workflow')
 const { authenticateToken, requireRole, canActOnRequest } = require('../middleware/auth')
 const { validateRequest, validateQuery, validateParams } = require('../middleware/validation')
 const { catchAsync, AppError } = require('../middleware/errorHandler')
+const { 
+  createRequestSchema, 
+  requestActionSchema, 
+  cancelRequestSchema, 
+  listRequestsSchema 
+} = require('../schemas/requests')
 
 const router = express.Router()
 
@@ -12,7 +18,7 @@ const router = express.Router()
 router.use(authenticateToken)
 
 // Create new request
-router.post('/', catchAsync(async (req, res) => {
+router.post('/', validateRequest(createRequestSchema), catchAsync(async (req, res) => {
   const { type, workflow_id, payload } = req.body
 
   // Get workflow configuration
@@ -46,14 +52,12 @@ router.post('/', catchAsync(async (req, res) => {
     steps
   })
 
-  res.status(201).json({
-    message: 'Request created successfully',
-    request: await Request.findById(request.id)
-  })
+  const fullRequest = await Request.findById(request.id)
+  return res.created('Request created successfully', { request: fullRequest })
 }))
 
 // List requests (with filters)
-router.get('/', catchAsync(async (req, res) => {
+router.get('/', validateQuery(listRequestsSchema), catchAsync(async (req, res) => {
   const filters = { ...req.query }
 
   // Users can only see their own requests unless they're managers/admins
@@ -69,22 +73,25 @@ router.get('/', catchAsync(async (req, res) => {
 
   const requests = await Request.list(filters)
 
-  res.json({
+  return res.success(200, 'Requests retrieved successfully', { 
     requests,
-    filters: req.query,
-    count: requests.length
+    count: requests.length 
+  }, {
+    filters: req.query
   })
 }))
 
 // Get specific request
 router.get('/:id', validateParams({ id: require('../middleware/validation').uuid() }), canActOnRequest, catchAsync(async (req, res) => {
-  res.json({
-    request: req.targetRequest
-  })
+  return res.success(200, 'Request retrieved successfully', { request: req.targetRequest })
 }))
 
 // Take action on request (approve/reject)
-router.post('/:id/action', validateParams({ id: require('../middleware/validation').uuid() }), canActOnRequest, catchAsync(async (req, res) => {
+router.post('/:id/action', 
+  validateParams({ id: require('../middleware/validation').uuid() }), 
+  validateRequest(requestActionSchema),
+  canActOnRequest, 
+  catchAsync(async (req, res) => {
   const { action, comment = '' } = req.body
   const request = req.targetRequest
 
@@ -135,14 +142,14 @@ router.post('/:id/action', validateParams({ id: require('../middleware/validatio
 
   const fullRequest = await Request.findById(request.id)
 
-  res.json({
-    message: `Request ${action}d successfully`,
-    request: fullRequest
-  })
+  return res.success(200, `Request ${action}d successfully`, { request: fullRequest })
 }))
 
 // Cancel request (requestor only)
-router.post('/:id/cancel', validateParams({ id: require('../middleware/validation').uuid() }), catchAsync(async (req, res) => {
+router.post('/:id/cancel', 
+  validateParams({ id: require('../middleware/validation').uuid() }), 
+  validateRequest(cancelRequestSchema),
+  catchAsync(async (req, res) => {
   const request = await Request.findById(req.params.id)
 
   if (!request) {
@@ -168,19 +175,17 @@ router.post('/:id/cancel', validateParams({ id: require('../middleware/validatio
 
   const updatedRequest = await Request.updateStatus(request.id, 'cancelled', null, new Date())
 
-  res.json({
-    message: 'Request cancelled successfully',
-    request: await Request.findById(request.id)
-  })
+  const fullRequest = await Request.findById(request.id)
+  return res.success(200, 'Request cancelled successfully', { request: fullRequest })
 }))
 
 // Get request history
 router.get('/:id/history', validateParams({ id: require('../middleware/validation').uuid() }), canActOnRequest, catchAsync(async (req, res) => {
   const history = await RequestHistory.findByRequestId(req.params.id)
 
-  res.json({
+  return res.success(200, 'Request history retrieved successfully', { 
     request_id: req.params.id,
-    history
+    history 
   })
 }))
 

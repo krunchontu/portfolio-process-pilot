@@ -1,3 +1,14 @@
+// Load test environment variables before any imports
+const dotenv = require('dotenv');
+const path = require('path');
+
+// Load .env.test file
+const envPath = path.resolve(__dirname, '../.env.test');
+dotenv.config({ path: envPath });
+
+// Ensure NODE_ENV is set to test
+process.env.NODE_ENV = 'test';
+
 const { db } = require('../src/database/connection');
 
 // Global test setup

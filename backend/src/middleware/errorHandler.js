@@ -1,4 +1,5 @@
 const config = require('../config')
+const { error: sendErrorResponse } = require('../utils/apiResponse')
 
 // Custom error class for application errors
 class AppError extends Error {
@@ -45,33 +46,23 @@ const handleJWTExpiredError = () => {
   return new AppError('Token expired', 401, 'TOKEN_EXPIRED')
 }
 
-// Send error response
+// Send error response using standardized format
 const sendErrorDev = (err, res) => {
-  res.status(err.statusCode).json({
-    status: 'error',
-    error: err.message,
-    code: err.code,
+  const details = {
     stack: err.stack,
-    details: err
-  })
+    error_details: err
+  }
+  return sendErrorResponse(res, err.statusCode, err.message, err.code, details)
 }
 
 const sendErrorProd = (err, res) => {
   // Only send operational errors to client in production
   if (err.isOperational) {
-    res.status(err.statusCode).json({
-      status: 'error',
-      error: err.message,
-      code: err.code
-    })
+    return sendErrorResponse(res, err.statusCode, err.message, err.code)
   } else {
     // Log error and send generic message
     console.error('ERROR 💥', err)
-    res.status(500).json({
-      status: 'error',
-      error: 'Something went wrong!',
-      code: 'INTERNAL_ERROR'
-    })
+    return sendErrorResponse(res, 500, 'Something went wrong!', 'INTERNAL_ERROR')
   }
 }
 
@@ -115,6 +106,16 @@ const catchAsync = (fn) => {
 
 // Handle unhandled routes
 const notFound = (req, res, next) => {
+  // For API routes, send standardized error response directly
+  if (req.path.startsWith('/api/')) {
+    return sendErrorResponse(res, 404, `Route ${req.originalUrl} not found`, 'ROUTE_NOT_FOUND', {
+      method: req.method,
+      path: req.path,
+      available_endpoints: ['/api/auth', '/api/requests', '/api/workflows', '/api/users', '/api/analytics']
+    })
+  }
+  
+  // For non-API routes, create error and pass to global handler
   const err = new AppError(`Route ${req.originalUrl} not found`, 404, 'ROUTE_NOT_FOUND')
   next(err)
 }

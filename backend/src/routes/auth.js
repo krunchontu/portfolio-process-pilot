@@ -13,10 +13,11 @@ const router = express.Router()
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 attempts per window
-  message: {
-    error: 'Too many authentication attempts, please try again later',
-    code: 'RATE_LIMIT_EXCEEDED'
-  }
+  handler: (req, res) => {
+    return res.tooManyRequests('Too many authentication attempts, please try again later')
+  },
+  standardHeaders: true,
+  legacyHeaders: false
 })
 
 // Login endpoint
@@ -27,27 +28,18 @@ router.post('/login', authLimiter, validateRequest(loginSchema), async (req, res
     // Find user by email
     const user = await User.findByEmail(email)
     if (!user) {
-      return res.status(401).json({
-        error: 'Invalid email or password',
-        code: 'INVALID_CREDENTIALS'
-      })
+      return res.unauthorized('Invalid email or password')
     }
 
     // Check if user is active
     if (!user.is_active) {
-      return res.status(401).json({
-        error: 'Account is deactivated',
-        code: 'ACCOUNT_DEACTIVATED'
-      })
+      return res.unauthorized('Account is deactivated')
     }
 
     // Validate password
     const isValidPassword = await User.validatePassword(password, user.password_hash)
     if (!isValidPassword) {
-      return res.status(401).json({
-        error: 'Invalid email or password',
-        code: 'INVALID_CREDENTIALS'
-      })
+      return res.unauthorized('Invalid email or password')
     }
 
     // Generate tokens
@@ -69,9 +61,7 @@ router.post('/login', authLimiter, validateRequest(loginSchema), async (req, res
     // Remove sensitive data
     delete user.password_hash
 
-    res.json({
-      success: true,
-      message: 'Login successful',
+    return res.success(200, 'Login successful', {
       user,
       // Still provide tokens for API clients that need them
       tokens: {
@@ -81,11 +71,7 @@ router.post('/login', authLimiter, validateRequest(loginSchema), async (req, res
       }
     })
   } catch (error) {
-    console.error('Login error:', error)
-    res.status(500).json({
-      error: 'Login failed',
-      code: 'LOGIN_ERROR'
-    })
+    return res.internalError('Login failed', error)
   }
 })
 
@@ -97,10 +83,7 @@ router.post('/register', validateRequest(registerSchema), async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findByEmail(email)
     if (existingUser) {
-      return res.status(409).json({
-        error: 'User with this email already exists',
-        code: 'EMAIL_ALREADY_EXISTS'
-      })
+      return res.conflict('User with this email already exists', { email })
     }
 
     // Create new user
@@ -113,16 +96,9 @@ router.post('/register', validateRequest(registerSchema), async (req, res) => {
       department
     })
 
-    res.status(201).json({
-      message: 'User registered successfully',
-      user: newUser
-    })
+    return res.created('User registered successfully', { user: newUser })
   } catch (error) {
-    console.error('Registration error:', error)
-    res.status(500).json({
-      error: 'Registration failed',
-      code: 'REGISTRATION_ERROR'
-    })
+    return res.internalError('Registration failed', error)
   }
 })
 
@@ -137,10 +113,7 @@ router.post('/refresh', async (req, res) => {
     }
     
     if (!refreshToken) {
-      return res.status(401).json({
-        error: 'Refresh token required',
-        code: 'MISSING_REFRESH_TOKEN'
-      })
+      return res.unauthorized('Refresh token required')
     }
 
     // Verify refresh token
@@ -149,10 +122,7 @@ router.post('/refresh', async (req, res) => {
     // Get fresh user data
     const user = await User.findById(decoded.userId)
     if (!user || !user.is_active) {
-      return res.status(401).json({
-        error: 'Invalid refresh token',
-        code: 'INVALID_REFRESH_TOKEN'
-      })
+      return res.unauthorized('Invalid refresh token')
     }
 
     // Generate new access token
@@ -167,32 +137,22 @@ router.post('/refresh', async (req, res) => {
     // Set new access token in cookie
     setTokenCookies(res, accessToken, refreshToken)
 
-    res.json({
-      success: true,
+    return res.success(200, 'Token refreshed successfully', {
       access_token: accessToken,
       expires_in: config.jwt.expiresIn
     })
   } catch (error) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        error: 'Invalid or expired refresh token',
-        code: 'INVALID_REFRESH_TOKEN'
-      })
+      return res.unauthorized('Invalid or expired refresh token')
     }
 
-    console.error('Token refresh error:', error)
-    res.status(500).json({
-      error: 'Token refresh failed',
-      code: 'REFRESH_ERROR'
-    })
+    return res.internalError('Token refresh failed', error)
   }
 })
 
 // Get current user profile
 router.get('/me', authenticateToken, async (req, res) => {
-  res.json({
-    user: req.user
-  })
+  return res.success(200, 'Profile retrieved successfully', { user: req.user })
 })
 
 // Logout (clear httpOnly cookies)
@@ -203,10 +163,7 @@ router.post('/logout', authenticateToken, async (req, res) => {
   // Log the logout event
   console.log(`User ${req.user.email} logged out at ${new Date().toISOString()}`)
 
-  res.json({
-    success: true,
-    message: 'Logged out successfully'
-  })
+  return res.success(200, 'Logged out successfully')
 })
 
 // Password change endpoint
