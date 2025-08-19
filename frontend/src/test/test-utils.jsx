@@ -13,7 +13,10 @@ export function render(ui, options = {}) {
     ...renderOptions
   } = options
 
-  // Mock auth context
+  // Create proper AuthContext mock
+  const AuthContext = React.createContext()
+
+  // Mock auth context provider
   const MockAuthProvider = ({ children }) => {
     const mockAuthContext = {
       isAuthenticated: !!user,
@@ -36,9 +39,9 @@ export function render(ui, options = {}) {
     }
 
     return (
-      <div data-testid="mock-auth-provider">
-        {React.cloneElement(children, { authContext: mockAuthContext })}
-      </div>
+      <AuthContext.Provider value={mockAuthContext}>
+        {children}
+      </AuthContext.Provider>
     )
   }
 
@@ -67,17 +70,17 @@ export function createTestQueryClient() {
       queries: {
         retry: false,
         cacheTime: 0,
-        staleTime: 0,
+        staleTime: 0
       },
       mutations: {
-        retry: false,
-      },
+        retry: false
+      }
     },
     logger: {
       log: () => {},
       warn: () => {},
-      error: () => {},
-    },
+      error: () => {}
+    }
   })
 }
 
@@ -109,7 +112,7 @@ export const mockApiResponse = (data, status = 200) => ({
   status,
   statusText: 'OK',
   headers: {},
-  config: {},
+  config: {}
 })
 
 export const mockApiError = (message, status = 400, code = 'API_ERROR') => {
@@ -133,7 +136,7 @@ expect.extend({
     if (!field) {
       return {
         message: () => `Expected to find form field with name "${fieldName}"`,
-        pass: false,
+        pass: false
       }
     }
 
@@ -141,20 +144,45 @@ expect.extend({
     if (!errorElement) {
       return {
         message: () => `Expected to find error element for field "${fieldName}"`,
-        pass: false,
+        pass: false
       }
     }
 
     const hasError = errorElement.textContent.includes(expectedError)
     return {
-      message: () => 
+      message: () =>
         hasError
           ? `Expected field "${fieldName}" not to have error "${expectedError}"`
           : `Expected field "${fieldName}" to have error "${expectedError}", but got "${errorElement.textContent}"`,
-      pass: hasError,
+      pass: hasError
     }
   }
 })
+
+// Mock the AuthContext module for tests that need it
+export const mockAuthContextModule = () => {
+  vi.doMock('../contexts/AuthContext', () => ({
+    useAuth: vi.fn(),
+    AuthProvider: ({ children }) => children,
+    default: ({ children }) => children
+  }))
+}
+
+// Helper to setup auth context mock with specific user
+export const setupAuthContextMock = (user = null, overrides = {}) => {
+  const mockContext = createMockAuthContext(user, overrides)
+
+  // Mock the useAuth hook
+  const mockUseAuth = vi.fn(() => mockContext)
+
+  vi.doMock('../contexts/AuthContext', () => ({
+    useAuth: mockUseAuth,
+    AuthProvider: ({ children }) => children,
+    default: ({ children }) => children
+  }))
+
+  return { mockContext, mockUseAuth }
+}
 
 // Re-export everything from React Testing Library
 export * from '@testing-library/react'

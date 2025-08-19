@@ -7,17 +7,17 @@ import LoadingSpinner from './LoadingSpinner'
 const ProtectedRoute = ({ children, requiredRoles = [] }) => {
   const { isAuthenticated, isLoading, user, hasAnyRole } = useAuth()
   const location = useLocation()
-  
+
   // Show loading while checking authentication
   if (isLoading) {
     return <LoadingSpinner fullScreen text="Loading..." />
   }
-  
+
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
-  
+
   // Check role-based access
   if (requiredRoles.length > 0 && !hasAnyRole(requiredRoles)) {
     return (
@@ -46,7 +46,7 @@ const ProtectedRoute = ({ children, requiredRoles = [] }) => {
       </Layout>
     )
   }
-  
+
   // Render children within layout or outlet for nested routes
   return (
     <Layout>

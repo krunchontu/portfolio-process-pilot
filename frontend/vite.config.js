@@ -5,7 +5,7 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  
+
   // Path resolution
   resolve: {
     alias: {
@@ -19,7 +19,7 @@ export default defineConfig({
       '@/types': path.resolve(__dirname, './src/types')
     }
   },
-  
+
   // Development server
   server: {
     port: 3000,
@@ -32,7 +32,7 @@ export default defineConfig({
       }
     }
   },
-  
+
   // Build configuration
   build: {
     outDir: 'dist',
@@ -50,7 +50,7 @@ export default defineConfig({
       }
     }
   },
-  
+
   // Testing configuration
   test: {
     globals: true,
@@ -67,7 +67,7 @@ export default defineConfig({
       ]
     }
   },
-  
+
   // Preview configuration
   preview: {
     port: 3000,

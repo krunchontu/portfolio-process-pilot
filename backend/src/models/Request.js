@@ -1,24 +1,24 @@
-const { db } = require('../database/connection');
-const RequestHistory = require('./RequestHistory');
+const { db } = require('../database/connection')
+const RequestHistory = require('./RequestHistory')
 
 class Request {
   static get tableName() {
-    return 'requests';
+    return 'requests'
   }
 
   // Create new request
   static async create(requestData) {
-    const { created_by, workflow_id, type, payload, steps } = requestData;
-    
+    const { created_by, workflow_id, type, payload, steps } = requestData
+
     // Calculate SLA deadline if steps have SLA hours
-    let sla_hours = null;
-    let sla_deadline = null;
-    
+    let sla_hours = null
+    let sla_deadline = null
+
     if (steps && steps.length > 0 && steps[0].slaHours) {
-      sla_hours = steps[0].slaHours;
-      sla_deadline = new Date(Date.now() + sla_hours * 60 * 60 * 1000);
+      sla_hours = steps[0].slaHours
+      sla_deadline = new Date(Date.now() + sla_hours * 60 * 60 * 1000)
     }
-    
+
     const [request] = await db(this.tableName)
       .insert({
         type,
@@ -29,8 +29,8 @@ class Request {
         sla_hours,
         sla_deadline
       })
-      .returning('*');
-    
+      .returning('*')
+
     // Create initial history entry
     await RequestHistory.create({
       request_id: request.id,
@@ -38,9 +38,9 @@ class Request {
       action: 'submit',
       comment: 'Request submitted',
       metadata: { payload }
-    });
-    
-    return request;
+    })
+
+    return request
   }
 
   // Find request by ID with full details
@@ -56,14 +56,14 @@ class Request {
         'workflows.name as workflow_name'
       )
       .where('requests.id', id)
-      .first();
-    
+      .first()
+
     if (request) {
       // Get request history
-      request.history = await RequestHistory.findByRequestId(id);
+      request.history = await RequestHistory.findByRequestId(id)
     }
-    
-    return request;
+
+    return request
   }
 
   // List requests with filters
@@ -83,90 +83,90 @@ class Request {
         'creator.last_name as creator_last_name',
         'creator.email as creator_email',
         'workflows.name as workflow_name'
-      );
-    
+      )
+
     if (filters.status) {
-      query = query.where('requests.status', filters.status);
+      query = query.where('requests.status', filters.status)
     }
-    
+
     if (filters.type) {
-      query = query.where('requests.type', filters.type);
+      query = query.where('requests.type', filters.type)
     }
-    
+
     if (filters.created_by) {
-      query = query.where('requests.created_by', filters.created_by);
+      query = query.where('requests.created_by', filters.created_by)
     }
-    
+
     if (filters.pending_for_role) {
       // Find requests pending for specific role
       query = query.whereRaw(`
         requests.status = 'pending' AND 
         requests.steps->requests.current_step_index->>'role' = ?
-      `, [filters.pending_for_role]);
+      `, [filters.pending_for_role])
     }
-    
+
     if (filters.sla_breached) {
-      query = query.where('requests.sla_deadline', '<', new Date());
+      query = query.where('requests.sla_deadline', '<', new Date())
     }
-    
-    return await query.orderBy('requests.submitted_at', 'desc');
+
+    return await query.orderBy('requests.submitted_at', 'desc')
   }
 
   // Update request status and step
   static async updateStatus(id, status, current_step_index = null, completed_at = null) {
-    const updates = { 
-      status, 
+    const updates = {
+      status,
       updated_at: new Date()
-    };
-    
+    }
+
     if (current_step_index !== null) {
-      updates.current_step_index = current_step_index;
+      updates.current_step_index = current_step_index
     }
-    
+
     if (completed_at) {
-      updates.completed_at = completed_at;
+      updates.completed_at = completed_at
     }
-    
+
     // Calculate new SLA if moving to next step
     if (current_step_index !== null && status === 'pending') {
-      const request = await this.findById(id);
+      const request = await this.findById(id)
       if (request && request.steps[current_step_index]?.slaHours) {
-        updates.sla_hours = request.steps[current_step_index].slaHours;
-        updates.sla_deadline = new Date(Date.now() + updates.sla_hours * 60 * 60 * 1000);
+        updates.sla_hours = request.steps[current_step_index].slaHours
+        updates.sla_deadline = new Date(Date.now() + updates.sla_hours * 60 * 60 * 1000)
       }
     }
-    
+
     const [updatedRequest] = await db(this.tableName)
       .where('id', id)
       .update(updates)
-      .returning('*');
-    
-    return updatedRequest;
+      .returning('*')
+
+    return updatedRequest
   }
 
   // Get current step details
   static getCurrentStep(request) {
     if (!request || !request.steps || request.current_step_index >= request.steps.length) {
-      return null;
+      return null
     }
-    return request.steps[request.current_step_index];
+    return request.steps[request.current_step_index]
   }
 
   // Check if request is at final step
   static isFinalStep(request) {
-    return request.current_step_index >= request.steps.length - 1;
+    return request.current_step_index >= request.steps.length - 1
   }
 
   // Get requests approaching SLA deadline
   static async getSLAWarnings(hoursBeforeDeadline = 4) {
-    const warningTime = new Date(Date.now() + hoursBeforeDeadline * 60 * 60 * 1000);
-    
+    const warningTime = new Date(Date.now() + hoursBeforeDeadline * 60 * 60 * 1000)
+
     return await db(this.tableName)
       .leftJoin('users as creator', 'requests.created_by', 'creator.id')
       .select('requests.*', 'creator.email as creator_email')
       .where('requests.status', 'pending')
       .where('requests.sla_deadline', '<=', warningTime)
-      .where('requests.sla_deadline', '>', new Date());
+      .where('requests.sla_deadline', '>', new Date())
   }
 
   // Get overdue requests
@@ -175,7 +175,7 @@ class Request {
       .leftJoin('users as creator', 'requests.created_by', 'creator.id')
       .select('requests.*', 'creator.email as creator_email')
       .where('requests.status', 'pending')
-      .where('requests.sla_deadline', '<', new Date());
+      .where('requests.sla_deadline', '<', new Date())
   }
 
   // Analytics queries
@@ -190,13 +190,13 @@ class Request {
       )
       .where('submitted_at', '>=', dateFrom)
       .where('submitted_at', '<=', dateTo)
-      .first();
-    
+      .first()
+
     return {
       ...analytics,
       avg_completion_hours: analytics.avg_completion_hours ? parseFloat(analytics.avg_completion_hours).toFixed(2) : null
-    };
+    }
   }
 }
 
-module.exports = Request;
+module.exports = Request

@@ -10,9 +10,9 @@ const LoginPage = () => {
   const { login, isSubmitting, error, clearError } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  
+
   const from = location.state?.from?.pathname || '/dashboard'
-  
+
   const {
     register,
     handleSubmit,
@@ -25,7 +25,7 @@ const LoginPage = () => {
       password: ''
     }
   })
-  
+
   // Clear auth errors when form changes
   const watchedFields = watch()
   useEffect(() => {
@@ -33,7 +33,7 @@ const LoginPage = () => {
       clearError()
     }
   }, [watchedFields, error, clearError])
-  
+
   const onSubmit = async (data) => {
     try {
       await login(data)
@@ -43,7 +43,7 @@ const LoginPage = () => {
       console.error('Login failed:', err)
     }
   }
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-mesh py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
@@ -60,12 +60,12 @@ const LoginPage = () => {
               Sign in to your ProcessPilot account
             </p>
           </div>
-          
+
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" data-testid="login-form">
             {/* Global Error */}
             {error && (
-              <div 
+              <div
                 className="flex items-center p-4 bg-error-50 border border-error-200 rounded-lg"
                 data-testid="login-error"
               >
@@ -73,7 +73,7 @@ const LoginPage = () => {
                 <p className="text-error-700 text-sm">{error}</p>
               </div>
             )}
-            
+
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="label">
@@ -101,7 +101,7 @@ const LoginPage = () => {
                 </p>
               )}
             </div>
-            
+
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="label">
@@ -143,7 +143,7 @@ const LoginPage = () => {
                 </p>
               )}
             </div>
-            
+
             {/* Submit Button */}
             <button
               type="submit"
@@ -164,13 +164,13 @@ const LoginPage = () => {
               )}
             </button>
           </form>
-          
+
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-secondary-600">
               Don't have an account?{' '}
-              <Link 
-                to="/register" 
+              <Link
+                to="/register"
                 className="text-primary-600 hover:text-primary-700 font-medium"
                 data-testid="register-link"
               >
@@ -179,7 +179,7 @@ const LoginPage = () => {
             </p>
           </div>
         </div>
-        
+
         {/* Demo Credentials */}
         {import.meta.env.DEV && (
           <div className="mt-6 p-4 bg-warning-50 border border-warning-200 rounded-lg">

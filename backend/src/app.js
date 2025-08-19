@@ -1,35 +1,35 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const compression = require('compression');
-const rateLimit = require('express-rate-limit');
-const morgan = require('morgan');
+const express = require('express')
+const cors = require('cors')
+const helmet = require('helmet')
+const compression = require('compression')
+const rateLimit = require('express-rate-limit')
+const morgan = require('morgan')
 
-const config = require('./config');
-const { logger, stream } = require('./utils/logger');
-const { globalErrorHandler, notFound } = require('./middleware/errorHandler');
-const { testConnection } = require('./database/connection');
+const config = require('./config')
+const { logger, stream } = require('./utils/logger')
+const { globalErrorHandler, notFound } = require('./middleware/errorHandler')
+const { testConnection } = require('./database/connection')
 
 // Import routes
-const authRoutes = require('./routes/auth');
-const requestRoutes = require('./routes/requests');
-const workflowRoutes = require('./routes/workflows');
-const userRoutes = require('./routes/users');
-const analyticsRoutes = require('./routes/analytics');
+const authRoutes = require('./routes/auth')
+const requestRoutes = require('./routes/requests')
+const workflowRoutes = require('./routes/workflows')
+const userRoutes = require('./routes/users')
+const analyticsRoutes = require('./routes/analytics')
 
-const app = express();
+const app = express()
 
 // Trust proxy (for accurate IP addresses behind load balancers)
-app.set('trust proxy', 1);
+app.set('trust proxy', 1)
 
 // Security middleware
-app.use(helmet());
+app.use(helmet())
 
 // CORS configuration
-app.use(cors(config.cors));
+app.use(cors(config.cors))
 
 // Compression middleware
-app.use(compression());
+app.use(compression())
 
 // Rate limiting
 const limiter = rateLimit({
@@ -40,17 +40,17 @@ const limiter = rateLimit({
     code: 'RATE_LIMIT_EXCEEDED'
   },
   standardHeaders: true,
-  legacyHeaders: false,
-});
+  legacyHeaders: false
+})
 
-app.use('/api/', limiter);
+app.use('/api/', limiter)
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
 // Logging middleware
-app.use(morgan(config.logging.format, { stream }));
+app.use(morgan(config.logging.format, { stream }))
 
 // Health check endpoint (before rate limiting)
 app.get('/health', (req, res) => {
@@ -60,15 +60,15 @@ app.get('/health', (req, res) => {
     uptime: process.uptime(),
     environment: config.nodeEnv,
     version: process.env.npm_package_version || '1.0.0'
-  });
-});
+  })
+})
 
 // API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/requests', requestRoutes);
-app.use('/api/workflows', workflowRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/analytics', analyticsRoutes);
+app.use('/api/auth', authRoutes)
+app.use('/api/requests', requestRoutes)
+app.use('/api/workflows', workflowRoutes)
+app.use('/api/users', userRoutes)
+app.use('/api/analytics', analyticsRoutes)
 
 // API info endpoint
 app.get('/api', (req, res) => {
@@ -85,40 +85,40 @@ app.get('/api', (req, res) => {
     },
     documentation: '/api/docs',
     health: '/health'
-  });
-});
+  })
+})
 
 // Handle unmatched routes
-app.use(notFound);
+app.use(notFound)
 
 // Global error handling middleware
-app.use(globalErrorHandler);
+app.use(globalErrorHandler)
 
 // Initialize database connection
 const initializeApp = async () => {
   try {
-    await testConnection();
-    logger.info('✅ Database connection established');
+    await testConnection()
+    logger.info('✅ Database connection established')
   } catch (error) {
-    logger.error('❌ Failed to connect to database:', error);
-    process.exit(1);
+    logger.error('❌ Failed to connect to database:', error)
+    process.exit(1)
   }
-};
+}
 
 // Graceful shutdown handler
 const gracefulShutdown = async (signal) => {
-  logger.info(`Received ${signal}. Starting graceful shutdown...`);
-  
+  logger.info(`Received ${signal}. Starting graceful shutdown...`)
+
   // Close database connections
-  const { closeConnection } = require('./database/connection');
-  await closeConnection();
-  
-  logger.info('✅ Graceful shutdown completed');
-  process.exit(0);
-};
+  const { closeConnection } = require('./database/connection')
+  await closeConnection()
+
+  logger.info('✅ Graceful shutdown completed')
+  process.exit(0)
+}
 
 // Handle shutdown signals
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))
 
-module.exports = { app, initializeApp };
+module.exports = { app, initializeApp }

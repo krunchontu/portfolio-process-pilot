@@ -1,11 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from 'react-query'
-import { 
-  Plus, 
-  FileText, 
-  Clock, 
-  CheckCircle, 
+import {
+  Plus,
+  FileText,
+  Clock,
+  CheckCircle,
   XCircle,
   AlertTriangle,
   TrendingUp,
@@ -19,7 +19,7 @@ import { formatDistanceToNow, format } from 'date-fns'
 
 const DashboardPage = () => {
   const { user, isManagerOrAdmin } = useAuth()
-  
+
   // Fetch user's requests
   const { data: myRequestsData, isLoading: isLoadingRequests } = useQuery(
     ['requests', 'my-requests'],
@@ -28,21 +28,21 @@ const DashboardPage = () => {
       select: data => data.data.requests
     }
   )
-  
+
   // Fetch pending requests for managers/admins
   const { data: pendingRequestsData, isLoading: isLoadingPending } = useQuery(
     ['requests', 'pending'],
-    () => requestsAPI.list({ 
+    () => requestsAPI.list({
       status: 'pending',
       pending_for_role: user.role,
-      limit: 10 
+      limit: 10
     }),
     {
       enabled: isManagerOrAdmin(),
       select: data => data.data.requests
     }
   )
-  
+
   // Fetch dashboard analytics
   const { data: analyticsData, isLoading: isLoadingAnalytics } = useQuery(
     'dashboard-analytics',
@@ -55,7 +55,7 @@ const DashboardPage = () => {
       select: data => data.data
     }
   )
-  
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'pending':
@@ -68,7 +68,7 @@ const DashboardPage = () => {
         return <FileText className="w-4 h-4 text-secondary-500" />
     }
   }
-  
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending':
@@ -81,13 +81,13 @@ const DashboardPage = () => {
         return 'status-cancelled'
     }
   }
-  
+
   const formatRequestType = (type) => {
-    return type.split('-').map(word => 
+    return type.split('-').map(word =>
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ')
   }
-  
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
@@ -99,7 +99,7 @@ const DashboardPage = () => {
           Here's what's happening with your workflows today.
         </p>
       </div>
-      
+
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Link
@@ -117,7 +117,7 @@ const DashboardPage = () => {
             </div>
           </div>
         </Link>
-        
+
         <Link
           to="/requests"
           className="group card hover:shadow-md transition-shadow duration-200"
@@ -133,7 +133,7 @@ const DashboardPage = () => {
             </div>
           </div>
         </Link>
-        
+
         {isManagerOrAdmin() && (
           <Link
             to="/analytics"
@@ -152,7 +152,7 @@ const DashboardPage = () => {
           </Link>
         )}
       </div>
-      
+
       {/* Stats Cards for Managers/Admins */}
       {isManagerOrAdmin() && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -178,7 +178,7 @@ const DashboardPage = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="card" data-testid="pending-requests-stat">
                 <div className="flex items-center justify-between">
                   <div>
@@ -192,7 +192,7 @@ const DashboardPage = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="card" data-testid="approved-requests-stat">
                 <div className="flex items-center justify-between">
                   <div>
@@ -206,14 +206,14 @@ const DashboardPage = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="card" data-testid="avg-completion-stat">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-secondary-600">Avg. Completion</p>
                     <p className="text-2xl font-bold text-secondary-900">
-                      {analyticsData?.avg_completion_hours ? 
-                        `${Math.round(analyticsData.avg_completion_hours)}h` : 
+                      {analyticsData?.avg_completion_hours ?
+                        `${Math.round(analyticsData.avg_completion_hours)}h` :
                         'N/A'
                       }
                     </p>
@@ -227,14 +227,14 @@ const DashboardPage = () => {
           )}
         </div>
       )}
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* My Recent Requests */}
         <div className="card">
           <div className="card-header">
             <h2 className="text-lg font-semibold text-secondary-900">My Recent Requests</h2>
           </div>
-          
+
           {isLoadingRequests ? (
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -276,7 +276,7 @@ const DashboardPage = () => {
                   </div>
                 </Link>
               ))}
-              
+
               <div className="pt-4 border-t border-secondary-200">
                 <Link
                   to="/requests"
@@ -301,14 +301,14 @@ const DashboardPage = () => {
             </div>
           )}
         </div>
-        
+
         {/* Pending Actions (for Managers/Admins) */}
         {isManagerOrAdmin() && (
           <div className="card">
             <div className="card-header">
               <h2 className="text-lg font-semibold text-secondary-900">Pending Actions</h2>
             </div>
-            
+
             {isLoadingPending ? (
               <div className="space-y-4">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -349,13 +349,13 @@ const DashboardPage = () => {
                         )}
                       </div>
                       <p className="text-sm text-secondary-600 mt-1">
-                        From {request.creator_first_name} {request.creator_last_name} • 
+                        From {request.creator_first_name} {request.creator_last_name} •
                         {formatDistanceToNow(new Date(request.submitted_at), { addSuffix: true })}
                       </p>
                     </div>
                   </Link>
                 ))}
-                
+
                 <div className="pt-4 border-t border-secondary-200">
                   <Link
                     to="/requests?status=pending"

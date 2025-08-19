@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from 'react-query'
-import { 
-  Plus, 
-  Search, 
-  Filter, 
+import {
+  Plus,
+  Search,
+  Filter,
   Download,
   RefreshCw,
   SortAsc,
@@ -25,7 +25,7 @@ const RequestsPage = () => {
   const { user, isManagerOrAdmin } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [viewMode, setViewMode] = useState('card') // 'card' | 'list'
-  
+
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all')
@@ -33,10 +33,10 @@ const RequestsPage = () => {
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'submitted_at')
   const [sortOrder, setSortOrder] = useState(searchParams.get('order') || 'desc')
   const [createdByFilter, setCreatedByFilter] = useState(searchParams.get('created_by') || 'all')
-  
+
   // Debounce search term to avoid excessive API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
-  
+
   // Update URL params when filters change
   React.useEffect(() => {
     const params = new URLSearchParams()
@@ -46,29 +46,29 @@ const RequestsPage = () => {
     if (sortBy !== 'submitted_at') params.set('sort', sortBy)
     if (sortOrder !== 'desc') params.set('order', sortOrder)
     if (createdByFilter !== 'all') params.set('created_by', createdByFilter)
-    
+
     setSearchParams(params, { replace: true })
   }, [debouncedSearchTerm, statusFilter, typeFilter, sortBy, sortOrder, createdByFilter, setSearchParams])
-  
+
   // Build query parameters
   const queryParams = useMemo(() => {
     const params = {}
-    
+
     // Search
     if (debouncedSearchTerm) {
       params.search = debouncedSearchTerm
     }
-    
+
     // Status filter
     if (statusFilter !== 'all') {
       params.status = statusFilter
     }
-    
+
     // Type filter
     if (typeFilter !== 'all') {
       params.type = typeFilter
     }
-    
+
     // Creator filter
     if (createdByFilter === 'mine') {
       params.created_by = user?.id
@@ -76,37 +76,37 @@ const RequestsPage = () => {
       params.pending_for_role = user?.role
       params.status = 'pending'
     }
-    
+
     // Sorting
     params.sort_by = sortBy
     params.sort_order = sortOrder
-    
+
     // Pagination
     params.limit = 20
-    
+
     return params
   }, [debouncedSearchTerm, statusFilter, typeFilter, sortBy, sortOrder, createdByFilter, user, isManagerOrAdmin])
-  
+
   // Fetch requests
-  const { 
-    data: requestsData, 
-    isLoading, 
-    error, 
+  const {
+    data: requestsData,
+    isLoading,
+    error,
     refetch,
-    isFetching 
+    isFetching
   } = useQuery(
     ['requests', 'list', queryParams],
     () => requestsAPI.list(queryParams),
     {
       select: data => data.data,
       keepPreviousData: true,
-      staleTime: 30000, // 30 seconds
+      staleTime: 30000 // 30 seconds
     }
   )
-  
+
   const requests = requestsData?.requests || []
   const totalCount = requestsData?.total || 0
-  
+
   // Clear all filters
   const clearFilters = () => {
     setSearchTerm('')
@@ -116,7 +116,7 @@ const RequestsPage = () => {
     setSortBy('submitted_at')
     setSortOrder('desc')
   }
-  
+
   // Toggle sort order
   const toggleSort = (field) => {
     if (sortBy === field) {
@@ -126,22 +126,22 @@ const RequestsPage = () => {
       setSortOrder('desc')
     }
   }
-  
+
   // Export requests (placeholder)
   const exportRequests = () => {
     // TODO: Implement export functionality
     console.log('Export requests with params:', queryParams)
   }
-  
+
   // Get unique request types for filter
   const requestTypes = useMemo(() => {
     const types = new Set()
     requests.forEach(request => types.add(request.type))
     return Array.from(types).sort()
   }, [requests])
-  
+
   const hasActiveFilters = searchTerm || statusFilter !== 'all' || typeFilter !== 'all' || createdByFilter !== 'all'
-  
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
@@ -154,7 +154,7 @@ const RequestsPage = () => {
             Manage and track all your workflow requests
           </p>
         </div>
-        
+
         <div className="mt-4 sm:mt-0 flex items-center space-x-3">
           <button
             onClick={() => refetch()}
@@ -165,7 +165,7 @@ const RequestsPage = () => {
           >
             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
           </button>
-          
+
           {isManagerOrAdmin() && (
             <button
               onClick={exportRequests}
@@ -176,14 +176,14 @@ const RequestsPage = () => {
               Export
             </button>
           )}
-          
+
           <Link to="/requests/new" className="btn-primary" data-testid="create-request-button">
             <Plus className="w-4 h-4 mr-2" />
             New Request
           </Link>
         </div>
       </div>
-      
+
       {/* Filters and Search */}
       <div className="bg-white rounded-xl shadow-sm border border-secondary-200 p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -199,7 +199,7 @@ const RequestsPage = () => {
               data-testid="search-input"
             />
           </div>
-          
+
           {/* Status Filter */}
           <select
             value={statusFilter}
@@ -213,7 +213,7 @@ const RequestsPage = () => {
             <option value="rejected">Rejected</option>
             <option value="cancelled">Cancelled</option>
           </select>
-          
+
           {/* Type Filter */}
           <select
             value={typeFilter}
@@ -224,13 +224,13 @@ const RequestsPage = () => {
             <option value="all">All Types</option>
             {requestTypes.map(type => (
               <option key={type} value={type}>
-                {type.split('-').map(word => 
+                {type.split('-').map(word =>
                   word.charAt(0).toUpperCase() + word.slice(1)
                 ).join(' ')}
               </option>
             ))}
           </select>
-          
+
           {/* Creator Filter */}
           <select
             value={createdByFilter}
@@ -245,7 +245,7 @@ const RequestsPage = () => {
             )}
           </select>
         </div>
-        
+
         {/* Secondary Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center space-x-4 mb-4 sm:mb-0">
@@ -254,12 +254,12 @@ const RequestsPage = () => {
               <Menu.Button className="btn-outline text-sm">
                 <Filter className="w-4 h-4 mr-2" />
                 Sort by: {sortBy.replace('_', ' ')}
-                {sortOrder === 'asc' ? 
-                  <SortAsc className="w-4 h-4 ml-2" /> : 
+                {sortOrder === 'asc' ?
+                  <SortAsc className="w-4 h-4 ml-2" /> :
                   <SortDesc className="w-4 h-4 ml-2" />
                 }
               </Menu.Button>
-              
+
               <Transition
                 enter="transition ease-out duration-100"
                 enterFrom="transform opacity-0 scale-95"
@@ -295,7 +295,7 @@ const RequestsPage = () => {
                 </Menu.Items>
               </Transition>
             </Menu>
-            
+
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
@@ -306,7 +306,7 @@ const RequestsPage = () => {
               </button>
             )}
           </div>
-          
+
           {/* View Mode Toggle */}
           <div className="flex items-center space-x-2">
             <span className="text-sm text-secondary-600">View:</span>
@@ -315,8 +315,8 @@ const RequestsPage = () => {
                 onClick={() => setViewMode('card')}
                 className={clsx(
                   'p-2 rounded-md transition-colors',
-                  viewMode === 'card' 
-                    ? 'bg-white text-primary-600 shadow-sm' 
+                  viewMode === 'card'
+                    ? 'bg-white text-primary-600 shadow-sm'
                     : 'text-secondary-600 hover:text-secondary-800'
                 )}
                 data-testid="card-view-button"
@@ -327,8 +327,8 @@ const RequestsPage = () => {
                 onClick={() => setViewMode('list')}
                 className={clsx(
                   'p-2 rounded-md transition-colors',
-                  viewMode === 'list' 
-                    ? 'bg-white text-primary-600 shadow-sm' 
+                  viewMode === 'list'
+                    ? 'bg-white text-primary-600 shadow-sm'
                     : 'text-secondary-600 hover:text-secondary-800'
                 )}
                 data-testid="list-view-button"
@@ -339,7 +339,7 @@ const RequestsPage = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Results Summary */}
       {!isLoading && (
         <div className="mb-6 text-sm text-secondary-600" data-testid="results-summary">
@@ -347,7 +347,7 @@ const RequestsPage = () => {
           {hasActiveFilters && <span> (filtered)</span>}
         </div>
       )}
-      
+
       {/* Requests List */}
       <div className="space-y-6">
         {isLoading ? (
@@ -389,7 +389,7 @@ const RequestsPage = () => {
               {hasActiveFilters ? 'No requests match your filters' : 'No requests yet'}
             </h3>
             <p className="text-secondary-600 mb-4">
-              {hasActiveFilters 
+              {hasActiveFilters
                 ? 'Try adjusting your search criteria or clearing filters'
                 : 'Get started by creating your first request'
               }
@@ -406,10 +406,10 @@ const RequestsPage = () => {
             )}
           </div>
         ) : (
-          <div 
+          <div
             className={
-              viewMode === 'card' 
-                ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' 
+              viewMode === 'card'
+                ? 'grid grid-cols-1 lg:grid-cols-2 gap-6'
                 : 'space-y-4'
             }
             data-testid="requests-list"
@@ -425,11 +425,11 @@ const RequestsPage = () => {
           </div>
         )}
       </div>
-      
+
       {/* Load More Button (if pagination needed) */}
       {requests.length > 0 && requests.length < totalCount && (
         <div className="text-center mt-8">
-          <button 
+          <button
             className="btn-outline"
             onClick={() => {
               // TODO: Implement load more functionality

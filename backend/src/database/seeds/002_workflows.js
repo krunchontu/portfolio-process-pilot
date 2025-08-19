@@ -1,11 +1,11 @@
 /**
  * @param { import("knex").Knex } knex
- * @returns { Promise<void> } 
+ * @returns { Promise<void> }
  */
-exports.seed = async function(knex) {
+exports.seed = async function (knex) {
   // Clear existing entries
-  await knex('workflows').del();
-  
+  await knex('workflows').del()
+
   // Insert seed workflows
   await knex('workflows').insert([
     {
@@ -89,7 +89,7 @@ exports.seed = async function(knex) {
       is_active: true,
       created_by: '00000000-0000-0000-0000-000000000003'
     }
-  ]);
-  
-  console.log('✅ Workflows seeded successfully');
-};
+  ])
+
+  console.log('✅ Workflows seeded successfully')
+}

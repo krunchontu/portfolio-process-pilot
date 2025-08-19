@@ -4,13 +4,13 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  
+
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
     css: true,
-    
+
     // Coverage configuration
     coverage: {
       reporter: ['text', 'json', 'html', 'lcov'],
@@ -32,12 +32,12 @@ export default defineConfig({
         }
       }
     },
-    
+
     // Test file patterns
     include: [
       '**/*.{test,spec}.{js,jsx,ts,tsx}'
     ],
-    
+
     // Exclude patterns
     exclude: [
       'node_modules/',
@@ -46,7 +46,7 @@ export default defineConfig({
       'e2e/'
     ]
   },
-  
+
   // Path resolution (same as main config)
   resolve: {
     alias: {

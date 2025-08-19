@@ -1,5 +1,5 @@
-const Joi = require('joi');
-const { email, password } = require('../middleware/validation');
+const Joi = require('joi')
+const { email, password } = require('../middleware/validation')
 
 // Login schema
 const loginSchema = Joi.object({
@@ -8,7 +8,7 @@ const loginSchema = Joi.object({
     'any.required': 'Password is required',
     'string.empty': 'Password cannot be empty'
   })
-});
+})
 
 // Registration schema
 const registerSchema = Joi.object({
@@ -28,7 +28,7 @@ const registerSchema = Joi.object({
   department: Joi.string().trim().max(100).messages({
     'string.max': 'Department must not exceed 100 characters'
   })
-});
+})
 
 // Refresh token schema
 const refreshTokenSchema = Joi.object({
@@ -36,7 +36,7 @@ const refreshTokenSchema = Joi.object({
     'any.required': 'Refresh token is required',
     'string.empty': 'Refresh token cannot be empty'
   })
-});
+})
 
 // Change password schema
 const changePasswordSchema = Joi.object({
@@ -46,11 +46,11 @@ const changePasswordSchema = Joi.object({
   new_password: password().required().messages({
     'any.required': 'New password is required'
   })
-});
+})
 
 module.exports = {
   loginSchema,
   registerSchema,
   refreshTokenSchema,
   changePasswordSchema
-};
+}

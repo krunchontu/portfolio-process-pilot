@@ -13,7 +13,7 @@ const NotFoundPage = () => {
             Sorry, we couldn't find the page you're looking for.
           </p>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={() => window.history.back()}
@@ -22,7 +22,7 @@ const NotFoundPage = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Go back
           </button>
-          
+
           <Link to="/dashboard" className="btn-primary">
             <Home className="w-4 h-4 mr-2" />
             Go home

@@ -1,16 +1,16 @@
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs')
 
 /**
  * @param { import("knex").Knex } knex
- * @returns { Promise<void> } 
+ * @returns { Promise<void> }
  */
-exports.seed = async function(knex) {
+exports.seed = async function (knex) {
   // Clear existing entries
-  await knex('users').del();
-  
+  await knex('users').del()
+
   // Hash password for all users (using 'password123' for demo)
-  const passwordHash = await bcrypt.hash('password123', 12);
-  
+  const passwordHash = await bcrypt.hash('password123', 12)
+
   // Insert seed entries
   await knex('users').insert([
     {
@@ -75,11 +75,11 @@ exports.seed = async function(knex) {
       department: 'Marketing',
       is_active: true
     }
-  ]);
-  
-  console.log('✅ Users seeded successfully');
-  console.log('📧 Demo login credentials:');
-  console.log('   Admin: admin@processpilot.com / password123');
-  console.log('   Manager: manager.hr@processpilot.com / password123');
-  console.log('   Employee: employee.jane@processpilot.com / password123');
-};
+  ])
+
+  console.log('✅ Users seeded successfully')
+  console.log('📧 Demo login credentials:')
+  console.log('   Admin: admin@processpilot.com / password123')
+  console.log('   Manager: manager.hr@processpilot.com / password123')
+  console.log('   Employee: employee.jane@processpilot.com / password123')
+}

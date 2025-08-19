@@ -21,7 +21,7 @@ const localStorageMock = {
   removeItem: vi.fn(),
   clear: vi.fn(),
   length: 0,
-  key: vi.fn(),
+  key: vi.fn()
 }
 
 Object.defineProperty(window, 'localStorage', {
@@ -35,7 +35,7 @@ const sessionStorageMock = {
   removeItem: vi.fn(),
   clear: vi.fn(),
   length: 0,
-  key: vi.fn(),
+  key: vi.fn()
 }
 
 Object.defineProperty(window, 'sessionStorage', {
@@ -59,14 +59,14 @@ window.location = {
 global.IntersectionObserver = vi.fn(() => ({
   disconnect: vi.fn(),
   observe: vi.fn(),
-  unobserve: vi.fn(),
+  unobserve: vi.fn()
 }))
 
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn(() => ({
   disconnect: vi.fn(),
   observe: vi.fn(),
-  unobserve: vi.fn(),
+  unobserve: vi.fn()
 }))
 
 // Mock window.matchMedia
@@ -80,8 +80,8 @@ Object.defineProperty(window, 'matchMedia', {
     removeListener: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
+    dispatchEvent: vi.fn()
+  }))
 })
 
 // Mock fetch
@@ -114,7 +114,7 @@ global.testUtils = {
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z'
   },
-  
+
   // Mock admin user
   mockAdmin: {
     id: '2',
@@ -127,7 +127,7 @@ global.testUtils = {
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z'
   },
-  
+
   // Mock manager user
   mockManager: {
     id: '3',
@@ -140,7 +140,7 @@ global.testUtils = {
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z'
   },
-  
+
   // Mock request data
   mockRequest: {
     id: '1',
@@ -158,7 +158,7 @@ global.testUtils = {
     creator_email: 'test@example.com',
     workflow_name: 'Leave Request Approval'
   },
-  
+
   // Mock workflow data
   mockWorkflow: {
     id: '1',

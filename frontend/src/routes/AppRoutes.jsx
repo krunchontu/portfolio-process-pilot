@@ -19,7 +19,7 @@ const NotFoundPage = React.lazy(() => import('../pages/NotFoundPage'))
 
 const AppRoutes = () => {
   const { isAuthenticated, isLoading } = useAuth()
-  
+
   // Show loading spinner while checking auth state
   if (isLoading) {
     return (
@@ -28,74 +28,75 @@ const AppRoutes = () => {
       </div>
     )
   }
-  
+
   return (
-    <Suspense fallback={
+    <Suspense fallback={(
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
-    }>
+    )}
+    >
       <Routes>
         {/* Public Routes */}
-        <Route 
-          path="/login" 
+        <Route
+          path="/login"
           element={
             isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />
-          } 
+          }
         />
-        <Route 
-          path="/register" 
+        <Route
+          path="/register"
           element={
             isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />
-          } 
+          }
         />
-        
+
         {/* Protected Routes */}
         <Route path="/" element={<ProtectedRoute />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
-          
+
           {/* Dashboard */}
           <Route path="dashboard" element={<DashboardPage />} />
-          
+
           {/* Requests */}
           <Route path="requests" element={<RequestsPage />} />
           <Route path="requests/new" element={<CreateRequestPage />} />
           <Route path="requests/:id" element={<RequestDetailPage />} />
-          
+
           {/* Workflows - Admin/Manager only */}
-          <Route 
-            path="workflows" 
-            element={
+          <Route
+            path="workflows"
+            element={(
               <ProtectedRoute requiredRoles={['admin', 'manager']}>
                 <WorkflowsPage />
               </ProtectedRoute>
-            } 
+            )}
           />
-          
+
           {/* Users - Admin only */}
-          <Route 
-            path="users" 
-            element={
+          <Route
+            path="users"
+            element={(
               <ProtectedRoute requiredRoles={['admin']}>
                 <UsersPage />
               </ProtectedRoute>
-            } 
+            )}
           />
-          
+
           {/* Analytics - Manager/Admin only */}
-          <Route 
-            path="analytics" 
-            element={
+          <Route
+            path="analytics"
+            element={(
               <ProtectedRoute requiredRoles={['admin', 'manager']}>
                 <AnalyticsPage />
               </ProtectedRoute>
-            } 
+            )}
           />
-          
+
           {/* Profile */}
           <Route path="profile" element={<ProfilePage />} />
         </Route>
-        
+
         {/* 404 Route */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

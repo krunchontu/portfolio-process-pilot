@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery } from 'react-query'
 import { useForm } from 'react-hook-form'
-import { 
+import {
   ArrowLeft,
   Save,
   AlertCircle,
@@ -22,7 +22,7 @@ const CreateRequestPage = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [selectedWorkflow, setSelectedWorkflow] = useState(null)
-  
+
   const {
     register,
     handleSubmit,
@@ -30,9 +30,9 @@ const CreateRequestPage = () => {
     setValue,
     formState: { errors, isSubmitting }
   } = useForm()
-  
+
   const requestType = watch('type')
-  
+
   // Fetch available workflows
   const { data: workflowsData, isLoading: workflowsLoading } = useQuery(
     'workflows',
@@ -41,12 +41,12 @@ const CreateRequestPage = () => {
       select: data => data.data.workflows || []
     }
   )
-  
+
   // Create request mutation
   const createRequestMutation = useMutation(requestsAPI.create, {
     onSuccess: (data) => {
-      navigate('/requests', { 
-        state: { 
+      navigate('/requests', {
+        state: {
           message: `Request submitted successfully! Your request ID is ${data.data.request.id}`,
           type: 'success'
         }
@@ -56,13 +56,13 @@ const CreateRequestPage = () => {
       console.error('Failed to create request:', error)
     }
   })
-  
+
   const onSubmit = async (data) => {
     try {
       const payload = { ...data }
       delete payload.type
       delete payload.workflow_id
-      
+
       await createRequestMutation.mutateAsync({
         type: data.type,
         workflow_id: data.workflow_id,
@@ -72,7 +72,7 @@ const CreateRequestPage = () => {
       console.error('Submit error:', error)
     }
   }
-  
+
   const getRequestTypeIcon = (type) => {
     switch (type) {
       case 'leave-request':
@@ -89,7 +89,7 @@ const CreateRequestPage = () => {
         return <FileText className="w-5 h-5 text-secondary-500" />
     }
   }
-  
+
   const renderFormFields = () => {
     switch (requestType) {
       case 'leave-request':
@@ -111,7 +111,7 @@ const CreateRequestPage = () => {
                   <p className="error-message">{errors.startDate.message}</p>
                 )}
               </div>
-              
+
               <div>
                 <label htmlFor="endDate" className="label">
                   End Date *
@@ -128,7 +128,7 @@ const CreateRequestPage = () => {
                 )}
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="leaveType" className="label">
                 Leave Type *
@@ -150,7 +150,7 @@ const CreateRequestPage = () => {
                 <p className="error-message">{errors.leaveType.message}</p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="reason" className="label">
                 Reason *
@@ -169,7 +169,7 @@ const CreateRequestPage = () => {
             </div>
           </div>
         )
-        
+
       case 'expense-approval':
         return (
           <div className="space-y-4">
@@ -182,7 +182,7 @@ const CreateRequestPage = () => {
                   id="amount"
                   type="number"
                   step="0.01"
-                  {...register('amount', { 
+                  {...register('amount', {
                     required: 'Amount is required',
                     min: { value: 0.01, message: 'Amount must be greater than 0' }
                   })}
@@ -194,7 +194,7 @@ const CreateRequestPage = () => {
                   <p className="error-message">{errors.amount.message}</p>
                 )}
               </div>
-              
+
               <div>
                 <label htmlFor="currency" className="label">
                   Currency *
@@ -216,7 +216,7 @@ const CreateRequestPage = () => {
                 )}
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="expenseDate" className="label">
                 Expense Date *
@@ -232,7 +232,7 @@ const CreateRequestPage = () => {
                 <p className="error-message">{errors.expenseDate.message}</p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="category" className="label">
                 Category *
@@ -255,7 +255,7 @@ const CreateRequestPage = () => {
                 <p className="error-message">{errors.category.message}</p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="description" className="label">
                 Description *
@@ -274,7 +274,7 @@ const CreateRequestPage = () => {
             </div>
           </div>
         )
-        
+
       case 'equipment-request':
         return (
           <div className="space-y-4">
@@ -301,7 +301,7 @@ const CreateRequestPage = () => {
                 <p className="error-message">{errors.equipmentType.message}</p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="specifications" className="label">
                 Specifications
@@ -315,7 +315,7 @@ const CreateRequestPage = () => {
                 data-testid="specifications-textarea"
               />
             </div>
-            
+
             <div>
               <label htmlFor="justification" className="label">
                 Business Justification *
@@ -332,7 +332,7 @@ const CreateRequestPage = () => {
                 <p className="error-message">{errors.justification.message}</p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="urgency" className="label">
                 Urgency *
@@ -355,7 +355,7 @@ const CreateRequestPage = () => {
             </div>
           </div>
         )
-        
+
       default:
         return (
           <div className="space-y-4">
@@ -375,7 +375,7 @@ const CreateRequestPage = () => {
                 <p className="error-message">{errors.subject.message}</p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="details" className="label">
                 Details *
@@ -396,9 +396,9 @@ const CreateRequestPage = () => {
         )
     }
   }
-  
+
   const formatRequestType = (type) => {
-    return type?.split('-').map(word => 
+    return type?.split('-').map(word =>
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ')
   }
@@ -425,7 +425,7 @@ const CreateRequestPage = () => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Requests
         </button>
-        
+
         <h1 className="text-3xl font-bold text-secondary-900" data-testid="page-title">
           Create New Request
         </h1>
@@ -433,14 +433,14 @@ const CreateRequestPage = () => {
           Submit a new workflow request for approval
         </p>
       </div>
-      
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* Request Type Selection */}
         <div className="card">
           <h2 className="text-lg font-semibold text-secondary-900 mb-4">
             Request Type
           </h2>
-          
+
           <div>
             <label htmlFor="type" className="label">
               Select Request Type *
@@ -469,7 +469,7 @@ const CreateRequestPage = () => {
               <p className="error-message">{errors.type.message}</p>
             )}
           </div>
-          
+
           {/* Workflow Selection */}
           {requestType && workflowsData && workflowsData.length > 0 && (
             <div className="mt-4">
@@ -488,8 +488,8 @@ const CreateRequestPage = () => {
               >
                 <option value="">Select workflow</option>
                 {workflowsData
-                  .filter(workflow => 
-                    workflow.request_types.includes(requestType) || 
+                  .filter(workflow =>
+                    workflow.request_types.includes(requestType) ||
                     workflow.request_types.includes('*')
                   )
                   .map(workflow => (
@@ -501,7 +501,7 @@ const CreateRequestPage = () => {
               {errors.workflow_id && (
                 <p className="error-message">{errors.workflow_id.message}</p>
               )}
-              
+
               {/* Workflow Preview */}
               {selectedWorkflow && (
                 <div className="mt-4 p-4 bg-secondary-50 rounded-lg" data-testid="workflow-preview">
@@ -515,9 +515,9 @@ const CreateRequestPage = () => {
                           {index + 1}
                         </div>
                         <span className="text-sm text-secondary-700">
-                          {step.role === 'manager' ? 'Manager' : 
-                           step.role === 'admin' ? 'Administrator' : 
-                           step.role.charAt(0).toUpperCase() + step.role.slice(1)} Approval
+                          {step.role === 'manager' ? 'Manager' :
+                            step.role === 'admin' ? 'Administrator' :
+                              step.role.charAt(0).toUpperCase() + step.role.slice(1)} Approval
                         </span>
                         {step.sla_hours && (
                           <span className="text-xs text-secondary-500">
@@ -532,7 +532,7 @@ const CreateRequestPage = () => {
             </div>
           )}
         </div>
-        
+
         {/* Request Details */}
         {requestType && (
           <div className="card">
@@ -542,11 +542,11 @@ const CreateRequestPage = () => {
                 {formatRequestType(requestType)} Details
               </h2>
             </div>
-            
+
             {renderFormFields()}
           </div>
         )}
-        
+
         {/* Submit Section */}
         {requestType && (
           <div className="card">
@@ -559,7 +559,7 @@ const CreateRequestPage = () => {
                   Review your request and submit for approval
                 </p>
               </div>
-              
+
               <div className="flex space-x-3">
                 <button
                   type="button"
@@ -569,7 +569,7 @@ const CreateRequestPage = () => {
                 >
                   Cancel
                 </button>
-                
+
                 <button
                   type="submit"
                   disabled={isSubmitting || createRequestMutation.isLoading}
@@ -590,7 +590,7 @@ const CreateRequestPage = () => {
                 </button>
               </div>
             </div>
-            
+
             {/* Error Display */}
             {createRequestMutation.error && (
               <div className="mt-4 p-4 bg-error-50 border border-error-200 rounded-lg" data-testid="error-message">

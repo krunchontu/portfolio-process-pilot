@@ -1,9 +1,9 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   User,
   Calendar,
@@ -15,7 +15,7 @@ import { useAuth } from '../contexts/AuthContext'
 
 const RequestCard = ({ request, showCreator = false, showActions = true }) => {
   const { user } = useAuth()
-  
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'pending':
@@ -30,7 +30,7 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
         return <FileText className="w-4 h-4 text-secondary-500" />
     }
   }
-  
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending':
@@ -45,36 +45,36 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
         return 'badge-secondary'
     }
   }
-  
+
   const formatRequestType = (type) => {
-    return type.split('-').map(word => 
+    return type.split('-').map(word =>
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ')
   }
-  
+
   const isOverdue = () => {
-    return request.sla_deadline && 
-           new Date(request.sla_deadline) < new Date() && 
+    return request.sla_deadline &&
+           new Date(request.sla_deadline) < new Date() &&
            request.status === 'pending'
   }
-  
+
   const canCancel = () => {
-    return request.created_by === user?.id && 
+    return request.created_by === user?.id &&
            request.status === 'pending'
   }
-  
+
   const isPendingForUser = () => {
     // Check if this request is pending for the current user to act on
     const currentStep = request.steps?.[request.current_step_index]
     if (!currentStep) return false
-    
+
     const expectedRole = currentStep.escalatedTo || currentStep.role
-    return request.status === 'pending' && 
+    return request.status === 'pending' &&
            (user?.role === expectedRole || user?.role === 'admin')
   }
-  
+
   return (
-    <div 
+    <div
       className={`card hover:shadow-md transition-all duration-200 ${
         isPendingForUser() ? 'ring-2 ring-primary-200 bg-primary-50' : ''
       }`}
@@ -104,7 +104,7 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
               {request.status}
             </span>
           </div>
-          
+
           {/* Request Details */}
           <div className="space-y-2 text-sm text-secondary-600 mb-4">
             {showCreator && request.creator_first_name && (
@@ -118,7 +118,7 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
                 </span>
               </div>
             )}
-            
+
             <div className="flex items-center space-x-2" data-testid="submitted-date">
               <Calendar className="w-4 h-4" />
               <span>
@@ -130,26 +130,27 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
                 )}
               </span>
             </div>
-            
+
             {request.sla_deadline && (
               <div className="flex items-center space-x-2" data-testid="sla-deadline">
                 <AlertTriangle className={`w-4 h-4 ${
                   isOverdue() ? 'text-error-500' : 'text-warning-500'
-                }`} />
+                }`}
+                />
                 <span>
                   SLA: {formatDistanceToNow(new Date(request.sla_deadline), { addSuffix: true })}
                   {isOverdue() && <span className="text-error-600 font-medium ml-1">(Overdue)</span>}
                 </span>
               </div>
             )}
-            
+
             {request.workflow_name && (
               <div className="flex items-center space-x-2" data-testid="workflow-info">
                 <FileText className="w-4 h-4" />
                 <span>Workflow: {request.workflow_name}</span>
               </div>
             )}
-            
+
             {request.completed_at && (
               <div className="flex items-center space-x-2" data-testid="completed-date">
                 <CheckCircle className="w-4 h-4 text-success-500" />
@@ -159,7 +160,7 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
               </div>
             )}
           </div>
-          
+
           {/* Request Summary */}
           {request.payload && Object.keys(request.payload).length > 0 && (
             <div className="mb-4 p-3 bg-secondary-50 rounded-lg" data-testid="request-summary">
@@ -173,8 +174,8 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
                       {key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}:
                     </span>
                     <span className="text-secondary-900 font-medium">
-                      {typeof value === 'string' && value.length > 30 
-                        ? `${value.substring(0, 30)}...` 
+                      {typeof value === 'string' && value.length > 30
+                        ? `${value.substring(0, 30)}...`
                         : String(value)
                       }
                     </span>
@@ -190,7 +191,7 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
           )}
         </div>
       </div>
-      
+
       {/* Actions */}
       {showActions && (
         <div className="flex items-center justify-between pt-4 border-t border-secondary-200">
@@ -201,10 +202,10 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
               </span>
             )}
           </div>
-          
+
           <div className="flex items-center space-x-2">
             {canCancel() && (
-              <button 
+              <button
                 className="text-sm text-error-600 hover:text-error-800 font-medium"
                 data-testid="cancel-button"
                 onClick={(e) => {
@@ -216,7 +217,7 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
                 Cancel
               </button>
             )}
-            
+
             <Link
               to={`/requests/${request.id}`}
               className="inline-flex items-center text-sm text-primary-600 hover:text-primary-800 font-medium"

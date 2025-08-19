@@ -9,7 +9,7 @@ const ProfilePage = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [activeTab, setActiveTab] = useState('profile')
-  
+
   // Profile form
   const profileForm = useForm({
     defaultValues: {
@@ -19,7 +19,7 @@ const ProfilePage = () => {
       department: user?.department || ''
     }
   })
-  
+
   // Password form
   const passwordForm = useForm({
     defaultValues: {
@@ -28,7 +28,7 @@ const ProfilePage = () => {
       confirm_password: ''
     }
   })
-  
+
   const onProfileSubmit = async (data) => {
     try {
       await updateUser(data)
@@ -36,7 +36,7 @@ const ProfilePage = () => {
       console.error('Profile update failed:', error)
     }
   }
-  
+
   const onPasswordSubmit = async (data) => {
     try {
       await changePassword({
@@ -48,7 +48,7 @@ const ProfilePage = () => {
       console.error('Password change failed:', error)
     }
   }
-  
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -57,7 +57,7 @@ const ProfilePage = () => {
           Manage your account settings and preferences
         </p>
       </div>
-      
+
       {/* Tabs */}
       <div className="border-b border-secondary-200 mb-8">
         <nav className="-mb-px flex space-x-8">
@@ -72,7 +72,7 @@ const ProfilePage = () => {
             <User className="w-4 h-4 inline mr-2" />
             Profile
           </button>
-          
+
           <button
             onClick={() => setActiveTab('password')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -86,7 +86,7 @@ const ProfilePage = () => {
           </button>
         </nav>
       </div>
-      
+
       {/* Profile Tab */}
       {activeTab === 'profile' && (
         <div className="card">
@@ -101,7 +101,7 @@ const ProfilePage = () => {
                   disabled
                 />
               </div>
-              
+
               <div>
                 <label className="label">Last name</label>
                 <input
@@ -112,7 +112,7 @@ const ProfilePage = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <label className="label">Email address</label>
               <input
@@ -125,7 +125,7 @@ const ProfilePage = () => {
                 Email cannot be changed. Contact your administrator if needed.
               </p>
             </div>
-            
+
             <div>
               <label className="label">Department</label>
               <input
@@ -135,7 +135,7 @@ const ProfilePage = () => {
                 disabled
               />
             </div>
-            
+
             <div>
               <label className="label">Role</label>
               <input
@@ -145,7 +145,7 @@ const ProfilePage = () => {
                 disabled
               />
             </div>
-            
+
             <div className="flex justify-end">
               <p className="text-sm text-secondary-500">
                 Profile information is managed by your administrator.
@@ -154,7 +154,7 @@ const ProfilePage = () => {
           </form>
         </div>
       )}
-      
+
       {/* Password Tab */}
       {activeTab === 'password' && (
         <div className="card">
@@ -180,7 +180,7 @@ const ProfilePage = () => {
                 </button>
               </div>
             </div>
-            
+
             <div>
               <label className="label">New password</label>
               <div className="relative">
@@ -205,7 +205,7 @@ const ProfilePage = () => {
                 </button>
               </div>
             </div>
-            
+
             <div>
               <label className="label">Confirm new password</label>
               <input
@@ -218,7 +218,7 @@ const ProfilePage = () => {
                 className="input"
               />
             </div>
-            
+
             <div className="flex justify-end">
               <button
                 type="submit"

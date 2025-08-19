@@ -10,30 +10,30 @@ class ErrorBoundary extends React.Component {
       errorInfo: null
     }
   }
-  
+
   static getDerivedStateFromError(error) {
     // Update state so the next render will show the fallback UI
     return { hasError: true }
   }
-  
+
   componentDidCatch(error, errorInfo) {
     // Log error to console in development
     if (import.meta.env.DEV) {
       console.error('Error Boundary caught an error:', error, errorInfo)
     }
-    
+
     // Update state with error details
     this.setState({
       error,
       errorInfo
     })
-    
+
     // In production, you might want to send this to a logging service
     if (import.meta.env.PROD) {
       this.logErrorToService(error, errorInfo)
     }
   }
-  
+
   logErrorToService = (error, errorInfo) => {
     // This would integrate with a service like Sentry, LogRocket, etc.
     console.error('Production error logged:', {
@@ -45,15 +45,15 @@ class ErrorBoundary extends React.Component {
       url: window.location.href
     })
   }
-  
+
   handleReload = () => {
     window.location.reload()
   }
-  
+
   handleGoHome = () => {
     window.location.href = '/'
   }
-  
+
   render() {
     if (this.state.hasError) {
       return (
@@ -64,16 +64,16 @@ class ErrorBoundary extends React.Component {
                 <div className="mx-auto w-16 h-16 bg-error-100 rounded-full flex items-center justify-center mb-4">
                   <AlertTriangle className="w-8 h-8 text-error-600" />
                 </div>
-                
+
                 <h1 className="text-2xl font-bold text-secondary-900 mb-2">
                   Oops! Something went wrong
                 </h1>
-                
+
                 <p className="text-secondary-600 mb-6">
                   We're sorry for the inconvenience. An unexpected error occurred while loading this page.
                 </p>
               </div>
-              
+
               {/* Error details (development only) */}
               {import.meta.env.DEV && this.state.error && (
                 <div className="mb-6 p-4 bg-error-50 rounded-lg text-left">
@@ -93,7 +93,7 @@ class ErrorBoundary extends React.Component {
                   )}
                 </div>
               )}
-              
+
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={this.handleReload}
@@ -102,7 +102,7 @@ class ErrorBoundary extends React.Component {
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Reload Page
                 </button>
-                
+
                 <button
                   onClick={this.handleGoHome}
                   className="btn-outline flex-1"
@@ -111,7 +111,7 @@ class ErrorBoundary extends React.Component {
                   Go Home
                 </button>
               </div>
-              
+
               <p className="text-xs text-secondary-500 mt-4">
                 If this problem persists, please contact support.
               </p>
@@ -120,7 +120,7 @@ class ErrorBoundary extends React.Component {
         </div>
       )
     }
-    
+
     return this.props.children
   }
 }

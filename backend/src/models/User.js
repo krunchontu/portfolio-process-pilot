@@ -1,98 +1,98 @@
-const { db } = require('../database/connection');
-const bcrypt = require('bcryptjs');
+const { db } = require('../database/connection')
+const bcrypt = require('bcryptjs')
 
 class User {
   static get tableName() {
-    return 'users';
+    return 'users'
   }
 
   // Create new user
   static async create(userData) {
-    const { password, ...rest } = userData;
-    const password_hash = await bcrypt.hash(password, 12);
-    
+    const { password, ...rest } = userData
+    const password_hash = await bcrypt.hash(password, 12)
+
     const [user] = await db(this.tableName)
       .insert({ ...rest, password_hash })
-      .returning('*');
-    
+      .returning('*')
+
     // Remove password hash from returned object
-    delete user.password_hash;
-    return user;
+    delete user.password_hash
+    return user
   }
 
   // Find user by ID
   static async findById(id) {
     const user = await db(this.tableName)
       .where('id', id)
-      .first();
-    
+      .first()
+
     if (user) {
-      delete user.password_hash;
+      delete user.password_hash
     }
-    return user;
+    return user
   }
 
   // Find user by email
   static async findByEmail(email) {
     return await db(this.tableName)
       .where('email', email)
-      .first();
+      .first()
   }
 
   // Validate password
   static async validatePassword(plainPassword, hashedPassword) {
-    return await bcrypt.compare(plainPassword, hashedPassword);
+    return await bcrypt.compare(plainPassword, hashedPassword)
   }
 
   // Update user
   static async update(id, updates) {
     if (updates.password) {
-      updates.password_hash = await bcrypt.hash(updates.password, 12);
-      delete updates.password;
+      updates.password_hash = await bcrypt.hash(updates.password, 12)
+      delete updates.password
     }
-    
+
     const [user] = await db(this.tableName)
       .where('id', id)
       .update({ ...updates, updated_at: new Date() })
-      .returning('*');
-    
+      .returning('*')
+
     if (user) {
-      delete user.password_hash;
+      delete user.password_hash
     }
-    return user;
+    return user
   }
 
   // Update last login
   static async updateLastLogin(id) {
     return await db(this.tableName)
       .where('id', id)
-      .update({ last_login: new Date() });
+      .update({ last_login: new Date() })
   }
 
   // List users with filters
   static async list(filters = {}) {
-    let query = db(this.tableName).select('id', 'email', 'first_name', 'last_name', 'role', 'department', 'is_active', 'created_at');
-    
+    let query = db(this.tableName).select('id', 'email', 'first_name', 'last_name', 'role', 'department', 'is_active', 'created_at')
+
     if (filters.role) {
-      query = query.where('role', filters.role);
+      query = query.where('role', filters.role)
     }
-    
+
     if (filters.department) {
-      query = query.where('department', filters.department);
+      query = query.where('department', filters.department)
     }
-    
+
     if (filters.is_active !== undefined) {
-      query = query.where('is_active', filters.is_active);
+      query = query.where('is_active', filters.is_active)
     }
-    
-    return await query.orderBy('created_at', 'desc');
+
+    return await query.orderBy('created_at', 'desc')
   }
 
   // Delete user (soft delete)
   static async delete(id) {
     return await db(this.tableName)
       .where('id', id)
-      .update({ is_active: false, updated_at: new Date() });
+      .update({ is_active: false, updated_at: new Date() })
   }
 
   // Get managers for department
@@ -101,8 +101,8 @@ class User {
       .select('id', 'email', 'first_name', 'last_name')
       .where('role', 'manager')
       .where('department', department)
-      .where('is_active', true);
+      .where('is_active', true)
   }
 }
 
-module.exports = User;
+module.exports = User

@@ -2,10 +2,10 @@ import React from 'react'
 import { Loader2 } from 'lucide-react'
 import { clsx } from 'clsx'
 
-const LoadingSpinner = ({ 
-  size = 'md', 
-  className = '', 
-  text = '', 
+const LoadingSpinner = ({
+  size = 'md',
+  className = '',
+  text = '',
   fullScreen = false,
   variant = 'primary'
 }) => {
@@ -15,7 +15,7 @@ const LoadingSpinner = ({
     lg: 'w-8 h-8',
     xl: 'w-12 h-12'
   }
-  
+
   const variantClasses = {
     primary: 'text-primary-600',
     secondary: 'text-secondary-600',
@@ -24,33 +24,35 @@ const LoadingSpinner = ({
     warning: 'text-warning-600',
     error: 'text-error-600'
   }
-  
+
   const spinner = (
     <div className={clsx(
       'flex items-center justify-center',
       fullScreen && 'min-h-screen',
       className
-    )}>
+    )}
+    >
       <div className="flex flex-col items-center space-y-3">
-        <Loader2 
+        <Loader2
           className={clsx(
             'animate-spin',
             sizeClasses[size],
             variantClasses[variant]
-          )} 
+          )}
         />
         {text && (
           <p className={clsx(
             'text-sm font-medium',
             variantClasses[variant]
-          )}>
+          )}
+          >
             {text}
           </p>
         )}
       </div>
     </div>
   )
-  
+
   if (fullScreen) {
     return (
       <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50">
@@ -58,7 +60,7 @@ const LoadingSpinner = ({
       </div>
     )
   }
-  
+
   return spinner
 }
 

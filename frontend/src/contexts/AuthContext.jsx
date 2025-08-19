@@ -11,7 +11,7 @@ const authReducer = (state, action) => {
   switch (action.type) {
     case 'LOGIN_START':
       return { ...state, isLoading: true, error: null }
-    
+
     case 'LOGIN_SUCCESS':
       return {
         ...state,
@@ -20,7 +20,7 @@ const authReducer = (state, action) => {
         user: action.payload.user,
         error: null
       }
-    
+
     case 'LOGIN_FAILURE':
       return {
         ...state,
@@ -29,7 +29,7 @@ const authReducer = (state, action) => {
         user: null,
         error: action.payload
       }
-    
+
     case 'LOGOUT':
       return {
         ...state,
@@ -38,19 +38,19 @@ const authReducer = (state, action) => {
         isLoading: false,
         error: null
       }
-    
+
     case 'UPDATE_USER':
       return {
         ...state,
         user: { ...state.user, ...action.payload }
       }
-    
+
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload }
-    
+
     case 'CLEAR_ERROR':
       return { ...state, error: null }
-    
+
     default:
       return state
   }
@@ -67,7 +67,7 @@ const initialState = {
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
   const queryClient = useQueryClient()
-  
+
   // Query to get current user profile
   const { data: userData, isLoading: isLoadingProfile } = useQuery(
     'profile',
@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
       }
     }
   )
-  
+
   // Login mutation
   const loginMutation = useMutation(authAPI.login, {
     onMutate: () => {
@@ -97,19 +97,19 @@ export const AuthProvider = ({ children }) => {
     },
     onSuccess: (response) => {
       const { user, tokens } = response.data
-      
+
       // Store tokens
       setTokens(tokens.access_token, tokens.refresh_token)
-      
+
       // Update state
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: { user }
       })
-      
+
       // Invalidate profile query to refetch
       queryClient.invalidateQueries('profile')
-      
+
       toast.success(`Welcome back, ${user.first_name}!`)
     },
     onError: (error) => {
@@ -121,7 +121,7 @@ export const AuthProvider = ({ children }) => {
       toast.error(errorMessage)
     }
   })
-  
+
   // Register mutation
   const registerMutation = useMutation(authAPI.register, {
     onSuccess: (response) => {
@@ -132,7 +132,7 @@ export const AuthProvider = ({ children }) => {
       toast.error(errorMessage)
     }
   })
-  
+
   // Logout mutation
   const logoutMutation = useMutation(authAPI.logout, {
     onSuccess: () => {
@@ -148,7 +148,7 @@ export const AuthProvider = ({ children }) => {
       queryClient.clear()
     }
   })
-  
+
   // Password change mutation
   const changePasswordMutation = useMutation(authAPI.changePassword, {
     onSuccess: () => {
@@ -159,7 +159,7 @@ export const AuthProvider = ({ children }) => {
       toast.error(errorMessage)
     }
   })
-  
+
   // Initialize auth state on app load
   useEffect(() => {
     const token = localStorage.getItem('access_token')
@@ -167,7 +167,7 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: false })
     }
   }, [])
-  
+
   // Update loading state based on profile query
   useEffect(() => {
     if (!localStorage.getItem('access_token')) {
@@ -176,46 +176,46 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: isLoadingProfile })
     }
   }, [isLoadingProfile])
-  
+
   // Auth methods
   const login = (credentials) => {
     return loginMutation.mutate(credentials)
   }
-  
+
   const register = (userData) => {
     return registerMutation.mutate(userData)
   }
-  
+
   const logout = () => {
     return logoutMutation.mutate()
   }
-  
+
   const changePassword = (data) => {
     return changePasswordMutation.mutate(data)
   }
-  
+
   const updateUser = (userData) => {
     dispatch({ type: 'UPDATE_USER', payload: userData })
   }
-  
+
   const clearError = () => {
     dispatch({ type: 'CLEAR_ERROR' })
   }
-  
+
   // Helper functions
   const hasRole = (role) => {
     return state.user?.role === role
   }
-  
+
   const hasAnyRole = (roles) => {
     return roles.includes(state.user?.role)
   }
-  
+
   const isEmployee = () => hasRole('employee')
   const isManager = () => hasRole('manager')
   const isAdmin = () => hasRole('admin')
   const isManagerOrAdmin = () => hasAnyRole(['manager', 'admin'])
-  
+
   const value = {
     ...state,
     login,
@@ -232,7 +232,7 @@ export const AuthProvider = ({ children }) => {
     isManagerOrAdmin,
     isSubmitting: loginMutation.isLoading || registerMutation.isLoading || logoutMutation.isLoading
   }
-  
+
   return (
     <AuthContext.Provider value={value}>
       {children}

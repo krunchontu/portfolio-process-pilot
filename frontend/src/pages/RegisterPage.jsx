@@ -11,7 +11,7 @@ const RegisterPage = () => {
   const [isSuccess, setIsSuccess] = useState(false)
   const { register: registerUser, isSubmitting } = useAuth()
   const navigate = useNavigate()
-  
+
   const {
     register,
     handleSubmit,
@@ -30,22 +30,22 @@ const RegisterPage = () => {
       role: 'employee'
     }
   })
-  
+
   const watchPassword = watch('password')
-  
+
   const onSubmit = async (data) => {
     try {
       // Remove confirmPassword from data before sending to API
       const { confirmPassword, ...userData } = data
-      
+
       await registerUser(userData)
       setIsSuccess(true)
-      
+
       // Redirect to login after 2 seconds
       setTimeout(() => {
         navigate('/login')
       }, 2000)
-      
+
     } catch (err) {
       // Handle specific API errors
       if (err.response?.data?.details) {
@@ -59,7 +59,7 @@ const RegisterPage = () => {
       }
     }
   }
-  
+
   if (isSuccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-mesh py-12 px-4 sm:px-6 lg:px-8">
@@ -80,7 +80,7 @@ const RegisterPage = () => {
       </div>
     )
   }
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-mesh py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
@@ -97,7 +97,7 @@ const RegisterPage = () => {
               Join ProcessPilot and streamline your workflows
             </p>
           </div>
-          
+
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" data-testid="register-form">
             {/* Name Fields */}
@@ -128,7 +128,7 @@ const RegisterPage = () => {
                   </p>
                 )}
               </div>
-              
+
               <div>
                 <label htmlFor="last_name" className="label">
                   Last name
@@ -156,7 +156,7 @@ const RegisterPage = () => {
                 )}
               </div>
             </div>
-            
+
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="label">
@@ -184,7 +184,7 @@ const RegisterPage = () => {
                 </p>
               )}
             </div>
-            
+
             {/* Department Field */}
             <div>
               <label htmlFor="department" className="label">
@@ -200,7 +200,7 @@ const RegisterPage = () => {
                 data-testid="department-input"
               />
             </div>
-            
+
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="label">
@@ -246,7 +246,7 @@ const RegisterPage = () => {
                 </p>
               )}
             </div>
-            
+
             {/* Confirm Password Field */}
             <div>
               <label htmlFor="confirmPassword" className="label">
@@ -286,7 +286,7 @@ const RegisterPage = () => {
                 </p>
               )}
             </div>
-            
+
             {/* Submit Button */}
             <button
               type="submit"
@@ -307,13 +307,13 @@ const RegisterPage = () => {
               )}
             </button>
           </form>
-          
+
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-secondary-600">
               Already have an account?{' '}
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className="text-primary-600 hover:text-primary-700 font-medium"
                 data-testid="login-link"
               >

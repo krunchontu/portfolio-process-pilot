@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Settings, 
-  Users, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  FileText,
+  Settings,
+  Users,
+  BarChart3,
   User,
   Menu,
   X,
@@ -24,7 +24,7 @@ const Layout = ({ children }) => {
   const { notifications, unreadCount, markAllAsRead } = useNotifications()
   const location = useLocation()
   const navigate = useNavigate()
-  
+
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, current: location.pathname === '/dashboard' },
     { name: 'Requests', href: '/requests', icon: FileText, current: location.pathname.startsWith('/requests') },
@@ -36,21 +36,22 @@ const Layout = ({ children }) => {
       { name: 'Users', href: '/users', icon: Users, current: location.pathname === '/users' }
     ] : [])
   ]
-  
+
   const handleLogout = async () => {
     await logout()
     navigate('/login')
   }
-  
+
   return (
     <div className="min-h-screen bg-secondary-50">
       {/* Mobile sidebar overlay */}
       <div className={clsx(
         'fixed inset-0 z-50 lg:hidden',
         sidebarOpen ? 'block' : 'hidden'
-      )}>
+      )}
+      >
         <div className="fixed inset-0 bg-secondary-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        
+
         {/* Mobile sidebar */}
         <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
           <div className="flex h-16 items-center justify-between px-4">
@@ -67,7 +68,7 @@ const Layout = ({ children }) => {
               <X className="w-6 h-6" />
             </button>
           </div>
-          
+
           <nav className="mt-5 px-2">
             <div className="space-y-1">
               {navigation.map((item) => (
@@ -95,7 +96,7 @@ const Layout = ({ children }) => {
           </nav>
         </div>
       </div>
-      
+
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-64 lg:flex-col">
         <div className="flex min-h-0 flex-1 flex-col bg-white shadow-lg">
@@ -107,7 +108,7 @@ const Layout = ({ children }) => {
               <span className="text-xl font-bold text-secondary-900">ProcessPilot</span>
             </Link>
           </div>
-          
+
           <div className="flex flex-1 flex-col overflow-y-auto">
             <nav className="flex-1 px-2 py-4">
               <div className="space-y-1">
@@ -136,7 +137,7 @@ const Layout = ({ children }) => {
           </div>
         </div>
       </div>
-      
+
       {/* Main content */}
       <div className="lg:pl-64 flex flex-col min-h-screen">
         {/* Top bar */}
@@ -148,10 +149,10 @@ const Layout = ({ children }) => {
           >
             <Menu className="h-6 w-6" />
           </button>
-          
+
           <div className="flex flex-1 justify-between px-4">
             <div className="flex flex-1" />
-            
+
             <div className="ml-4 flex items-center space-x-4">
               {/* Notifications */}
               <HeadlessMenu as="div" className="relative">
@@ -163,7 +164,7 @@ const Layout = ({ children }) => {
                     </span>
                   )}
                 </HeadlessMenu.Button>
-                
+
                 <Transition
                   enter="transition ease-out duration-100"
                   enterFrom="transform opacity-0 scale-95"
@@ -186,7 +187,7 @@ const Layout = ({ children }) => {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="max-h-96 overflow-y-auto">
                       {notifications.length === 0 ? (
                         <div className="px-4 py-6 text-center text-sm text-secondary-500">
@@ -219,7 +220,7 @@ const Layout = ({ children }) => {
                   </HeadlessMenu.Items>
                 </Transition>
               </HeadlessMenu>
-              
+
               {/* User menu */}
               <HeadlessMenu as="div" className="relative">
                 <HeadlessMenu.Button className="flex items-center space-x-2 text-sm rounded-lg p-2 hover:bg-secondary-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
@@ -238,7 +239,7 @@ const Layout = ({ children }) => {
                   </div>
                   <ChevronDown className="w-4 h-4 text-secondary-400" />
                 </HeadlessMenu.Button>
-                
+
                 <Transition
                   enter="transition ease-out duration-100"
                   enterFrom="transform opacity-0 scale-95"
@@ -262,9 +263,9 @@ const Layout = ({ children }) => {
                         </Link>
                       )}
                     </HeadlessMenu.Item>
-                    
+
                     <div className="border-t border-secondary-100 my-1" />
-                    
+
                     <HeadlessMenu.Item>
                       {({ active }) => (
                         <button
@@ -285,7 +286,7 @@ const Layout = ({ children }) => {
             </div>
           </div>
         </div>
-        
+
         {/* Page content */}
         <main className="flex-1">
           {children}

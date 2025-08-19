@@ -15,7 +15,7 @@ const notificationReducer = (state, action) => {
         notifications: [action.payload, ...state.notifications].slice(0, 50), // Keep only last 50
         unreadCount: state.unreadCount + 1
       }
-    
+
     case 'MARK_READ':
       return {
         ...state,
@@ -24,27 +24,27 @@ const notificationReducer = (state, action) => {
         ),
         unreadCount: Math.max(0, state.unreadCount - 1)
       }
-    
+
     case 'MARK_ALL_READ':
       return {
         ...state,
         notifications: state.notifications.map(notif => ({ ...notif, read: true })),
         unreadCount: 0
       }
-    
+
     case 'CLEAR_NOTIFICATIONS':
       return {
         ...state,
         notifications: [],
         unreadCount: 0
       }
-    
+
     case 'SET_SOCKET_CONNECTED':
       return {
         ...state,
         socketConnected: action.payload
       }
-    
+
     default:
       return state
   }
@@ -60,10 +60,10 @@ const initialState = {
 export const NotificationProvider = ({ children }) => {
   const [state, dispatch] = useReducer(notificationReducer, initialState)
   const { user, isAuthenticated } = useAuth()
-  
+
   useEffect(() => {
     let socket = null
-    
+
     if (isAuthenticated && user) {
       // Initialize socket connection
       socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:5000', {
@@ -72,22 +72,22 @@ export const NotificationProvider = ({ children }) => {
         },
         transports: ['websocket', 'polling']
       })
-      
+
       // Connection events
       socket.on('connect', () => {
         console.log('🔌 WebSocket connected')
         dispatch({ type: 'SET_SOCKET_CONNECTED', payload: true })
       })
-      
+
       socket.on('disconnect', () => {
         console.log('🔌 WebSocket disconnected')
         dispatch({ type: 'SET_SOCKET_CONNECTED', payload: false })
       })
-      
+
       // Notification events
       socket.on('notification', (notification) => {
         console.log('🔔 New notification:', notification)
-        
+
         const notificationData = {
           id: notification.id || Date.now().toString(),
           type: notification.type,
@@ -97,14 +97,14 @@ export const NotificationProvider = ({ children }) => {
           timestamp: new Date().toISOString(),
           read: false
         }
-        
+
         // Add to state
         dispatch({ type: 'ADD_NOTIFICATION', payload: notificationData })
-        
+
         // Show toast notification
         showToastNotification(notificationData)
       })
-      
+
       // Request-specific events
       socket.on('request:created', (data) => {
         if (data.assignedTo === user.id || user.role === 'admin') {
@@ -117,12 +117,12 @@ export const NotificationProvider = ({ children }) => {
             timestamp: new Date().toISOString(),
             read: false
           }
-          
+
           dispatch({ type: 'ADD_NOTIFICATION', payload: notification })
           showToastNotification(notification)
         }
       })
-      
+
       socket.on('request:updated', (data) => {
         if (data.userId === user.id) {
           const notification = {
@@ -134,26 +134,26 @@ export const NotificationProvider = ({ children }) => {
             timestamp: new Date().toISOString(),
             read: false
           }
-          
+
           dispatch({ type: 'ADD_NOTIFICATION', payload: notification })
           showToastNotification(notification)
         }
       })
     }
-    
+
     return () => {
       if (socket) {
         socket.disconnect()
       }
     }
   }, [isAuthenticated, user])
-  
+
   const showToastNotification = (notification) => {
     const toastConfig = {
       duration: 5000,
       position: 'top-right'
     }
-    
+
     switch (notification.type) {
       case 'request_created':
         toast.success(notification.message, toastConfig)
@@ -174,26 +174,26 @@ export const NotificationProvider = ({ children }) => {
         toast(notification.message, toastConfig)
     }
   }
-  
+
   const markAsRead = (notificationId) => {
     dispatch({ type: 'MARK_READ', payload: notificationId })
   }
-  
+
   const markAllAsRead = () => {
     dispatch({ type: 'MARK_ALL_READ' })
   }
-  
+
   const clearNotifications = () => {
     dispatch({ type: 'CLEAR_NOTIFICATIONS' })
   }
-  
+
   const value = {
     ...state,
     markAsRead,
     markAllAsRead,
     clearNotifications
   }
-  
+
   return (
     <NotificationContext.Provider value={value}>
       {children}

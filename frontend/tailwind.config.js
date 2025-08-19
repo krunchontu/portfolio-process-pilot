@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}'
   ],
   theme: {
     extend: {
@@ -18,7 +18,7 @@ export default {
           700: '#1d4ed8',
           800: '#1e40af',
           900: '#1e3a8a',
-          950: '#172554',
+          950: '#172554'
         },
         secondary: {
           50: '#f8fafc',
@@ -31,7 +31,7 @@ export default {
           700: '#334155',
           800: '#1e293b',
           900: '#0f172a',
-          950: '#020617',
+          950: '#020617'
         },
         success: {
           50: '#f0fdf4',
@@ -44,7 +44,7 @@ export default {
           700: '#15803d',
           800: '#166534',
           900: '#14532d',
-          950: '#052e16',
+          950: '#052e16'
         },
         warning: {
           50: '#fffbeb',
@@ -57,7 +57,7 @@ export default {
           700: '#b45309',
           800: '#92400e',
           900: '#78350f',
-          950: '#451a03',
+          950: '#451a03'
         },
         error: {
           50: '#fef2f2',
@@ -70,50 +70,50 @@ export default {
           700: '#b91c1c',
           800: '#991b1b',
           900: '#7f1d1d',
-          950: '#450a0a',
+          950: '#450a0a'
         }
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        mono: ['JetBrains Mono', 'monospace']
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-in': 'slideIn 0.3s ease-out',
         'bounce-gentle': 'bounceGentle 2s infinite',
-        'pulse-soft': 'pulseSoft 2s infinite',
+        'pulse-soft': 'pulseSoft 2s infinite'
       },
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
+          '100%': { opacity: '1' }
         },
         slideIn: {
           '0%': { transform: 'translateY(-10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
+          '100%': { transform: 'translateY(0)', opacity: '1' }
         },
         bounceGentle: {
           '0%, 100%': { transform: 'translateY(-5%)' },
-          '50%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(0)' }
         },
         pulseSoft: {
           '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.8' },
+          '50%': { opacity: '0.8' }
         }
       },
       spacing: {
         '18': '4.5rem',
         '88': '22rem',
-        '128': '32rem',
+        '128': '32rem'
       },
       borderRadius: {
-        '4xl': '2rem',
+        '4xl': '2rem'
       }
-    },
+    }
   },
   plugins: [
     require('@tailwindcss/forms'),
     require('@tailwindcss/typography'),
-    require('@tailwindcss/aspect-ratio'),
-  ],
+    require('@tailwindcss/aspect-ratio')
+  ]
 }
