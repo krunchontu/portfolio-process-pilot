@@ -6,15 +6,8 @@ const config = {
   host: process.env.HOST || 'localhost',
   nodeEnv: process.env.NODE_ENV || 'development',
 
-  // Database
-  database: {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT) || 5432,
-    database: process.env.DB_NAME || 'process_pilot',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || '',
-    ssl: process.env.DB_SSL === 'true'
-  },
+  // Database Provider
+  dbProvider: process.env.DB_PROVIDER || 'postgresql',
 
   // JWT
   jwt: {
@@ -71,8 +64,20 @@ if (!process.env.JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET.length < 3
 }
 
 if (config.nodeEnv === 'production') {
-  if (!process.env.DB_PASSWORD) {
-    throw new Error('DB_PASSWORD must be set in production')
+  // Database validation is now handled by the database config module
+  const requiredEnvVars = []
+  
+  // Check provider-specific requirements
+  if (config.dbProvider === 'supabase' && !process.env.SUPABASE_DB_URL && !process.env.DATABASE_URL) {
+    requiredEnvVars.push('SUPABASE_DB_URL or DATABASE_URL')
+  }
+  
+  if (config.dbProvider === 'postgresql' && !process.env.DB_PASSWORD && !process.env.DATABASE_URL) {
+    requiredEnvVars.push('DB_PASSWORD or DATABASE_URL')
+  }
+  
+  if (requiredEnvVars.length > 0) {
+    throw new Error(`Production environment missing: ${requiredEnvVars.join(', ')}`)
   }
 }
 

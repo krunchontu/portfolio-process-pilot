@@ -20,7 +20,10 @@
     "db:reset": "npm run db:rollback && npm run db:migrate && npm run db:seed",
     "docs:generate": "swagger-jsdoc -d swaggerDef.js src/routes/*.js -o docs/swagger.json",
     "docs:serve": "swagger-ui-serve docs/swagger.json",
-    "setup": "node setup.js"
+    "setup": "node setup.js",
+    "setup:supabase": "npm install @supabase/supabase-js && npm run db:migrate && npm run db:seed",
+    "setup:planetscale": "npm install mysql2 && npm run db:migrate && npm run db:seed",
+    "db:check": "node src/scripts/check-db-compatibility.js"
   },
   "dependencies": {
     "@fastify/csrf-protection": "^7.1.0",
@@ -69,8 +72,17 @@
     "business-process",
     "nodejs",
     "express",
-    "postgresql"
+    "postgresql",
+    "supabase",
+    "planetscale",
+    "neon",
+    "railway",
+    "baas"
   ],
+  "optionalDependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "mysql2": "^3.6.5"
+  },
   "author": "Your Name",
   "license": "MIT",
   "repository": {

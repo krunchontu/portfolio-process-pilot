@@ -1,57 +1,18 @@
 const knex = require('knex')
-const config = require('../config')
+const { databaseConfig, getConnectionInfo } = require('../config/database')
 const { logger } = require('../utils/logger')
 
-const knexConfig = require('../../knexfile')[config.nodeEnv]
+// Use the flexible database configuration
+const db = knex(databaseConfig)
 
-// Enhanced database configuration with connection pooling and retry logic
-const enhancedKnexConfig = {
-  ...knexConfig,
-  pool: {
-    ...knexConfig.pool,
-    // Connection pool configuration
-    min: knexConfig.pool?.min || 2,
-    max: knexConfig.pool?.max || 10,
-    // Connection timeout (30 seconds)
-    acquireTimeoutMillis: 30000,
-    // Idle timeout (10 minutes)
-    idleTimeoutMillis: 600000,
-    // Connection creation timeout (5 seconds)
-    createTimeoutMillis: 5000,
-    // Destroy timeout (5 seconds)
-    destroyTimeoutMillis: 5000,
-    // Connection validation
-    validate: (connection) => {
-      return connection && connection.readyState === 'open'
-    },
-    // Retry configuration
-    afterCreate: (connection, callback) => {
-      // Set connection-level configurations
-      connection.query('SET timezone = "UTC"', (err) => {
-        callback(err, connection)
-      })
-    }
-  },
-  // Connection retry configuration
-  connection: {
-    ...knexConfig.connection,
-    // Connection timeout
-    requestTimeout: 30000,
-    connectionTimeout: 5000,
-    // Enable connection keepalive
-    options: {
-      ...knexConfig.connection?.options,
-      keepAlive: true,
-      keepAliveInitialDelay: 0,
-      encrypt: false
-    }
-  },
-  // Query timeout
-  asyncStackTraces: config.nodeEnv === 'development',
-  debug: config.nodeEnv === 'development'
-}
-
-const db = knex(enhancedKnexConfig)
+// Log database connection info (without sensitive data)
+const connectionInfo = getConnectionInfo()
+logger.info(`🔄 Connecting to ${connectionInfo.provider} database`, {
+  host: connectionInfo.host,
+  port: connectionInfo.port,
+  database: connectionInfo.database,
+  ssl: connectionInfo.ssl
+})
 
 // Database connection retry logic
 const retryConnection = async (operation, maxRetries = 3, delay = 1000) => {
