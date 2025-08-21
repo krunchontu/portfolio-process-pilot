@@ -2,9 +2,12 @@ const express = require('express')
 const Request = require('../models/Request')
 const RequestHistory = require('../models/RequestHistory')
 const Workflow = require('../models/Workflow')
+const User = require('../models/User')
 const { authenticateToken, requireRole, canActOnRequest } = require('../middleware/auth')
 const { validateRequest, validateQuery, validateParams } = require('../middleware/validation')
 const { catchAsync, AppError } = require('../middleware/errorHandler')
+const emailService = require('../services/emailService')
+const logger = require('../utils/logger')
 const {
   createRequestSchema,
   requestActionSchema,
@@ -53,6 +56,27 @@ router.post('/', validateRequest(createRequestSchema), catchAsync(async (req, re
   })
 
   const fullRequest = await Request.findById(request.id)
+
+  // Send email notification to approvers
+  try {
+    const user = await User.findById(req.user.userId)
+    if (user) {
+      await emailService.sendRequestSubmittedNotification(fullRequest, user, workflow)
+      logger.info('Request submission notification sent', {
+        requestId: fullRequest.id,
+        userId: user.id,
+        workflowId: workflow.id
+      })
+    }
+  } catch (emailError) {
+    // Don't fail the request creation if email fails
+    logger.error('Failed to send request submission notification', {
+      requestId: fullRequest.id,
+      userId: req.user.userId,
+      error: emailError.message
+    })
+  }
+
   return res.created('Request created successfully', { request: fullRequest })
 }))
 
@@ -141,6 +165,41 @@ router.post('/:id/action',
     }
 
     const fullRequest = await Request.findById(request.id)
+
+    // Send email notifications
+    try {
+      const [user, workflow, approver] = await Promise.all([
+        User.findById(request.user_id || request.created_by),
+        Workflow.findById(request.workflow_id),
+        User.findById(req.user.userId)
+      ])
+
+      if (user && workflow && approver) {
+        if (action === 'approve') {
+          await emailService.sendRequestApprovedNotification(fullRequest, user, approver, workflow)
+          logger.info('Request approval notification sent', {
+            requestId: fullRequest.id,
+            userId: user.id,
+            approverId: approver.id
+          })
+        } else if (action === 'reject') {
+          await emailService.sendRequestRejectedNotification(fullRequest, user, approver, workflow, comment)
+          logger.info('Request rejection notification sent', {
+            requestId: fullRequest.id,
+            userId: user.id,
+            approverId: approver.id
+          })
+        }
+      }
+    } catch (emailError) {
+      // Don't fail the action if email fails
+      logger.error('Failed to send request action notification', {
+        requestId: fullRequest.id,
+        action,
+        userId: req.user.userId,
+        error: emailError.message
+      })
+    }
 
     return res.success(200, `Request ${action}d successfully`, { request: fullRequest })
   }))

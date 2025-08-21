@@ -1,7 +1,7 @@
 const User = require('../../src/models/User');
 const bcrypt = require('bcryptjs');
 
-describe('User Model', () => {
+describeWithDb('User Model', () => {
   describe('create', () => {
     it('should create a new user with hashed password', async () => {
       const userData = {

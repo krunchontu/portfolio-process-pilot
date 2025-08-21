@@ -17,16 +17,19 @@ const config = {
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
   },
 
-  // Email
-  email: {
+  // Email/SMTP Configuration
+  smtp: {
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    },
-    from: process.env.FROM_EMAIL || 'noreply@processpilot.com'
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    fromEmail: process.env.FROM_EMAIL || 'noreply@processpilot.com'
+  },
+
+  // Application URLs
+  app: {
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+    backendUrl: process.env.BACKEND_URL || 'http://localhost:5000'
   },
 
   // Rate Limiting

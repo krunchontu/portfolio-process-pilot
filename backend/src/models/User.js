@@ -69,23 +69,82 @@ class User {
       .update({ last_login: new Date() })
   }
 
-  // List users with filters
-  static async list(filters = {}) {
-    let query = db(this.tableName).select('id', 'email', 'first_name', 'last_name', 'role', 'department', 'is_active', 'created_at')
+  // List users with filters and pagination
+  static async list(options = {}) {
+    const { role, department, active, search, limit = 50, offset = 0 } = options
+    
+    let query = db(this.tableName)
+      .select([
+        'id', 
+        'email', 
+        'first_name', 
+        'last_name', 
+        'role', 
+        'department', 
+        'is_active', 
+        'last_login',
+        'created_at',
+        'updated_at'
+      ])
 
-    if (filters.role) {
-      query = query.where('role', filters.role)
+    // Apply filters
+    if (role) {
+      query = query.where('role', role)
     }
 
-    if (filters.department) {
-      query = query.where('department', filters.department)
+    if (department) {
+      query = query.where('department', department)
     }
 
-    if (filters.is_active !== undefined) {
-      query = query.where('is_active', filters.is_active)
+    if (active !== undefined) {
+      query = query.where('is_active', active)
+    }
+    
+    if (search) {
+      query = query.where(function() {
+        this.whereILike('first_name', `%${search}%`)
+            .orWhereILike('last_name', `%${search}%`)
+            .orWhereILike('email', `%${search}%`)
+            .orWhereILike('department', `%${search}%`)
+      })
     }
 
-    return await query.orderBy('created_at', 'desc')
+    return await query
+      .orderBy('created_at', 'desc')
+      .limit(limit)
+      .offset(offset)
+  }
+
+  // Count users with filters
+  static async count(options = {}) {
+    const { role, department, active, search } = options
+    
+    let query = db(this.tableName)
+
+    // Apply filters
+    if (role) {
+      query = query.where('role', role)
+    }
+
+    if (department) {
+      query = query.where('department', department)
+    }
+
+    if (active !== undefined) {
+      query = query.where('is_active', active)
+    }
+    
+    if (search) {
+      query = query.where(function() {
+        this.whereILike('first_name', `%${search}%`)
+            .orWhereILike('last_name', `%${search}%`)
+            .orWhereILike('email', `%${search}%`)
+            .orWhereILike('department', `%${search}%`)
+      })
+    }
+
+    const result = await query.count('* as count').first()
+    return parseInt(result.count)
   }
 
   // Delete user (soft delete)

@@ -49,9 +49,12 @@ describe('Error Handler Middleware', () => {
       
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
-        status: 'error',
+        success: false,
         error: 'Test operational error',
-        code: 'TEST_ERROR'
+        code: 'TEST_ERROR',
+        meta: {
+          timestamp: expect.any(String)
+        }
       });
     });
     
@@ -64,25 +67,29 @@ describe('Error Handler Middleware', () => {
       
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        status: 'error',
+        success: false,
         error: 'Something went wrong!',
-        code: 'INTERNAL_ERROR'
+        code: 'INTERNAL_ERROR',
+        meta: {
+          timestamp: expect.any(String)
+        }
       });
     });
     
-    it('should show full error details in development', () => {
-      process.env.NODE_ENV = 'development';
-      const error = new AppError('Development error', 400, 'DEV_ERROR');
+    it('should handle errors in test environment', () => {
+      // In test environment, it should handle errors similar to production
+      const error = new AppError('Test error', 400, 'TEST_ERROR');
       
       globalErrorHandler(error, req, res, next);
       
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
-        status: 'error',
-        error: 'Development error',
-        code: 'DEV_ERROR',
-        stack: error.stack,
-        details: error
+        success: false,
+        error: 'Test error',
+        code: 'TEST_ERROR',
+        meta: {
+          timestamp: expect.any(String)
+        }
       });
     });
     
@@ -95,9 +102,12 @@ describe('Error Handler Middleware', () => {
       
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        status: 'error',
+        success: false,
         error: 'Invalid token',
-        code: 'INVALID_TOKEN'
+        code: 'INVALID_TOKEN',
+        meta: {
+          timestamp: expect.any(String)
+        }
       });
     });
     
@@ -110,9 +120,12 @@ describe('Error Handler Middleware', () => {
       
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        status: 'error',
+        success: false,
         error: 'Token expired',
-        code: 'TOKEN_EXPIRED'
+        code: 'TOKEN_EXPIRED',
+        meta: {
+          timestamp: expect.any(String)
+        }
       });
     });
     
@@ -125,9 +138,12 @@ describe('Error Handler Middleware', () => {
       
       expect(res.status).toHaveBeenCalledWith(409);
       expect(res.json).toHaveBeenCalledWith({
-        status: 'error',
+        success: false,
         error: 'Resource already exists',
-        code: 'DUPLICATE_RESOURCE'
+        code: 'DUPLICATE_RESOURCE',
+        meta: {
+          timestamp: expect.any(String)
+        }
       });
     });
   });

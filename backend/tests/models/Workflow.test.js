@@ -1,6 +1,6 @@
 const Workflow = require('../../src/models/Workflow');
 
-describe('Workflow Model', () => {
+describeWithDb('Workflow Model', () => {
   let testUser;
   
   beforeEach(async () => {

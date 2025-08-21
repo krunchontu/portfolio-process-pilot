@@ -49,6 +49,61 @@ class Workflow {
       .orderBy('workflows.name', 'asc')
   }
 
+  // List workflows with filtering and pagination
+  static async list(options = {}) {
+    const { active, search, limit = 50, offset = 0 } = options
+    
+    let query = db(this.tableName)
+      .leftJoin('users as creator', 'workflows.created_by', 'creator.id')
+      .select(
+        'workflows.*',
+        'creator.first_name as creator_first_name',
+        'creator.last_name as creator_last_name',
+        'creator.email as creator_email'
+      )
+    
+    // Apply filters
+    if (active !== undefined) {
+      query = query.where('workflows.is_active', active)
+    }
+    
+    if (search) {
+      query = query.where(function() {
+        this.whereILike('workflows.name', `%${search}%`)
+            .orWhereILike('workflows.description', `%${search}%`)
+            .orWhereILike('workflows.flow_id', `%${search}%`)
+      })
+    }
+    
+    return await query
+      .orderBy('workflows.created_at', 'desc')
+      .limit(limit)
+      .offset(offset)
+  }
+
+  // Count workflows with filtering
+  static async count(options = {}) {
+    const { active, search } = options
+    
+    let query = db(this.tableName)
+    
+    // Apply filters
+    if (active !== undefined) {
+      query = query.where('is_active', active)
+    }
+    
+    if (search) {
+      query = query.where(function() {
+        this.whereILike('name', `%${search}%`)
+            .orWhereILike('description', `%${search}%`)
+            .orWhereILike('flow_id', `%${search}%`)
+      })
+    }
+    
+    const result = await query.count('* as count').first()
+    return parseInt(result.count)
+  }
+
   // Update workflow
   static async update(id, updates) {
     const [workflow] = await db(this.tableName)
@@ -60,10 +115,22 @@ class Workflow {
   }
 
   // Deactivate workflow
-  static async deactivate(id) {
-    return await db(this.tableName)
+  static async deactivate(id, updatedBy = null) {
+    const updateData = { 
+      is_active: false, 
+      updated_at: new Date() 
+    }
+    
+    if (updatedBy) {
+      updateData.updated_by = updatedBy
+    }
+    
+    const [workflow] = await db(this.tableName)
       .where('id', id)
-      .update({ is_active: false, updated_at: new Date() })
+      .update(updateData)
+      .returning('*')
+    
+    return workflow
   }
 
   // Get workflow usage statistics
@@ -120,7 +187,7 @@ class Workflow {
     }
 
     return {
-      isValid: errors.length === 0,
+      valid: errors.length === 0,
       errors
     }
   }

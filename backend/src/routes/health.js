@@ -102,6 +102,7 @@ const { healthCheck } = require('../database/connection')
 const { loggers } = require('../utils/logger')
 const config = require('../config')
 const { supabaseAdapter } = require('../adapters/supabase')
+const emailService = require('../services/emailService')
 
 const router = express.Router()
 const execAsync = promisify(exec)
@@ -464,8 +465,28 @@ async function checkExternalServices() {
     }
   }
 
+  // Check Email service if configured
+  try {
+    totalCount++
+    const emailHealth = await emailService.verifyConnection()
+    services.email = {
+      status: emailHealth.success ? 'healthy' : 'unhealthy',
+      configured: !!config.smtp.host && !!config.smtp.user,
+      timestamp: new Date().toISOString(),
+      ...(emailHealth.error && { error: emailHealth.error })
+    }
+    if (emailHealth.success) healthyCount++
+  } catch (error) {
+    services.email = {
+      status: 'unhealthy',
+      configured: !!config.smtp.host && !!config.smtp.user,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }
+  }
+
   // Add other external service checks here
-  // Example: Email service, Redis, external APIs, etc.
+  // Example: Redis, external APIs, etc.
 
   const overall_status = totalCount === 0
     ? 'healthy'
