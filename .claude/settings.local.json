@@ -20,7 +20,8 @@
       "Bash(timeout 20 npm test RequestDetailPage.test.jsx -- --run)",
       "Bash(timeout 15 npm test RequestDetailPage.test.jsx -- --run)",
       "Bash(git commit:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(JWT_SECRET=test_secret_key_12345678901234567890 JWT_REFRESH_SECRET=test_refresh_secret_key_12345678901234567890 node -e \"const { progressiveLimiter, apiLimiter } = require(''./src/middleware/rateLimiting''); console.log(''✅ Rate limiting middleware loaded successfully''); console.log(''✅ Progressive limiter:'', typeof progressiveLimiter); console.log(''✅ API limiter:'', typeof apiLimiter);\")"
     ],
     "deny": [],
     "ask": []

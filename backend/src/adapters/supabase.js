@@ -1,6 +1,6 @@
 /**
  * Supabase Integration Adapter
- * 
+ *
  * This adapter provides additional Supabase-specific features on top of the standard PostgreSQL connection.
  * It includes authentication integration, real-time subscriptions, and edge functions.
  */
@@ -13,12 +13,12 @@ class SupabaseAdapter {
     this.supabaseUrl = process.env.SUPABASE_URL
     this.supabaseAnonKey = process.env.SUPABASE_ANON_KEY
     this.supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    
+
     // Client for public operations (with RLS)
     this.client = null
     // Admin client for server operations (bypasses RLS)
     this.adminClient = null
-    
+
     this.initialized = false
   }
 
@@ -79,12 +79,12 @@ class SupabaseAdapter {
       email,
       password
     })
-    
+
     if (error) {
       logger.error('Supabase auth error:', error)
       throw new Error(error.message)
     }
-    
+
     return data
   }
 
@@ -99,12 +99,12 @@ class SupabaseAdapter {
       email_confirm: true,
       user_metadata: metadata
     })
-    
+
     if (error) {
       logger.error('Supabase user creation error:', error)
       throw new Error(error.message)
     }
-    
+
     return data
   }
 
@@ -113,7 +113,7 @@ class SupabaseAdapter {
    */
   async subscribeToRequests(callback) {
     const client = this.getClient()
-    
+
     const subscription = client
       .channel('requests_channel')
       .on('postgres_changes', {
@@ -122,7 +122,7 @@ class SupabaseAdapter {
         table: 'requests'
       }, callback)
       .subscribe()
-    
+
     logger.info('📡 Real-time subscription set up for requests table')
     return subscription
   }
@@ -132,7 +132,7 @@ class SupabaseAdapter {
    */
   async subscribeToRequestHistory(requestId, callback) {
     const client = this.getClient()
-    
+
     const subscription = client
       .channel(`request_history_${requestId}`)
       .on('postgres_changes', {
@@ -142,7 +142,7 @@ class SupabaseAdapter {
         filter: `request_id=eq.${requestId}`
       }, callback)
       .subscribe()
-    
+
     logger.info(`📡 Real-time subscription set up for request ${requestId} history`)
     return subscription
   }
@@ -152,7 +152,7 @@ class SupabaseAdapter {
    */
   async uploadFile(bucket, filePath, file, options = {}) {
     const client = this.getClient()
-    
+
     const { data, error } = await client.storage
       .from(bucket)
       .upload(filePath, file, {
@@ -160,12 +160,12 @@ class SupabaseAdapter {
         upsert: false,
         ...options
       })
-    
+
     if (error) {
       logger.error('Supabase storage upload error:', error)
       throw new Error(error.message)
     }
-    
+
     return data
   }
 
@@ -177,7 +177,7 @@ class SupabaseAdapter {
     const { data } = client.storage
       .from(bucket)
       .getPublicUrl(filePath)
-    
+
     return data.publicUrl
   }
 
@@ -186,17 +186,17 @@ class SupabaseAdapter {
    */
   async callEdgeFunction(functionName, body = {}, options = {}) {
     const client = this.getClient()
-    
+
     const { data, error } = await client.functions.invoke(functionName, {
       body,
       ...options
     })
-    
+
     if (error) {
       logger.error(`Supabase edge function ${functionName} error:`, error)
       throw new Error(error.message)
     }
-    
+
     return data
   }
 
@@ -205,14 +205,14 @@ class SupabaseAdapter {
    */
   async getDatabaseStats() {
     const client = this.getClient(true)
-    
+
     try {
       // Get table sizes
       const { data: tableSizes } = await client.rpc('get_table_sizes')
-      
+
       // Get connection count
       const { data: connections } = await client.rpc('get_connection_count')
-      
+
       return {
         tableSizes,
         connections,
@@ -230,10 +230,10 @@ class SupabaseAdapter {
   async healthCheck() {
     try {
       const client = this.getClient()
-      
+
       // Test database connection
       const { data, error } = await client.from('users').select('count').limit(1)
-      
+
       if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" which is ok
         throw error
       }

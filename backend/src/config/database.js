@@ -1,6 +1,6 @@
 /**
  * Flexible Database Configuration for Multiple BaaS Providers
- * 
+ *
  * Supports: PostgreSQL, Supabase, PlanetScale, Neon, Railway, and more
  */
 
@@ -165,10 +165,10 @@ const createDatabaseConfig = () => {
 
   // Environment-specific adjustments
   if (nodeEnv === 'test') {
-    config.connection = typeof config.connection === 'string' 
+    config.connection = typeof config.connection === 'string'
       ? config.connection.replace(/\/[^/]*$/, '/process_pilot_test') // Change DB name in connection string
       : { ...config.connection, database: `${config.connection.database || 'process_pilot'}_test` }
-    
+
     config.pool = {
       ...config.pool,
       min: 1,
@@ -191,7 +191,7 @@ const createDatabaseConfig = () => {
 const validateConfig = (config) => {
   const requiredFields = ['client']
   const missing = requiredFields.filter(field => !config[field])
-  
+
   if (missing.length > 0) {
     throw new Error(`Missing required database configuration: ${missing.join(', ')}`)
   }
@@ -216,7 +216,7 @@ validateConfig(databaseConfig)
 const getConnectionInfo = () => {
   const provider = process.env.DB_PROVIDER || 'postgresql'
   const config = databaseConfig.connection
-  
+
   if (typeof config === 'string') {
     const url = new URL(config)
     return {
@@ -227,7 +227,7 @@ const getConnectionInfo = () => {
       ssl: url.searchParams.get('ssl') || url.searchParams.get('sslmode')
     }
   }
-  
+
   return {
     provider,
     host: config.host,

@@ -8,12 +8,16 @@ ProcessPilot is a full-stack workflow and approval engine built with Node.js/Exp
 
 ## Architecture
 
-### Backend (Node.js/Express)
+### Backend (Node.js/Express) - ENTERPRISE-READY
 - **API Structure**: RESTful routes organized by domain (auth, requests, workflows, users, analytics)
-- **Database**: PostgreSQL with Knex.js ORM for migrations and queries
-- **Authentication**: JWT-based with refresh token support and role-based access control
+- **Database**: Multi-provider support (PostgreSQL, Supabase, PlanetScale, Neon, Railway) with Knex.js ORM
+- **Authentication**: JWT-based with httpOnly cookies, refresh tokens, and role-based access control
 - **Models**: User, Request, Workflow, RequestHistory with proper relationships
-- **Middleware**: Authentication, validation (Joi), error handling, rate limiting
+- **Middleware**: Authentication, validation (Joi), CSRF protection, input sanitization, sophisticated rate limiting
+- **Documentation**: Complete OpenAPI 3.0 specification with Swagger UI
+- **Logging**: Enterprise-grade Winston logging with structured data and multiple transports
+- **Monitoring**: Comprehensive health checks with Kubernetes probes and Prometheus metrics
+- **Security**: Progressive rate limiting, security event logging, SQL injection prevention
 
 ### Frontend (React/Vite)
 - **State Management**: React Query for server state + AuthContext for authentication
@@ -48,9 +52,10 @@ npm run db:rollback         # Rollback last migration
 npm run db:seed             # Run database seeds
 npm run db:reset            # Rollback, migrate, and seed
 
-# Documentation commands
-npm run docs:generate       # Generate API documentation
-npm run docs:serve          # Serve Swagger documentation
+# Documentation and monitoring commands  
+npm run docs:serve          # Serve Swagger documentation at /docs
+curl localhost:5000/health/detailed  # Check system health and metrics
+curl localhost:5000/health/metrics   # Get Prometheus metrics
 ```
 
 ### Frontend Commands
@@ -85,6 +90,12 @@ npm test src/pages/RequestDetailPage.test.jsx  # Full path to test file
 
 ## Database Architecture
 
+### Multi-Provider Database Support
+- **Primary**: PostgreSQL with connection pooling and retry logic
+- **BaaS Options**: Supabase, PlanetScale, Neon, Railway support
+- **Configuration**: Environment-based provider switching
+- **Health Monitoring**: Connection status and pool metrics tracking
+
 ### Core Tables
 - **users**: Authentication, roles (employee/manager/admin), profile data
 - **workflows**: Configurable approval chains with step definitions
@@ -101,8 +112,10 @@ npm test src/pages/RequestDetailPage.test.jsx  # Full path to test file
 
 ### JWT Implementation
 - Access tokens (15min) + Refresh tokens (7 days)
+- Stored in httpOnly cookies for XSS protection
 - Automatic token refresh in API interceptors
 - Role-based route protection in both frontend and backend
+- CSRF protection with Double Submit Cookie pattern
 
 ### Role Permissions
 - **Employee**: Submit requests, view own requests
@@ -205,8 +218,10 @@ testUtils.generateTestToken(user)           # Generate JWT for testing
 NODE_ENV=development
 PORT=5000
 DATABASE_URL=postgresql://...
-JWT_SECRET=your-secret-key
-JWT_REFRESH_SECRET=your-refresh-secret
+DB_PROVIDER=postgresql  # Options: postgresql, supabase, planetscale, neon, railway
+JWT_SECRET=your-secret-key-32-chars-minimum
+JWT_REFRESH_SECRET=your-refresh-secret-32-chars-minimum
+SESSION_SECRET=your-session-secret-for-csrf
 ```
 
 ### Frontend Environment  
@@ -214,13 +229,35 @@ JWT_REFRESH_SECRET=your-refresh-secret
 VITE_API_URL=http://localhost:5000/api
 ```
 
+### BaaS Provider Examples
+```bash
+# Supabase
+DB_PROVIDER=supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_KEY=your-service-key
+
+# PlanetScale
+DB_PROVIDER=planetscale
+PLANETSCALE_HOST=your-db.planetscale.com
+PLANETSCALE_USERNAME=your-username
+PLANETSCALE_PASSWORD=your-password
+```
+
 ## Key Files to Understand
 
 ### Backend Core Files
-- `src/app.js` - Express application setup and middleware configuration
-- `src/routes/requests.js` - Request management API endpoints
+- `src/app.js` - Express application setup and comprehensive middleware configuration
+- `src/config/swagger.js` - OpenAPI 3.0 specification and documentation configuration
+- `src/utils/logger.js` - Enterprise Winston logging with structured data and multiple transports
+- `src/routes/health.js` - Comprehensive health checks and monitoring endpoints
+- `src/middleware/rateLimiting.js` - Sophisticated user/IP-based rate limiting
+- `src/config/database.js` - Multi-provider database configuration system
+- `src/routes/requests.js` - Request management API endpoints with validation
 - `src/models/Request.js` - Request model with workflow integration
-- `src/middleware/auth.js` - JWT authentication and role verification
+- `src/middleware/auth.js` - JWT authentication with httpOnly cookies and role verification
+- `src/middleware/csrf.js` - CSRF protection with Double Submit Cookie pattern
+- `src/middleware/sanitization.js` - Input sanitization and SQL injection prevention
 
 ### Frontend Core Files
 - `src/pages/RequestDetailPage.jsx` - Comprehensive request detail view
@@ -255,4 +292,12 @@ Workflows define approval chains with:
 cd backend
 npm run db:migrate    # Apply schema migrations
 npm run db:seed       # Insert sample data
+
+# Start development server
+npm run dev           # Backend on http://localhost:5000
+
+# Access development tools
+# API Documentation: http://localhost:5000/docs
+# Health Dashboard: http://localhost:5000/health/detailed  
+# System Metrics: http://localhost:5000/health/metrics
 ```

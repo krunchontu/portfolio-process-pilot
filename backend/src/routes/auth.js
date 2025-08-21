@@ -1,25 +1,147 @@
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     LoginRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *         - password
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: User's email address
+ *           example: user@example.com
+ *         password:
+ *           type: string
+ *           format: password
+ *           description: User's password
+ *           example: SecurePass123!
+ *
+ *     RegisterRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *         - password
+ *         - first_name
+ *         - last_name
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *           example: newuser@example.com
+ *         password:
+ *           type: string
+ *           format: password
+ *           minLength: 8
+ *           example: SecurePass123!
+ *         first_name:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 50
+ *           example: John
+ *         last_name:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 50
+ *           example: Doe
+ *         role:
+ *           type: string
+ *           enum: [employee, manager, admin]
+ *           default: employee
+ *         department:
+ *           type: string
+ *           maxLength: 100
+ *           example: Engineering
+ *
+ *     AuthTokens:
+ *       type: object
+ *       properties:
+ *         access_token:
+ *           type: string
+ *           description: JWT access token
+ *         refresh_token:
+ *           type: string
+ *           description: JWT refresh token
+ *         expires_in:
+ *           type: string
+ *           description: Token expiration time
+ *           example: 15m
+ *
+ *     ChangePasswordRequest:
+ *       type: object
+ *       required:
+ *         - current_password
+ *         - new_password
+ *       properties:
+ *         current_password:
+ *           type: string
+ *           format: password
+ *           description: User's current password
+ *         new_password:
+ *           type: string
+ *           format: password
+ *           minLength: 8
+ *           description: New password (min 8 characters)
+ */
+
 const express = require('express')
 const jwt = require('jsonwebtoken')
-const rateLimit = require('express-rate-limit')
 const User = require('../models/User')
 const config = require('../config')
 const { generateToken, generateRefreshToken, authenticateToken, setTokenCookies, clearTokenCookies } = require('../middleware/auth')
 const { validateRequest } = require('../middleware/validation')
 const { loginSchema, registerSchema, refreshTokenSchema, changePasswordSchema } = require('../schemas/auth')
+const { authLimiter } = require('../middleware/rateLimiting')
+const { loggers } = require('../utils/logger')
 
 const router = express.Router()
 
-// Rate limiting for auth endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per window
-  handler: (req, res) => {
-    return res.tooManyRequests('Too many authentication attempts, please try again later')
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-})
-
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Authenticate user and get tokens
+ *     description: Login with email and password to receive JWT tokens. Tokens are set as httpOnly cookies and also returned in response.
+ *     tags: [Authentication]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         headers:
+ *           Set-Cookie:
+ *             description: HttpOnly cookies with access and refresh tokens
+ *             schema:
+ *               type: string
+ *               example: access_token=eyJ...; HttpOnly; Secure; SameSite=Strict
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *                         tokens:
+ *                           $ref: '#/components/schemas/AuthTokens'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       429:
+ *         $ref: '#/components/responses/RateLimitError'
+ */
 // Login endpoint
 router.post('/login', authLimiter, validateRequest(loginSchema), async (req, res) => {
   try {
@@ -150,6 +272,34 @@ router.post('/refresh', async (req, res) => {
   }
 })
 
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get current user profile
+ *     description: Retrieve the authenticated user's profile information
+ *     tags: [Authentication]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 // Get current user profile
 router.get('/me', authenticateToken, async (req, res) => {
   return res.success(200, 'Profile retrieved successfully', { user: req.user })
@@ -161,7 +311,12 @@ router.post('/logout', authenticateToken, async (req, res) => {
   clearTokenCookies(res)
 
   // Log the logout event
-  console.log(`User ${req.user.email} logged out at ${new Date().toISOString()}`)
+  loggers.auth.info('User logged out', {
+    userId: req.user.id,
+    email: req.user.email,
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
+  })
 
   return res.success(200, 'Logged out successfully')
 })

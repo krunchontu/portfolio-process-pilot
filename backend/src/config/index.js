@@ -66,16 +66,16 @@ if (!process.env.JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET.length < 3
 if (config.nodeEnv === 'production') {
   // Database validation is now handled by the database config module
   const requiredEnvVars = []
-  
+
   // Check provider-specific requirements
   if (config.dbProvider === 'supabase' && !process.env.SUPABASE_DB_URL && !process.env.DATABASE_URL) {
     requiredEnvVars.push('SUPABASE_DB_URL or DATABASE_URL')
   }
-  
+
   if (config.dbProvider === 'postgresql' && !process.env.DB_PASSWORD && !process.env.DATABASE_URL) {
     requiredEnvVars.push('DB_PASSWORD or DATABASE_URL')
   }
-  
+
   if (requiredEnvVars.length > 0) {
     throw new Error(`Production environment missing: ${requiredEnvVars.join(', ')}`)
   }

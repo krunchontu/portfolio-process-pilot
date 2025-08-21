@@ -51,6 +51,7 @@ const testConnection = async () => {
   } catch (error) {
     logger.error('❌ Database connection failed after all retries:', error.message)
 
+    const config = require('../config')
     if (config.nodeEnv === 'production') {
       // In production, exit gracefully
       process.exit(1)

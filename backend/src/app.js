@@ -2,18 +2,19 @@ const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const compression = require('compression')
-const rateLimit = require('express-rate-limit')
 const morgan = require('morgan')
 const session = require('express-session')
 const cookieParser = require('cookie-parser')
 
 const config = require('./config')
-const { logger, stream } = require('./utils/logger')
+const { logger, stream, requestLogger } = require('./utils/logger')
 const { apiResponseMiddleware } = require('./utils/apiResponse')
 const { globalErrorHandler, notFound } = require('./middleware/errorHandler')
 const { testConnection } = require('./database/connection')
 const csrfProtection = require('./middleware/csrf')
 const { sanitizeInput, preventSqlInjection } = require('./middleware/sanitization')
+const { specs, swaggerUi, swaggerOptions } = require('./config/swagger')
+const { progressiveLimiter, rateLimitInfo, burstProtection } = require('./middleware/rateLimiting')
 
 // Import routes
 const authRoutes = require('./routes/auth')
@@ -21,6 +22,7 @@ const requestRoutes = require('./routes/requests')
 const workflowRoutes = require('./routes/workflows')
 const userRoutes = require('./routes/users')
 const analyticsRoutes = require('./routes/analytics')
+const healthRoutes = require('./routes/health')
 
 const app = express()
 
@@ -36,19 +38,10 @@ app.use(cors(config.cors))
 // Compression middleware
 app.use(compression())
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.max,
-  message: {
-    error: 'Too many requests from this IP, please try again later',
-    code: 'RATE_LIMIT_EXCEEDED'
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-})
-
-app.use('/api/', limiter)
+// Enhanced rate limiting middleware with burst protection
+app.use(rateLimitInfo)
+app.use(burstProtection)
+app.use('/api/', progressiveLimiter)
 
 // Cookie parsing middleware
 app.use(cookieParser())
@@ -73,8 +66,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use(sanitizeInput())
 app.use(preventSqlInjection)
 
-// Logging middleware
-app.use(morgan(config.logging.format, { stream }))
+// Enhanced request logging
+app.use(requestLogger)
+
+// HTTP access logging with Morgan
+app.use(morgan(config.logging?.format || 'combined', { stream }))
 
 // CSRF protection middleware
 app.use(csrfProtection.generateToken)
@@ -84,27 +80,8 @@ app.use(csrfProtection.addTokenToResponse)
 // API response standardization middleware
 app.use(apiResponseMiddleware)
 
-// Health check endpoint (before rate limiting)
-app.get('/health', async (req, res) => {
-  try {
-    const { healthCheck } = require('./database/connection')
-    const dbHealth = await healthCheck()
-
-    const healthData = {
-      status: dbHealth.status === 'healthy' ? 'ok' : 'degraded',
-      uptime: process.uptime(),
-      environment: config.nodeEnv,
-      version: process.env.npm_package_version || '1.0.0',
-      database: dbHealth,
-      timestamp: new Date().toISOString()
-    }
-
-    const statusCode = dbHealth.status === 'healthy' ? 200 : 503
-    res.success(statusCode, 'Health check completed', healthData)
-  } catch (error) {
-    res.internalError('Health check failed', error)
-  }
-})
+// Health routes (before rate limiting for monitoring)
+app.use('/health', healthRoutes)
 
 // API routes
 app.use('/api/auth', authRoutes)
@@ -113,12 +90,30 @@ app.use('/api/workflows', workflowRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/analytics', analyticsRoutes)
 
+// Swagger Documentation
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerOptions))
+
+// API documentation redirect
+app.get('/api/docs', (req, res) => {
+  res.redirect('/docs')
+})
+
+// Swagger JSON endpoint
+app.get('/api/swagger.json', (req, res) => {
+  res.json(specs)
+})
+
 // API info endpoint
 app.get('/api', (req, res) => {
   const apiInfo = {
     name: 'ProcessPilot API',
     version: '1.0.0',
     description: 'Workflow & Approval Engine API',
+    documentation: {
+      swagger_ui: `${req.protocol}://${req.get('host')}/docs`,
+      swagger_json: `${req.protocol}://${req.get('host')}/api/swagger.json`,
+      postman_collection: `${req.protocol}://${req.get('host')}/api/postman.json`
+    },
     endpoints: {
       auth: '/api/auth',
       requests: '/api/requests',
@@ -126,7 +121,6 @@ app.get('/api', (req, res) => {
       users: '/api/users',
       analytics: '/api/analytics'
     },
-    documentation: '/api/docs',
     health: '/health'
   }
 
