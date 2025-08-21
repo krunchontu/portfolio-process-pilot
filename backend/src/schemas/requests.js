@@ -10,11 +10,11 @@ const createRequestSchema = Joi.object({
       'any.required': 'Request type is required',
       'any.only': 'Request type must be one of: leave-request, expense-approval, equipment-request'
     }),
-  
+
   workflow_id: uuid().optional().messages({
     'string.guid': 'Workflow ID must be a valid UUID'
   }),
-  
+
   payload: Joi.object().required().messages({
     'any.required': 'Request payload is required',
     'object.base': 'Request payload must be an object'
@@ -122,7 +122,7 @@ const requestActionSchema = Joi.object({
       'any.required': 'Action is required',
       'any.only': 'Action must be one of: approve, reject, escalate, delegate'
     }),
-  
+
   comment: Joi.string().trim().max(1000).allow('').optional().messages({
     'string.max': 'Comment must not exceed 1000 characters'
   }).when('action', {
@@ -132,14 +132,14 @@ const requestActionSchema = Joi.object({
       'string.min': 'Rejection comment must be at least 10 characters'
     })
   }),
-  
+
   delegate_to: uuid().optional().when('action', {
     is: 'delegate',
     then: Joi.required().messages({
       'any.required': 'delegate_to is required when delegating'
     })
   }),
-  
+
   escalate_to: uuid().optional().when('action', {
     is: 'escalate',
     then: Joi.required().messages({
@@ -161,36 +161,36 @@ const listRequestsSchema = Joi.object({
   status: Joi.string()
     .valid('pending', 'approved', 'rejected', 'cancelled')
     .optional(),
-  
+
   type: Joi.string()
     .valid('leave-request', 'expense-approval', 'equipment-request')
     .optional(),
-  
+
   created_by: uuid().optional(),
-  
+
   pending_for_role: Joi.string()
     .valid('employee', 'manager', 'admin')
     .optional(),
-  
+
   from_date: Joi.date().iso().optional(),
-  
+
   to_date: Joi.date().iso().min(Joi.ref('from_date')).optional().messages({
     'date.min': 'To date must be after from date'
   }),
-  
+
   limit: Joi.number().integer().min(1).max(100).default(20).messages({
     'number.min': 'Limit must be at least 1',
     'number.max': 'Limit must not exceed 100'
   }),
-  
+
   offset: Joi.number().integer().min(0).default(0).messages({
     'number.min': 'Offset must not be negative'
   }),
-  
+
   sort_by: Joi.string()
     .valid('created_at', 'updated_at', 'status', 'type')
     .default('created_at'),
-  
+
   sort_order: Joi.string()
     .valid('asc', 'desc')
     .default('desc')

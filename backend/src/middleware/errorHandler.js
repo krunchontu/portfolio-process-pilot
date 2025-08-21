@@ -114,7 +114,7 @@ const notFound = (req, res, next) => {
       available_endpoints: ['/api/auth', '/api/requests', '/api/workflows', '/api/users', '/api/analytics']
     })
   }
-  
+
   // For non-API routes, create error and pass to global handler
   const err = new AppError(`Route ${req.originalUrl} not found`, 404, 'ROUTE_NOT_FOUND')
   next(err)

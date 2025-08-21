@@ -5,7 +5,7 @@ const User = require('../models/User')
 const config = require('../config')
 const { generateToken, generateRefreshToken, authenticateToken, setTokenCookies, clearTokenCookies } = require('../middleware/auth')
 const { validateRequest } = require('../middleware/validation')
-const { loginSchema, registerSchema, refreshTokenSchema } = require('../schemas/auth')
+const { loginSchema, registerSchema, refreshTokenSchema, changePasswordSchema } = require('../schemas/auth')
 
 const router = express.Router()
 
@@ -107,11 +107,11 @@ router.post('/refresh', async (req, res) => {
   try {
     // Try to get refresh token from cookie first, then from body
     let refreshToken = req.cookies?.refresh_token
-    
+
     if (!refreshToken && req.body.refresh_token) {
       refreshToken = req.body.refresh_token
     }
-    
+
     if (!refreshToken) {
       return res.unauthorized('Refresh token required')
     }
@@ -159,7 +159,7 @@ router.get('/me', authenticateToken, async (req, res) => {
 router.post('/logout', authenticateToken, async (req, res) => {
   // Clear httpOnly cookies
   clearTokenCookies(res)
-  
+
   // Log the logout event
   console.log(`User ${req.user.email} logged out at ${new Date().toISOString()}`)
 
@@ -167,23 +167,9 @@ router.post('/logout', authenticateToken, async (req, res) => {
 })
 
 // Password change endpoint
-router.post('/change-password', authenticateToken, async (req, res) => {
+router.post('/change-password', authenticateToken, validateRequest(changePasswordSchema), async (req, res) => {
   try {
     const { current_password, new_password } = req.body
-
-    if (!current_password || !new_password) {
-      return res.status(400).json({
-        error: 'Current password and new password are required',
-        code: 'MISSING_PASSWORDS'
-      })
-    }
-
-    if (new_password.length < 8) {
-      return res.status(400).json({
-        error: 'New password must be at least 8 characters long',
-        code: 'PASSWORD_TOO_SHORT'
-      })
-    }
 
     // Get user with password hash
     const userWithPassword = await User.findByEmail(req.user.email)
@@ -191,24 +177,15 @@ router.post('/change-password', authenticateToken, async (req, res) => {
     // Verify current password
     const isCurrentPasswordValid = await User.validatePassword(current_password, userWithPassword.password_hash)
     if (!isCurrentPasswordValid) {
-      return res.status(401).json({
-        error: 'Current password is incorrect',
-        code: 'INVALID_CURRENT_PASSWORD'
-      })
+      return res.unauthorized('Current password is incorrect')
     }
 
     // Update password
     await User.update(req.user.id, { password: new_password })
 
-    res.json({
-      message: 'Password changed successfully'
-    })
+    return res.success(200, 'Password changed successfully')
   } catch (error) {
-    console.error('Password change error:', error)
-    res.status(500).json({
-      error: 'Password change failed',
-      code: 'PASSWORD_CHANGE_ERROR'
-    })
+    return res.internalError('Password change failed', error)
   }
 })
 

@@ -61,12 +61,12 @@ const retryConnection = async (operation, maxRetries = 3, delay = 1000) => {
       return result
     } catch (error) {
       logger.warn(`Database operation attempt ${attempt} failed:`, error.message)
-      
+
       if (attempt === maxRetries) {
         logger.error('Database operation failed after all retries:', error)
         throw error
       }
-      
+
       // Exponential backoff
       const waitTime = delay * Math.pow(2, attempt - 1)
       logger.info(`Retrying database operation in ${waitTime}ms...`)
@@ -83,14 +83,13 @@ const testConnection = async () => {
       logger.info('✅ Database connection established successfully')
       return true
     })
-    
+
     // Log connection pool status
     const pool = db.client.pool
     logger.info(`Database pool status: ${pool.numUsed()}/${pool.numFree()} (used/free), max: ${pool.max}`)
-    
   } catch (error) {
     logger.error('❌ Database connection failed after all retries:', error.message)
-    
+
     if (config.nodeEnv === 'production') {
       // In production, exit gracefully
       process.exit(1)
@@ -108,16 +107,15 @@ const closeConnection = async () => {
     const pool = db.client.pool
     const startTime = Date.now()
     const maxWaitTime = 10000 // 10 seconds
-    
+
     while (pool.numUsed() > 0 && (Date.now() - startTime) < maxWaitTime) {
       logger.info(`Waiting for ${pool.numUsed()} active database connections to finish...`)
       await new Promise(resolve => setTimeout(resolve, 500))
     }
-    
+
     // Destroy the connection pool
     await db.destroy()
     logger.info('✅ Database connection pool closed successfully')
-    
   } catch (error) {
     logger.error('❌ Error closing database connection:', error.message)
     throw error
@@ -133,7 +131,7 @@ const healthCheck = async () => {
       const duration = Date.now() - start
       return { status: 'healthy', response_time: `${duration}ms` }
     }, 2, 500) // Faster retry for health checks
-    
+
     const pool = db.client.pool
     return {
       ...result,
@@ -169,7 +167,7 @@ const dbWithRetry = {
   update: (table) => db.update(table),
   delete: (table) => db.delete(table),
   transaction: (callback) => retryConnection(() => db.transaction(callback)),
-  
+
   // Direct access to original knex instance for advanced usage
   knex: db
 }

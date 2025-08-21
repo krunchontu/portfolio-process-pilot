@@ -5,11 +5,11 @@ const Workflow = require('../models/Workflow')
 const { authenticateToken, requireRole, canActOnRequest } = require('../middleware/auth')
 const { validateRequest, validateQuery, validateParams } = require('../middleware/validation')
 const { catchAsync, AppError } = require('../middleware/errorHandler')
-const { 
-  createRequestSchema, 
-  requestActionSchema, 
-  cancelRequestSchema, 
-  listRequestsSchema 
+const {
+  createRequestSchema,
+  requestActionSchema,
+  cancelRequestSchema,
+  listRequestsSchema
 } = require('../schemas/requests')
 
 const router = express.Router()
@@ -73,9 +73,9 @@ router.get('/', validateQuery(listRequestsSchema), catchAsync(async (req, res) =
 
   const requests = await Request.list(filters)
 
-  return res.success(200, 'Requests retrieved successfully', { 
+  return res.success(200, 'Requests retrieved successfully', {
     requests,
-    count: requests.length 
+    count: requests.length
   }, {
     filters: req.query
   })
@@ -87,105 +87,105 @@ router.get('/:id', validateParams({ id: require('../middleware/validation').uuid
 }))
 
 // Take action on request (approve/reject)
-router.post('/:id/action', 
-  validateParams({ id: require('../middleware/validation').uuid() }), 
+router.post('/:id/action',
+  validateParams({ id: require('../middleware/validation').uuid() }),
   validateRequest(requestActionSchema),
-  canActOnRequest, 
+  canActOnRequest,
   catchAsync(async (req, res) => {
-  const { action, comment = '' } = req.body
-  const request = req.targetRequest
+    const { action, comment = '' } = req.body
+    const request = req.targetRequest
 
-  if (request.status !== 'pending') {
-    throw new AppError(`Request is already ${request.status}`, 409, 'REQUEST_NOT_PENDING')
-  }
-
-  const currentStep = Request.getCurrentStep(request)
-  if (!currentStep) {
-    throw new AppError('No active step for this request', 400, 'NO_ACTIVE_STEP')
-  }
-
-  // Validate action
-  if (!currentStep.actions.includes(action)) {
-    throw new AppError(`Invalid action. Allowed: ${currentStep.actions.join(', ')}`, 400, 'INVALID_ACTION')
-  }
-
-  // Check authorization
-  const expectedRole = currentStep.escalatedTo || currentStep.role
-  if (req.user.role !== 'admin' && req.user.role !== expectedRole) {
-    throw new AppError(`Role ${req.user.role} cannot perform this action`, 403, 'INSUFFICIENT_ROLE')
-  }
-
-  // Record the action in history
-  await RequestHistory.create({
-    request_id: request.id,
-    actor_id: req.user.id,
-    action: action.toUpperCase(),
-    step_id: currentStep.stepId,
-    comment
-  })
-
-  let updatedRequest
-
-  if (action === 'reject') {
-    // Reject the request
-    updatedRequest = await Request.updateStatus(request.id, 'rejected', null, new Date())
-  } else if (action === 'approve') {
-    // Check if this is the final step
-    if (Request.isFinalStep(request)) {
-      updatedRequest = await Request.updateStatus(request.id, 'approved', null, new Date())
-    } else {
-      // Move to next step
-      const nextStepIndex = request.current_step_index + 1
-      updatedRequest = await Request.updateStatus(request.id, 'pending', nextStepIndex)
+    if (request.status !== 'pending') {
+      throw new AppError(`Request is already ${request.status}`, 409, 'REQUEST_NOT_PENDING')
     }
-  }
 
-  const fullRequest = await Request.findById(request.id)
+    const currentStep = Request.getCurrentStep(request)
+    if (!currentStep) {
+      throw new AppError('No active step for this request', 400, 'NO_ACTIVE_STEP')
+    }
 
-  return res.success(200, `Request ${action}d successfully`, { request: fullRequest })
-}))
+    // Validate action
+    if (!currentStep.actions.includes(action)) {
+      throw new AppError(`Invalid action. Allowed: ${currentStep.actions.join(', ')}`, 400, 'INVALID_ACTION')
+    }
+
+    // Check authorization
+    const expectedRole = currentStep.escalatedTo || currentStep.role
+    if (req.user.role !== 'admin' && req.user.role !== expectedRole) {
+      throw new AppError(`Role ${req.user.role} cannot perform this action`, 403, 'INSUFFICIENT_ROLE')
+    }
+
+    // Record the action in history
+    await RequestHistory.create({
+      request_id: request.id,
+      actor_id: req.user.id,
+      action: action.toUpperCase(),
+      step_id: currentStep.stepId,
+      comment
+    })
+
+    let updatedRequest
+
+    if (action === 'reject') {
+    // Reject the request
+      updatedRequest = await Request.updateStatus(request.id, 'rejected', null, new Date())
+    } else if (action === 'approve') {
+    // Check if this is the final step
+      if (Request.isFinalStep(request)) {
+        updatedRequest = await Request.updateStatus(request.id, 'approved', null, new Date())
+      } else {
+      // Move to next step
+        const nextStepIndex = request.current_step_index + 1
+        updatedRequest = await Request.updateStatus(request.id, 'pending', nextStepIndex)
+      }
+    }
+
+    const fullRequest = await Request.findById(request.id)
+
+    return res.success(200, `Request ${action}d successfully`, { request: fullRequest })
+  }))
 
 // Cancel request (requestor only)
-router.post('/:id/cancel', 
-  validateParams({ id: require('../middleware/validation').uuid() }), 
+router.post('/:id/cancel',
+  validateParams({ id: require('../middleware/validation').uuid() }),
   validateRequest(cancelRequestSchema),
   catchAsync(async (req, res) => {
-  const request = await Request.findById(req.params.id)
+    const request = await Request.findById(req.params.id)
 
-  if (!request) {
-    throw new AppError('Request not found', 404, 'REQUEST_NOT_FOUND')
-  }
+    if (!request) {
+      throw new AppError('Request not found', 404, 'REQUEST_NOT_FOUND')
+    }
 
-  // Only the requestor or admin can cancel
-  if (request.created_by !== req.user.id && req.user.role !== 'admin') {
-    throw new AppError('You can only cancel your own requests', 403, 'CANCEL_NOT_ALLOWED')
-  }
+    // Only the requestor or admin can cancel
+    if (request.created_by !== req.user.id && req.user.role !== 'admin') {
+      throw new AppError('You can only cancel your own requests', 403, 'CANCEL_NOT_ALLOWED')
+    }
 
-  if (request.status !== 'pending') {
-    throw new AppError(`Cannot cancel request with status: ${request.status}`, 409, 'CANNOT_CANCEL')
-  }
+    if (request.status !== 'pending') {
+      throw new AppError(`Cannot cancel request with status: ${request.status}`, 409, 'CANNOT_CANCEL')
+    }
 
-  // Record cancellation
-  await RequestHistory.create({
-    request_id: request.id,
-    actor_id: req.user.id,
-    action: 'cancel',
-    comment: req.body.comment || 'Request cancelled by requestor'
-  })
+    // Record cancellation
+    await RequestHistory.create({
+      request_id: request.id,
+      actor_id: req.user.id,
+      action: 'cancel',
+      comment: req.body.comment || 'Request cancelled by requestor'
+    })
 
-  const updatedRequest = await Request.updateStatus(request.id, 'cancelled', null, new Date())
+    const updatedRequest = await Request.updateStatus(request.id, 'cancelled', null, new Date())
 
-  const fullRequest = await Request.findById(request.id)
-  return res.success(200, 'Request cancelled successfully', { request: fullRequest })
-}))
+    const fullRequest = await Request.findById(request.id)
+    return res.success(200, 'Request cancelled successfully', { request: fullRequest })
+  }))
 
 // Get request history
 router.get('/:id/history', validateParams({ id: require('../middleware/validation').uuid() }), canActOnRequest, catchAsync(async (req, res) => {
   const history = await RequestHistory.findByRequestId(req.params.id)
 
-  return res.success(200, 'Request history retrieved successfully', { 
+  return res.success(200, 'Request history retrieved successfully', {
     request_id: req.params.id,
-    history 
+    history
   })
 }))
 

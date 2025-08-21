@@ -17,7 +17,7 @@ const csrfProtection = {
   generateToken: (req, res, next) => {
     if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
       const csrfToken = generateCSRFToken()
-      
+
       // Set CSRF token in cookie (httpOnly for security)
       res.cookie('XSRF-TOKEN', csrfToken, {
         httpOnly: false, // Needs to be readable by frontend
@@ -25,15 +25,15 @@ const csrfProtection = {
         sameSite: 'strict',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
       })
-      
+
       // Also store in session for validation
       req.session = req.session || {}
       req.session.csrfSecret = csrfToken
-      
+
       // Add token to response for immediate use
       res.locals.csrfToken = csrfToken
     }
-    
+
     next()
   },
 
@@ -58,10 +58,10 @@ const csrfProtection = {
     const sessionToken = req.session && req.session.csrfSecret
 
     if (!csrfToken) {
-      logger.warn('CSRF token missing', { 
-        ip: req.ip, 
-        method: req.method, 
-        path: req.path 
+      logger.warn('CSRF token missing', {
+        ip: req.ip,
+        method: req.method,
+        path: req.path
       })
       return res.status(403).json({
         success: false,
@@ -71,10 +71,10 @@ const csrfProtection = {
     }
 
     if (!sessionToken) {
-      logger.warn('CSRF session token missing', { 
-        ip: req.ip, 
-        method: req.method, 
-        path: req.path 
+      logger.warn('CSRF session token missing', {
+        ip: req.ip,
+        method: req.method,
+        path: req.path
       })
       return res.status(403).json({
         success: false,
@@ -85,10 +85,10 @@ const csrfProtection = {
 
     // Constant-time comparison to prevent timing attacks
     if (csrfToken !== sessionToken) {
-      logger.warn('CSRF token mismatch', { 
-        ip: req.ip, 
-        method: req.method, 
-        path: req.path 
+      logger.warn('CSRF token mismatch', {
+        ip: req.ip,
+        method: req.method,
+        path: req.path
       })
       return res.status(403).json({
         success: false,
@@ -104,7 +104,7 @@ const csrfProtection = {
   addTokenToResponse: (req, res, next) => {
     // Override res.json to include CSRF token
     const originalJson = res.json
-    res.json = function(data) {
+    res.json = function (data) {
       if (res.locals.csrfToken && typeof data === 'object' && data !== null) {
         data.csrfToken = res.locals.csrfToken
       }

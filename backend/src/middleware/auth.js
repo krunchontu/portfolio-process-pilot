@@ -21,7 +21,7 @@ const authenticateToken = async (req, res, next) => {
   try {
     // Try to get token from httpOnly cookie first, then fallback to Authorization header
     let token = req.cookies?.access_token
-    
+
     // Fallback to Authorization header for API clients
     if (!token) {
       const authHeader = req.headers.authorization
@@ -156,7 +156,7 @@ const optionalAuth = async (req, res, next) => {
   try {
     // Try to get token from httpOnly cookie first, then fallback to Authorization header
     let token = req.cookies?.access_token
-    
+
     if (!token) {
       const authHeader = req.headers.authorization
       token = authHeader && authHeader.split(' ')[1]
@@ -183,7 +183,7 @@ const optionalAuth = async (req, res, next) => {
 // Set JWT tokens in httpOnly cookies
 const setTokenCookies = (res, accessToken, refreshToken) => {
   const isProduction = process.env.NODE_ENV === 'production'
-  
+
   // Set access token cookie
   res.cookie('access_token', accessToken, {
     httpOnly: true,
@@ -191,7 +191,7 @@ const setTokenCookies = (res, accessToken, refreshToken) => {
     sameSite: 'strict',
     maxAge: 15 * 60 * 1000 // 15 minutes
   })
-  
+
   // Set refresh token cookie
   if (refreshToken) {
     res.cookie('refresh_token', refreshToken, {

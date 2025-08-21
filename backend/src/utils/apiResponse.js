@@ -1,6 +1,6 @@
 /**
  * Standardized API Response Utilities
- * 
+ *
  * This module provides consistent response formatting across all API endpoints.
  * All API responses follow a standard structure for better client integration.
  */
@@ -72,10 +72,10 @@ const error = (res, statusCode = 500, message = 'An error occurred', code = 'INT
   }
 
   // Log errors for monitoring
-  logger.error(`API Error [${statusCode}]: ${message}`, { 
-    code, 
-    details, 
-    stack: details instanceof Error ? details.stack : undefined 
+  logger.error(`API Error [${statusCode}]: ${message}`, {
+    code,
+    details,
+    stack: details instanceof Error ? details.stack : undefined
   })
 
   return res.status(statusCode).json(response)
@@ -100,10 +100,10 @@ const validationError = (res, errors, message = 'Validation failed') => {
  * @param {string} identifier - Resource identifier
  */
 const notFound = (res, resource = 'Resource', identifier = null) => {
-  const message = identifier 
+  const message = identifier
     ? `${resource} with identifier '${identifier}' not found`
     : `${resource} not found`
-  
+
   return error(res, 404, message, 'RESOURCE_NOT_FOUND', {
     resource,
     identifier
@@ -154,10 +154,12 @@ const tooManyRequests = (res, message = 'Rate limit exceeded') => {
  * @param {Error} err - Original error object
  */
 const internalError = (res, message = 'Internal server error', err = null) => {
-  const details = process.env.NODE_ENV === 'development' && err ? {
-    error_message: err.message,
-    stack: err.stack
-  } : null
+  const details = process.env.NODE_ENV === 'development' && err
+    ? {
+      error_message: err.message,
+      stack: err.stack
+    }
+    : null
 
   return error(res, 500, message, 'INTERNAL_ERROR', details)
 }
@@ -215,40 +217,40 @@ const paginated = (res, data, page, limit, total, message = 'Data retrieved succ
  */
 const apiResponseMiddleware = (req, res, next) => {
   // Add helper methods to response object
-  res.success = (statusCode, message, data, meta) => 
+  res.success = (statusCode, message, data, meta) =>
     success(res, statusCode, message, data, meta)
-  
-  res.error = (statusCode, message, code, details) => 
+
+  res.error = (statusCode, message, code, details) =>
     error(res, statusCode, message, code, details)
-  
-  res.validationError = (errors, message) => 
+
+  res.validationError = (errors, message) =>
     validationError(res, errors, message)
-  
-  res.notFound = (resource, identifier) => 
+
+  res.notFound = (resource, identifier) =>
     notFound(res, resource, identifier)
-  
-  res.unauthorized = (message) => 
+
+  res.unauthorized = (message) =>
     unauthorized(res, message)
-  
-  res.forbidden = (message) => 
+
+  res.forbidden = (message) =>
     forbidden(res, message)
-  
-  res.conflict = (message, details) => 
+
+  res.conflict = (message, details) =>
     conflict(res, message, details)
-  
-  res.tooManyRequests = (message) => 
+
+  res.tooManyRequests = (message) =>
     tooManyRequests(res, message)
-  
-  res.internalError = (message, err) => 
+
+  res.internalError = (message, err) =>
     internalError(res, message, err)
-  
-  res.created = (message, data, meta) => 
+
+  res.created = (message, data, meta) =>
     created(res, message, data, meta)
-  
-  res.noContent = () => 
+
+  res.noContent = () =>
     noContent(res)
-  
-  res.paginated = (data, page, limit, total, message) => 
+
+  res.paginated = (data, page, limit, total, message) =>
     paginated(res, data, page, limit, total, message)
 
   next()

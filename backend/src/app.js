@@ -89,7 +89,7 @@ app.get('/health', async (req, res) => {
   try {
     const { healthCheck } = require('./database/connection')
     const dbHealth = await healthCheck()
-    
+
     const healthData = {
       status: dbHealth.status === 'healthy' ? 'ok' : 'degraded',
       uptime: process.uptime(),
@@ -129,7 +129,7 @@ app.get('/api', (req, res) => {
     documentation: '/api/docs',
     health: '/health'
   }
-  
+
   res.success(200, 'API information retrieved', apiInfo)
 })
 

@@ -17,7 +17,7 @@ const htmlSanitizeOptions = {
 const richTextSanitizeOptions = {
   allowedTags: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li'],
   allowedAttributes: {
-    'a': ['href']
+    a: ['href']
   },
   allowedSchemes: ['http', 'https', 'mailto']
 }
@@ -29,16 +29,16 @@ const sanitizeObject = (obj, options = htmlSanitizeOptions) => {
   if (obj === null || obj === undefined) {
     return obj
   }
-  
+
   if (typeof obj === 'string') {
     // Trim whitespace and sanitize HTML
     return sanitizeHtml(obj.trim(), options)
   }
-  
+
   if (Array.isArray(obj)) {
     return obj.map(item => sanitizeObject(item, options))
   }
-  
+
   if (typeof obj === 'object') {
     const sanitized = {}
     for (const [key, value] of Object.entries(obj)) {
@@ -51,7 +51,7 @@ const sanitizeObject = (obj, options = htmlSanitizeOptions) => {
     }
     return sanitized
   }
-  
+
   return obj
 }
 
@@ -65,12 +65,12 @@ const sanitizeInput = (options = {}) => {
       if (req.body && typeof req.body === 'object') {
         req.body = sanitizeObject(req.body, options.htmlOptions || htmlSanitizeOptions)
       }
-      
+
       // Sanitize query parameters
       if (req.query && typeof req.query === 'object') {
         req.query = sanitizeObject(req.query, htmlSanitizeOptions)
       }
-      
+
       next()
     } catch (error) {
       console.error('Sanitization error:', error)
@@ -112,7 +112,7 @@ const commonValidations = {
       .normalizeEmail()
       .withMessage('Valid email address is required')
   ],
-  
+
   // Password validation (no sanitization for security)
   password: [
     body('password')
@@ -121,7 +121,7 @@ const commonValidations = {
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
       .withMessage('Password must contain at least one lowercase letter, one uppercase letter, and one number')
   ],
-  
+
   // Name validation and sanitization
   name: [
     body(['first_name', 'last_name'])
@@ -131,21 +131,21 @@ const commonValidations = {
       .matches(/^[a-zA-Z\s'-]+$/)
       .withMessage('Name can only contain letters, spaces, apostrophes, and hyphens')
   ],
-  
+
   // ID validation
   id: [
     param('id')
       .isInt({ gt: 0 })
       .withMessage('Valid ID is required')
   ],
-  
+
   // Request type validation
   requestType: [
     body('type')
       .isIn(['leave', 'expense', 'equipment'])
       .withMessage('Request type must be leave, expense, or equipment')
   ],
-  
+
   // Role validation
   role: [
     body('role')
@@ -153,7 +153,7 @@ const commonValidations = {
       .isIn(['employee', 'manager', 'admin'])
       .withMessage('Role must be employee, manager, or admin')
   ],
-  
+
   // Department validation
   department: [
     body('department')
@@ -164,7 +164,7 @@ const commonValidations = {
       .matches(/^[a-zA-Z0-9\s&-]+$/)
       .withMessage('Department can only contain letters, numbers, spaces, ampersands, and hyphens')
   ],
-  
+
   // Text content validation (for comments, descriptions, etc.)
   textContent: [
     body(['comment', 'description', 'reason', 'notes'])
@@ -173,7 +173,7 @@ const commonValidations = {
       .isLength({ max: 1000 })
       .withMessage('Text content must not exceed 1000 characters')
   ],
-  
+
   // Amount validation (for expenses)
   amount: [
     body('amount')
@@ -195,14 +195,14 @@ const preventSqlInjection = (req, res, next) => {
     /\/\*/,
     /\*\//
   ]
-  
+
   const checkForSqlInjection = (value) => {
     if (typeof value === 'string') {
       return sqlInjectionPatterns.some(pattern => pattern.test(value))
     }
     return false
   }
-  
+
   const hasSqlInjection = (obj) => {
     if (typeof obj === 'string') {
       return checkForSqlInjection(obj)
@@ -215,7 +215,7 @@ const preventSqlInjection = (req, res, next) => {
     }
     return false
   }
-  
+
   // Check request body, query, and params
   if (hasSqlInjection(req.body) || hasSqlInjection(req.query) || hasSqlInjection(req.params)) {
     return res.status(400).json({
@@ -223,7 +223,7 @@ const preventSqlInjection = (req, res, next) => {
       code: 'INVALID_INPUT'
     })
   }
-  
+
   next()
 }
 
