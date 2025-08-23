@@ -1,6 +1,6 @@
 /**
  * Test Database Setup Utilities
- * 
+ *
  * Provides utilities for setting up test databases, handling migrations,
  * and managing test data lifecycle.
  */
@@ -22,17 +22,16 @@ class TestDbManager {
     try {
       // First, try to connect to the test database
       this.db = knex(databaseConfig)
-      
+
       // Test the connection
       await this.db.raw('SELECT 1')
       logger.info('Test database connection successful')
-      
+
       // Run migrations
       await this.runMigrations()
-      
+
       this.isSetup = true
       return this.db
-      
     } catch (error) {
       this.setupError = error
       logger.error('Test database setup failed', {
@@ -40,7 +39,7 @@ class TestDbManager {
         code: error.code,
         stack: error.stack
       })
-      
+
       // Check if it's a connection issue
       if (this.isConnectionError(error)) {
         logger.warn('PostgreSQL connection failed - tests will be skipped', {
@@ -49,14 +48,14 @@ class TestDbManager {
         })
         return null
       }
-      
+
       // If it's a database not found error, try to create it
       if (this.isDatabaseNotFoundError(error)) {
         logger.info('Test database not found, attempting to create it')
         await this.createTestDatabase()
         return await this.setupTestDb() // Retry
       }
-      
+
       throw error
     }
   }
@@ -64,7 +63,7 @@ class TestDbManager {
   async runMigrations() {
     try {
       const [batchNo, migrations] = await this.db.migrate.latest()
-      
+
       if (migrations.length === 0) {
         logger.info('Database is up to date - no migrations needed')
       } else {
@@ -74,7 +73,7 @@ class TestDbManager {
           migrations: migrations.map(m => m.split('/').pop())
         })
       }
-      
+
       return true
     } catch (error) {
       logger.error('Migration failed', {
@@ -89,7 +88,7 @@ class TestDbManager {
     try {
       // Connect to the default postgres database to create our test database
       const adminConfig = { ...databaseConfig }
-      
+
       // Modify connection to connect to postgres database instead
       if (typeof adminConfig.connection === 'object') {
         adminConfig.connection.database = 'postgres'
@@ -97,18 +96,18 @@ class TestDbManager {
         // Handle connection string
         adminConfig.connection = adminConfig.connection.replace(/\/[^/]*$/, '/postgres')
       }
-      
+
       const adminDb = knex(adminConfig)
-      
+
       try {
         const testDbName = this.getTestDatabaseName()
-        
+
         // Check if database exists
         const result = await adminDb.raw(
           'SELECT 1 FROM pg_database WHERE datname = ?',
           [testDbName]
         )
-        
+
         if (result.rows.length === 0) {
           // Create the test database
           await adminDb.raw(`CREATE DATABASE "${testDbName}"`)
@@ -116,11 +115,9 @@ class TestDbManager {
         } else {
           logger.info('Test database already exists', { database: testDbName })
         }
-        
       } finally {
         await adminDb.destroy()
       }
-      
     } catch (error) {
       logger.error('Failed to create test database', {
         error: error.message,
@@ -140,24 +137,23 @@ class TestDbManager {
         WHERE schemaname = 'public' 
         ORDER BY tablename DESC
       `)
-      
+
       if (tables.rows.length > 0) {
         // Disable foreign key checks temporarily
         await this.db.raw('SET session_replication_role = replica')
-        
+
         // Truncate all tables
         for (const row of tables.rows) {
           await this.db(row.tablename).truncate()
         }
-        
+
         // Re-enable foreign key checks
         await this.db.raw('SET session_replication_role = DEFAULT')
-        
-        logger.debug('Test database cleaned', { 
-          tablesCleared: tables.rows.length 
+
+        logger.debug('Test database cleaned', {
+          tablesCleared: tables.rows.length
         })
       }
-      
     } catch (error) {
       logger.error('Failed to cleanup test database', {
         error: error.message
@@ -182,22 +178,22 @@ class TestDbManager {
   }
 
   // Helper methods
-  
+
   isConnectionError(error) {
-    return error.code === 'ECONNREFUSED' || 
+    return error.code === 'ECONNREFUSED' ||
            error.code === 'ENOTFOUND' ||
            error.code === 'ECONNRESET' ||
            (error.message && error.message.includes('connect ECONNREFUSED'))
   }
 
   isDatabaseNotFoundError(error) {
-    return error.code === '3D000' || 
+    return error.code === '3D000' ||
            (error.message && error.message.includes('database') && error.message.includes('does not exist'))
   }
 
   getTestDatabaseName() {
     const config = databaseConfig.connection
-    
+
     if (typeof config === 'object') {
       return config.database
     } else {
@@ -213,11 +209,11 @@ class TestDbManager {
 
   getSkipReason() {
     if (!this.setupError) return null
-    
+
     if (this.isConnectionError(this.setupError)) {
       return 'PostgreSQL server is not running or not accessible'
     }
-    
+
     return `Database setup failed: ${this.setupError.message}`
   }
 }
@@ -239,7 +235,7 @@ const testUtils = {
       department: 'IT',
       is_active: true
     }
-    
+
     return await User.create({ ...defaultData, ...overrides })
   },
 
@@ -265,7 +261,7 @@ const testUtils = {
       },
       is_active: true
     }
-    
+
     return await Workflow.create({ ...defaultData, ...overrides })
   },
 
@@ -286,7 +282,7 @@ const testUtils = {
       },
       current_step_index: 0
     }
-    
+
     return await Request.create({ ...defaultData, ...overrides })
   },
 
@@ -294,7 +290,7 @@ const testUtils = {
   generateTestToken(user) {
     const jwt = require('jsonwebtoken')
     const config = require('../config')
-    
+
     return jwt.sign(
       {
         userId: user.id,

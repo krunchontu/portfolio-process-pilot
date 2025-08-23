@@ -2,6 +2,7 @@ const winston = require('winston')
 const path = require('path')
 const fs = require('fs')
 const config = require('../config')
+const { LOGGING } = require('../constants')
 
 // Ensure logs directory exists
 const logDir = path.join(process.cwd(), 'logs')
@@ -238,7 +239,7 @@ const requestLogger = (req, res, next) => {
   // Log response
   res.on('finish', () => {
     const duration = Date.now() - startTime
-    const level = res.statusCode >= 400 ? 'warn' : 'info'
+    const level = res.statusCode >= LOGGING.ERROR_STATUS_THRESHOLD ? 'warn' : 'info'
 
     req.logger[level]('Request completed', {
       statusCode: res.statusCode,
@@ -284,7 +285,7 @@ const performanceLogger = (operation, duration, metadata = {}) => {
 const dbLogger = (operation, query, duration, metadata = {}) => {
   loggers.database.debug('Database Operation', {
     operation,
-    query: query.substring(0, 200), // Limit query length
+    query: query.substring(0, LOGGING.QUERY_LENGTH_LIMIT), // Limit query length
     duration: `${duration}ms`,
     timestamp: new Date().toISOString(),
     ...metadata

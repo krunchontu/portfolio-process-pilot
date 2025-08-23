@@ -12,7 +12,7 @@ const router = express.Router()
 router.use(authenticateToken)
 
 // Get dashboard analytics (admin and managers only)
-router.get('/dashboard', 
+router.get('/dashboard',
   requireRole(['admin', 'manager']),
   validateQuery(analyticsSchema.dashboardQuery),
   async (req, res) => {
@@ -20,22 +20,22 @@ router.get('/dashboard',
       const { timeframe = '30d', department } = req.query
       const userId = req.user.userId
       const userRole = req.user.role
-      
+
       logger.info('Fetching dashboard analytics', {
         userId,
         role: userRole,
         timeframe,
         department
       })
-      
+
       // Calculate date range
       const days = timeframe === '7d' ? 7 : timeframe === '90d' ? 90 : 30
       const startDate = new Date()
       startDate.setDate(startDate.getDate() - days)
-      
+
       // Base query with date filter
       let baseQuery = db('requests').where('created_at', '>=', startDate)
-      
+
       // Apply department filter if specified and user has permission
       if (department) {
         if (userRole === 'manager') {
@@ -43,49 +43,49 @@ router.get('/dashboard',
           const user = await db('users').where('id', userId).first()
           if (user && user.department === department) {
             baseQuery = baseQuery.join('users', 'requests.user_id', 'users.id')
-                                .where('users.department', department)
+              .where('users.department', department)
           } else {
             return apiResponse.forbidden(res, 'Access denied to department data')
           }
         } else if (userRole === 'admin') {
           baseQuery = baseQuery.join('users', 'requests.user_id', 'users.id')
-                              .where('users.department', department)
+            .where('users.department', department)
         }
       } else if (userRole === 'manager') {
         // Manager can only see their department by default
         const user = await db('users').where('id', userId).first()
         if (user && user.department) {
           baseQuery = baseQuery.join('users', 'requests.user_id', 'users.id')
-                              .where('users.department', user.department)
+            .where('users.department', user.department)
         }
       }
-      
+
       // Get total requests
       const totalRequests = await baseQuery.clone().count('* as count').first()
-      
+
       // Get requests by status
       const statusCounts = await baseQuery.clone()
         .select('status')
         .count('* as count')
         .groupBy('status')
-      
+
       const statusMap = statusCounts.reduce((acc, row) => {
         acc[row.status] = parseInt(row.count)
         return acc
       }, {})
-      
+
       // Calculate average processing time for completed requests
       const avgProcessingTime = await baseQuery.clone()
         .whereIn('status', ['approved', 'rejected'])
         .select(db.raw('AVG(EXTRACT(EPOCH FROM (updated_at - created_at))/3600) as avg_hours'))
         .first()
-      
+
       // Get recent activity (last 24 hours)
       const recentActivity = await baseQuery.clone()
         .where('created_at', '>=', new Date(Date.now() - 24 * 60 * 60 * 1000))
         .count('* as count')
         .first()
-      
+
       const analytics = {
         total_requests: parseInt(totalRequests.count),
         pending_requests: statusMap.pending || 0,
@@ -97,10 +97,9 @@ router.get('/dashboard',
         timeframe,
         department: department || (userRole === 'manager' ? 'user_department' : 'all')
       }
-      
+
       logger.info('Dashboard analytics retrieved', { userId, analytics })
       return apiResponse.success(res, analytics, 'Dashboard analytics retrieved successfully')
-      
     } catch (error) {
       logger.error('Dashboard analytics error', {
         userId: req.user.userId,
@@ -120,7 +119,7 @@ router.get('/requests',
       const { timeframe = '30d', type, status, department } = req.query
       const userId = req.user.userId
       const userRole = req.user.role
-      
+
       logger.info('Fetching request metrics', {
         userId,
         timeframe,
@@ -128,12 +127,12 @@ router.get('/requests',
         status,
         department
       })
-      
+
       // Calculate date range
       const days = timeframe === '7d' ? 7 : timeframe === '90d' ? 90 : 30
       const startDate = new Date()
       startDate.setDate(startDate.getDate() - days)
-      
+
       // Base query
       let query = db('requests')
         .select([
@@ -144,15 +143,15 @@ router.get('/requests',
           db.raw('AVG(EXTRACT(EPOCH FROM (updated_at - created_at))/3600) as avg_processing_hours')
         ])
         .where('created_at', '>=', startDate)
-      
+
       // Apply filters
       if (type) query = query.where('type', type)
       if (status) query = query.where('status', status)
-      
+
       // Apply department filter with role-based access
       if (department || userRole === 'manager') {
         query = query.join('users', 'requests.user_id', 'users.id')
-        
+
         if (userRole === 'manager') {
           const user = await db('users').where('id', userId).first()
           const targetDept = department || user?.department
@@ -163,25 +162,25 @@ router.get('/requests',
           query = query.where('users.department', department)
         }
       }
-      
+
       const metrics = await query
         .groupBy('date', 'type', 'status')
         .orderBy('date', 'desc')
-      
+
       // Get request type distribution
       const typeDistribution = await db('requests')
         .select('type')
         .count('* as count')
         .where('created_at', '>=', startDate)
         .groupBy('type')
-      
+
       // Get status distribution
       const statusDistribution = await db('requests')
         .select('status')
         .count('* as count')
         .where('created_at', '>=', startDate)
         .groupBy('status')
-      
+
       const result = {
         metrics: metrics.map(row => ({
           date: row.date,
@@ -205,13 +204,12 @@ router.get('/requests',
           department
         }
       }
-      
-      logger.info('Request metrics retrieved', { 
-        userId, 
-        totalMetrics: metrics.length 
+
+      logger.info('Request metrics retrieved', {
+        userId,
+        totalMetrics: metrics.length
       })
       return apiResponse.success(res, result, 'Request metrics retrieved successfully')
-      
     } catch (error) {
       logger.error('Request metrics error', {
         userId: req.user.userId,
@@ -230,14 +228,14 @@ router.get('/workflows',
     try {
       const { timeframe = '30d' } = req.query
       const userId = req.user.userId
-      
+
       logger.info('Fetching workflow analytics', { userId, timeframe })
-      
+
       // Calculate date range
       const days = timeframe === '7d' ? 7 : timeframe === '90d' ? 90 : 30
       const startDate = new Date()
       startDate.setDate(startDate.getDate() - days)
-      
+
       // Get workflow performance metrics
       const workflowMetrics = await db('workflows as w')
         .leftJoin('requests as r', 'w.flow_id', 'r.type')
@@ -253,14 +251,14 @@ router.get('/workflows',
           db.raw('AVG(CASE WHEN r.status IN (\'approved\', \'rejected\') THEN EXTRACT(EPOCH FROM (r.updated_at - r.created_at))/3600 END) as avg_processing_hours'),
           db.raw('MAX(r.created_at) as last_used')
         ])
-        .where(function() {
+        .where(function () {
           this.where('r.created_at', '>=', startDate)
-              .orWhereNull('r.created_at')
+            .orWhereNull('r.created_at')
         })
         .where('w.is_active', true)
         .groupBy('w.id', 'w.name', 'w.flow_id', 'w.description')
         .orderBy('total_requests', 'desc')
-      
+
       // Get workflow step performance
       const stepPerformance = await db('request_history as rh')
         .join('requests as r', 'rh.request_id', 'r.id')
@@ -277,7 +275,7 @@ router.get('/workflows',
         .whereIn('rh.action', ['approve', 'reject', 'submit'])
         .groupBy('w.flow_id', 'w.name', 'rh.action', 'rh.details')
         .orderBy('w.flow_id')
-      
+
       const result = {
         workflow_metrics: workflowMetrics.map(row => ({
           id: row.id,
@@ -288,7 +286,7 @@ router.get('/workflows',
           approved_count: parseInt(row.approved_count) || 0,
           rejected_count: parseInt(row.rejected_count) || 0,
           pending_count: parseInt(row.pending_count) || 0,
-          approval_rate: row.total_requests > 0 
+          approval_rate: row.total_requests > 0
             ? ((parseInt(row.approved_count) || 0) / parseInt(row.total_requests) * 100).toFixed(1)
             : 0,
           avg_processing_hours: parseFloat(row.avg_processing_hours) || 0,
@@ -304,13 +302,12 @@ router.get('/workflows',
         })),
         timeframe
       }
-      
+
       logger.info('Workflow analytics retrieved', {
         userId,
         workflowCount: result.workflow_metrics.length
       })
       return apiResponse.success(res, result, 'Workflow analytics retrieved successfully')
-      
     } catch (error) {
       logger.error('Workflow analytics error', {
         userId: req.user.userId,
@@ -329,23 +326,23 @@ router.get('/users',
     try {
       const { timeframe = '30d', department, role } = req.query
       const userId = req.user.userId
-      
+
       logger.info('Fetching user analytics', { userId, timeframe, department, role })
-      
+
       // Calculate date range
       const days = timeframe === '7d' ? 7 : timeframe === '90d' ? 90 : 30
       const startDate = new Date()
       startDate.setDate(startDate.getDate() - days)
-      
+
       // Base user activity query
       let query = db('users as u')
-        .leftJoin('requests as r', function() {
+        .leftJoin('requests as r', function () {
           this.on('u.id', 'r.user_id')
-              .andOn('r.created_at', '>=', db.raw('?', [startDate]))
+            .andOn('r.created_at', '>=', db.raw('?', [startDate]))
         })
-        .leftJoin('request_history as rh', function() {
+        .leftJoin('request_history as rh', function () {
           this.on('u.id', 'rh.user_id')
-              .andOn('rh.created_at', '>=', db.raw('?', [startDate]))
+            .andOn('rh.created_at', '>=', db.raw('?', [startDate]))
         })
         .select([
           'u.id',
@@ -362,7 +359,7 @@ router.get('/users',
           db.raw('COUNT(DISTINCT CASE WHEN rh.action = \'reject\' THEN rh.id END) as rejections'),
           db.raw('MAX(GREATEST(COALESCE(r.created_at, \'1970-01-01\'), COALESCE(rh.created_at, \'1970-01-01\'))) as last_activity')
         ])
-      
+
       // Apply filters
       if (department) {
         query = query.where('u.department', department)
@@ -370,11 +367,11 @@ router.get('/users',
       if (role) {
         query = query.where('u.role', role)
       }
-      
+
       const userActivity = await query
         .groupBy('u.id', 'u.email', 'u.first_name', 'u.last_name', 'u.role', 'u.department', 'u.is_active', 'u.last_login')
         .orderBy('requests_created', 'desc')
-      
+
       // Get department summary
       const departmentSummary = await db('users')
         .select([
@@ -388,14 +385,14 @@ router.get('/users',
         .whereNotNull('department')
         .groupBy('department')
         .orderBy('total_users', 'desc')
-      
+
       // Get role distribution
       const roleDistribution = await db('users')
         .select('role')
         .count('* as count')
         .where('is_active', true)
         .groupBy('role')
-      
+
       const result = {
         user_activity: userActivity.map(row => ({
           id: row.id,
@@ -429,13 +426,12 @@ router.get('/users',
           role
         }
       }
-      
+
       logger.info('User analytics retrieved', {
         userId,
         userCount: result.user_activity.length
       })
       return apiResponse.success(res, result, 'User analytics retrieved successfully')
-      
     } catch (error) {
       logger.error('User analytics error', {
         userId: req.user.userId,
@@ -455,19 +451,19 @@ router.get('/departments',
       const { timeframe = '30d' } = req.query
       const userId = req.user.userId
       const userRole = req.user.role
-      
+
       logger.info('Fetching department analytics', { userId, userRole, timeframe })
-      
+
       // Calculate date range
       const days = timeframe === '7d' ? 7 : timeframe === '90d' ? 90 : 30
       const startDate = new Date()
       startDate.setDate(startDate.getDate() - days)
-      
+
       // Base query for department metrics
       let query = db('users as u')
-        .leftJoin('requests as r', function() {
+        .leftJoin('requests as r', function () {
           this.on('u.id', 'r.user_id')
-              .andOn('r.created_at', '>=', db.raw('?', [startDate]))
+            .andOn('r.created_at', '>=', db.raw('?', [startDate]))
         })
         .select([
           'u.department',
@@ -480,7 +476,7 @@ router.get('/departments',
           db.raw('AVG(CASE WHEN r.status IN (\'approved\', \'rejected\') THEN EXTRACT(EPOCH FROM (r.updated_at - r.created_at))/3600 END) as avg_processing_hours')
         ])
         .whereNotNull('u.department')
-      
+
       // If user is manager, restrict to their department only
       if (userRole === 'manager') {
         const user = await db('users').where('id', userId).first()
@@ -488,11 +484,11 @@ router.get('/departments',
           query = query.where('u.department', user.department)
         }
       }
-      
+
       const departmentMetrics = await query
         .groupBy('u.department')
         .orderBy('total_requests', 'desc')
-      
+
       // Get request type breakdown by department
       let typeQuery = db('users as u')
         .join('requests as r', 'u.id', 'r.user_id')
@@ -503,18 +499,18 @@ router.get('/departments',
         ])
         .where('r.created_at', '>=', startDate)
         .whereNotNull('u.department')
-      
+
       if (userRole === 'manager') {
         const user = await db('users').where('id', userId).first()
         if (user && user.department) {
           typeQuery = typeQuery.where('u.department', user.department)
         }
       }
-      
+
       const requestTypesByDept = await typeQuery
         .groupBy('u.department', 'r.type')
         .orderBy('u.department')
-      
+
       // Get workload trends (requests per day)
       let trendQuery = db('users as u')
         .join('requests as r', 'u.id', 'r.user_id')
@@ -525,18 +521,18 @@ router.get('/departments',
         ])
         .where('r.created_at', '>=', startDate)
         .whereNotNull('u.department')
-      
+
       if (userRole === 'manager') {
         const user = await db('users').where('id', userId).first()
         if (user && user.department) {
           trendQuery = trendQuery.where('u.department', user.department)
         }
       }
-      
+
       const workloadTrends = await trendQuery
         .groupBy('u.department', db.raw('DATE(r.created_at)'))
         .orderBy('date', 'desc')
-      
+
       const result = {
         department_metrics: departmentMetrics.map(row => ({
           department: row.department,
@@ -546,7 +542,7 @@ router.get('/departments',
           approved_requests: parseInt(row.approved_requests),
           rejected_requests: parseInt(row.rejected_requests),
           pending_requests: parseInt(row.pending_requests),
-          approval_rate: row.total_requests > 0 
+          approval_rate: row.total_requests > 0
             ? ((parseInt(row.approved_requests) || 0) / parseInt(row.total_requests) * 100).toFixed(1)
             : 0,
           avg_processing_hours: parseFloat(row.avg_processing_hours) || 0
@@ -564,14 +560,13 @@ router.get('/departments',
         timeframe,
         access_level: userRole
       }
-      
+
       logger.info('Department analytics retrieved', {
         userId,
         userRole,
         departmentCount: result.department_metrics.length
       })
       return apiResponse.success(res, result, 'Department analytics retrieved successfully')
-      
     } catch (error) {
       logger.error('Department analytics error', {
         userId: req.user.userId,

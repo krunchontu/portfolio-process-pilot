@@ -1,5 +1,7 @@
 require('dotenv').config()
 
+const { createCorsConfig, validateCorsConfiguration } = require('./cors')
+
 const config = {
   // Server
   port: process.env.PORT || 5000,
@@ -38,11 +40,8 @@ const config = {
     max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100
   },
 
-  // CORS
-  cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-    credentials: true
-  },
+  // CORS - Production-ready configuration
+  cors: createCorsConfig(),
 
   // Logging
   logging: {
@@ -57,31 +56,10 @@ const config = {
   }
 }
 
-// Validation - JWT secrets required in all environments
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  throw new Error('JWT_SECRET environment variable must be set and at least 32 characters long')
-}
+// Validate CORS configuration at startup
+validateCorsConfiguration()
 
-if (!process.env.JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET.length < 32) {
-  throw new Error('JWT_REFRESH_SECRET environment variable must be set and at least 32 characters long')
-}
-
-if (config.nodeEnv === 'production') {
-  // Database validation is now handled by the database config module
-  const requiredEnvVars = []
-
-  // Check provider-specific requirements
-  if (config.dbProvider === 'supabase' && !process.env.SUPABASE_DB_URL && !process.env.DATABASE_URL) {
-    requiredEnvVars.push('SUPABASE_DB_URL or DATABASE_URL')
-  }
-
-  if (config.dbProvider === 'postgresql' && !process.env.DB_PASSWORD && !process.env.DATABASE_URL) {
-    requiredEnvVars.push('DB_PASSWORD or DATABASE_URL')
-  }
-
-  if (requiredEnvVars.length > 0) {
-    throw new Error(`Production environment missing: ${requiredEnvVars.join(', ')}`)
-  }
-}
+// Note: Comprehensive environment validation is now handled by env-validation.js
+// which is called from server.js before this config is loaded
 
 module.exports = config

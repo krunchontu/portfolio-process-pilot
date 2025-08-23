@@ -7,6 +7,7 @@
 
 const rateLimit = require('express-rate-limit')
 const { loggers } = require('../utils/logger')
+const { RATE_LIMIT, HTTP_STATUS, TIME_SECONDS } = require('../constants')
 
 // In-memory store fallback (for development)
 class MemoryStore {
@@ -17,12 +18,12 @@ class MemoryStore {
 
   async incr(key) {
     const now = Date.now()
-    const data = this.store.get(key) || { count: 0, resetTime: now + 15 * 60 * 1000 }
+    const data = this.store.get(key) || { count: 0, resetTime: now + RATE_LIMIT.WINDOW.FIFTEEN_MINUTES }
 
     // Reset if time window expired
     if (now > data.resetTime) {
       data.count = 1
-      data.resetTime = now + 15 * 60 * 1000
+      data.resetTime = now + RATE_LIMIT.WINDOW.FIFTEEN_MINUTES
     } else {
       data.count += 1
     }
@@ -50,7 +51,7 @@ class MemoryStore {
 
   getLimit(key) {
     // Default limits - will be overridden by specific limiters
-    return key.includes('auth:') ? 5 : 100
+    return key.includes('auth:') ? RATE_LIMIT.LIMITS.AUTH_ANONYMOUS : RATE_LIMIT.LIMITS.API_ANONYMOUS
   }
 }
 
@@ -75,8 +76,8 @@ const generateKey = (req, prefix = 'api') => {
 // Enhanced rate limiter with user/IP distinction
 const createRateLimiter = (options = {}) => {
   const {
-    windowMs = 15 * 60 * 1000, // 15 minutes
-    authenticated = { max: 100, message: 'Too many requests from authenticated user' },
+    windowMs = RATE_LIMIT.WINDOW.FIFTEEN_MINUTES,
+    authenticated = { max: RATE_LIMIT.LIMITS.API_ANONYMOUS, message: 'Too many requests from authenticated user' },
     anonymous = { max: 20, message: 'Too many requests from this IP' },
     prefix = 'api',
     skipSuccessfulRequests = false,
@@ -97,7 +98,7 @@ const createRateLimiter = (options = {}) => {
       code: 'RATE_LIMIT_EXCEEDED',
       details: {
         limit: req.user ? authenticated.max : anonymous.max,
-        windowMs: windowMs / 1000 / 60, // minutes
+        windowMs: windowMs / TIME_SECONDS.MINUTE, // minutes
         retryAfter: Math.ceil(windowMs / 1000) // seconds
       },
       meta: {
@@ -124,7 +125,7 @@ const createRateLimiter = (options = {}) => {
         path: req.path,
         method: req.method,
         limit,
-        windowMinutes: windowMs / 1000 / 60,
+        windowMinutes: windowMs / TIME_SECONDS.MINUTE,
         userAgent: req.get('User-Agent'),
         severity: 'medium'
       })
@@ -137,13 +138,13 @@ const createRateLimiter = (options = {}) => {
       const limit = req.user ? authenticated.max : anonymous.max
       const message = req.user ? authenticated.message : anonymous.message
 
-      return res.status(429).json({
+      return res.status(HTTP_STATUS.TOO_MANY_REQUESTS).json({
         success: false,
         error: message,
         code: 'RATE_LIMIT_EXCEEDED',
         details: {
           limit,
-          windowMs: windowMs / 1000 / 60,
+          windowMs: windowMs / TIME_SECONDS.MINUTE,
           retryAfter: Math.ceil(windowMs / 1000)
         },
         meta: {
@@ -158,34 +159,34 @@ const createRateLimiter = (options = {}) => {
 
 // General API rate limiter
 const apiLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  authenticated: { max: 1000, message: 'API rate limit exceeded for authenticated user' },
-  anonymous: { max: 100, message: 'API rate limit exceeded for this IP address' },
+  windowMs: RATE_LIMIT.WINDOW.FIFTEEN_MINUTES,
+  authenticated: { max: RATE_LIMIT.LIMITS.API_AUTHENTICATED, message: 'API rate limit exceeded for authenticated user' },
+  anonymous: { max: RATE_LIMIT.LIMITS.API_ANONYMOUS, message: 'API rate limit exceeded for this IP address' },
   prefix: 'api'
 })
 
 // Authentication endpoints (stricter limits)
 const authLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  authenticated: { max: 10, message: 'Authentication rate limit exceeded' },
-  anonymous: { max: 5, message: 'Too many authentication attempts from this IP' },
+  windowMs: RATE_LIMIT.WINDOW.FIFTEEN_MINUTES,
+  authenticated: { max: RATE_LIMIT.LIMITS.AUTH_AUTHENTICATED, message: 'Authentication rate limit exceeded' },
+  anonymous: { max: RATE_LIMIT.LIMITS.AUTH_ANONYMOUS, message: 'Too many authentication attempts from this IP' },
   prefix: 'auth',
   skipSuccessfulRequests: true // Only count failed attempts
 })
 
 // Request creation (moderate limits)
 const requestCreationLimiter = createRateLimiter({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  authenticated: { max: 50, message: 'Request creation limit exceeded' },
-  anonymous: { max: 5, message: 'Request creation limit exceeded for anonymous users' },
+  windowMs: RATE_LIMIT.WINDOW.ONE_HOUR,
+  authenticated: { max: RATE_LIMIT.LIMITS.REQUEST_CREATE_AUTHENTICATED, message: 'Request creation limit exceeded' },
+  anonymous: { max: RATE_LIMIT.LIMITS.REQUEST_CREATE_ANONYMOUS, message: 'Request creation limit exceeded for anonymous users' },
   prefix: 'requests:create'
 })
 
 // Admin operations (higher limits for authenticated admin users)
 const adminLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  authenticated: { max: 500, message: 'Admin operation rate limit exceeded' },
-  anonymous: { max: 10, message: 'Admin operations require authentication' },
+  windowMs: RATE_LIMIT.WINDOW.FIFTEEN_MINUTES,
+  authenticated: { max: RATE_LIMIT.LIMITS.ADMIN_AUTHENTICATED, message: 'Admin operation rate limit exceeded' },
+  anonymous: { max: RATE_LIMIT.LIMITS.ADMIN_ANONYMOUS, message: 'Admin operations require authentication' },
   prefix: 'admin'
 })
 
@@ -230,9 +231,9 @@ const rateLimitInfo = (req, res, next) => {
 
 // Burst protection for suspicious activity
 const burstProtection = createRateLimiter({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  authenticated: { max: 60, message: 'Burst limit exceeded - too many requests in a short time' },
-  anonymous: { max: 30, message: 'Burst limit exceeded for this IP address' },
+  windowMs: RATE_LIMIT.WINDOW.ONE_MINUTE,
+  authenticated: { max: RATE_LIMIT.LIMITS.BURST_AUTHENTICATED, message: 'Burst limit exceeded - too many requests in a short time' },
+  anonymous: { max: RATE_LIMIT.LIMITS.BURST_ANONYMOUS, message: 'Burst limit exceeded for this IP address' },
   prefix: 'burst'
 })
 

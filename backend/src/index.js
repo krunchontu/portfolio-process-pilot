@@ -6,6 +6,7 @@ const express = require('express')
 const cors = require('cors')
 const fs = require('fs')
 const path = require('path')
+const { SERVER, HTTP_STATUS, TIME } = require('./constants')
 const { randomUUID } = require('crypto')
 
 const app = express()
@@ -73,7 +74,7 @@ function scheduleSLA(reqObj) {
       })
       notify(['Admin'], `Request ${reqObj.id} escalated due to SLA breach.`)
     }
-  }, hours * 3600 * 1000) // convert hours to ms
+  }, hours * TIME.HOUR) // convert hours to ms
 }
 
 function notify(recipients, message) {
@@ -104,7 +105,7 @@ app.post('/api/requests', (req, res) => {
   }
 
   if (steps.length === 0) {
-    return res.status(400).json({ error: 'No steps configured for this request (check flow config).' })
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({ error: 'No steps configured for this request (check flow config).' })
   }
 
   const id = randomUUID()
@@ -132,7 +133,7 @@ app.post('/api/requests', (req, res) => {
   // Schedule SLA timer
   scheduleSLA(reqObj)
 
-  res.status(201).json({ id, status: reqObj.status, currentStep: first })
+  res.status(HTTP_STATUS.CREATED).json({ id, status: reqObj.status, currentStep: first })
 })
 
 // Approve / Reject current step
@@ -141,23 +142,23 @@ app.post('/api/requests/:id/action', (req, res) => {
   const { actor = 'manager@example.com', role = 'Manager', action, comment = '' } = req.body || {}
 
   const reqObj = REQUESTS.get(id)
-  if (!reqObj) return res.status(404).json({ error: 'Not found' })
+  if (!reqObj) return res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'Not found' })
 
   if (reqObj.status !== 'PENDING') {
-    return res.status(409).json({ error: `Request is already ${reqObj.status}` })
+    return res.status(HTTP_STATUS.CONFLICT).json({ error: `Request is already ${reqObj.status}` })
   }
 
   const step = currentStep(reqObj)
-  if (!step) return res.status(409).json({ error: 'No active step' })
+  if (!step) return res.status(HTTP_STATUS.CONFLICT).json({ error: 'No active step' })
 
   // Authorization check (very simple: role must match expected, or escalatedTo)
   const expectedRole = step.escalatedTo || step.role
   if (role !== expectedRole) {
-    return res.status(403).json({ error: `Role ${role} cannot act on step requiring ${expectedRole}` })
+    return res.status(HTTP_STATUS.FORBIDDEN).json({ error: `Role ${role} cannot act on step requiring ${expectedRole}` })
   }
 
   if (!step.actions.includes(action)) {
-    return res.status(400).json({ error: `Invalid action. Allowed: ${step.actions.join(', ')}` })
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({ error: `Invalid action. Allowed: ${step.actions.join(', ')}` })
   }
 
   // Record action
@@ -204,7 +205,7 @@ app.post('/api/requests/:id/action', (req, res) => {
 // Get one
 app.get('/api/requests/:id', (req, res) => {
   const reqObj = REQUESTS.get(req.params.id)
-  if (!reqObj) return res.status(404).json({ error: 'Not found' })
+  if (!reqObj) return res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'Not found' })
   res.json(reqObj)
 })
 
@@ -224,7 +225,7 @@ app.post('/api/admin/reload-flow', (_req, res) => {
 })
 
 // Start server
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || SERVER.DEFAULT_PORT
 app.listen(PORT, () => {
   console.log(`ProcessPilot API listening on http://localhost:${PORT}`)
 })

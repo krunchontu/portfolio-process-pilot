@@ -49,7 +49,7 @@ test.describe('Authenticated Navigation', () => {
   test.beforeEach(async ({ page }) => {
     // Login before each test
     await page.goto('/login')
-    await page.fill('input[type="email"]', 'test@example.com')
+    await page.fill('input[type="email"]', 'employee@test.com')
     await page.fill('input[type="password"]', 'password123')
     await page.click('button[type="submit"]')
     await expect(page).toHaveURL('/dashboard')
@@ -138,7 +138,7 @@ test.describe('Mobile Navigation', () => {
     await page.goto('/login')
 
     // Test login on mobile
-    await page.fill('input[type="email"]', 'test@example.com')
+    await page.fill('input[type="email"]', 'employee@test.com')
     await page.fill('input[type="password"]', 'password123')
     await page.click('button[type="submit"]')
 

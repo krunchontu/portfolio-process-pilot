@@ -1,10 +1,14 @@
 const { app, initializeApp } = require('./app')
 const config = require('./config')
 const { logger } = require('./utils/logger')
+const { initializeEnvironment } = require('./config/env-validation')
 
 // Initialize the application
 const startServer = async () => {
   try {
+    // Validate and initialize environment configuration first
+    const validatedEnv = initializeEnvironment()
+
     // Initialize database and other services
     await initializeApp()
 

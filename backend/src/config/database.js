@@ -5,6 +5,7 @@
  */
 
 require('dotenv').config()
+const { DATABASE } = require('../constants')
 
 const createDatabaseConfig = () => {
   const provider = process.env.DB_PROVIDER || 'postgresql'
@@ -42,8 +43,8 @@ const createDatabaseConfig = () => {
         max: parseInt(process.env.DB_POOL_MAX) || 10,
         acquireTimeoutMillis: 30000,
         idleTimeoutMillis: 600000,
-        createTimeoutMillis: 5000,
-        destroyTimeoutMillis: 5000
+        createTimeoutMillis: DATABASE.CONNECTION_TIMEOUT,
+        destroyTimeoutMillis: DATABASE.DESTROY_TIMEOUT
       }
     },
 
@@ -65,7 +66,7 @@ const createDatabaseConfig = () => {
         max: parseInt(process.env.DB_POOL_MAX) || 20,
         acquireTimeoutMillis: 60000,
         idleTimeoutMillis: 300000,
-        createTimeoutMillis: 10000
+        createTimeoutMillis: DATABASE.PLANETSCALE_TIMEOUT
       }
     },
 
@@ -109,7 +110,7 @@ const createDatabaseConfig = () => {
         max: parseInt(process.env.DB_POOL_MAX) || 5,
         acquireTimeoutMillis: 30000,
         idleTimeoutMillis: 180000, // Shorter for serverless
-        createTimeoutMillis: 10000
+        createTimeoutMillis: DATABASE.PLANETSCALE_TIMEOUT
       }
     },
 

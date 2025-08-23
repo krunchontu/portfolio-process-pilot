@@ -1,5 +1,6 @@
 const { db } = require('../database/connection')
 const bcrypt = require('bcryptjs')
+const { DATABASE } = require('../constants')
 
 class User {
   static get tableName() {
@@ -9,7 +10,7 @@ class User {
   // Create new user
   static async create(userData) {
     const { password, ...rest } = userData
-    const password_hash = await bcrypt.hash(password, 12)
+    const password_hash = await bcrypt.hash(password, DATABASE.BCRYPT_SALT_ROUNDS)
 
     const [user] = await db(this.tableName)
       .insert({ ...rest, password_hash })
@@ -47,7 +48,7 @@ class User {
   // Update user
   static async update(id, updates) {
     if (updates.password) {
-      updates.password_hash = await bcrypt.hash(updates.password, 12)
+      updates.password_hash = await bcrypt.hash(updates.password, DATABASE.BCRYPT_SALT_ROUNDS)
       delete updates.password
     }
 
@@ -72,16 +73,16 @@ class User {
   // List users with filters and pagination
   static async list(options = {}) {
     const { role, department, active, search, limit = 50, offset = 0 } = options
-    
+
     let query = db(this.tableName)
       .select([
-        'id', 
-        'email', 
-        'first_name', 
-        'last_name', 
-        'role', 
-        'department', 
-        'is_active', 
+        'id',
+        'email',
+        'first_name',
+        'last_name',
+        'role',
+        'department',
+        'is_active',
         'last_login',
         'created_at',
         'updated_at'
@@ -99,13 +100,13 @@ class User {
     if (active !== undefined) {
       query = query.where('is_active', active)
     }
-    
+
     if (search) {
-      query = query.where(function() {
+      query = query.where(function () {
         this.whereILike('first_name', `%${search}%`)
-            .orWhereILike('last_name', `%${search}%`)
-            .orWhereILike('email', `%${search}%`)
-            .orWhereILike('department', `%${search}%`)
+          .orWhereILike('last_name', `%${search}%`)
+          .orWhereILike('email', `%${search}%`)
+          .orWhereILike('department', `%${search}%`)
       })
     }
 
@@ -118,7 +119,7 @@ class User {
   // Count users with filters
   static async count(options = {}) {
     const { role, department, active, search } = options
-    
+
     let query = db(this.tableName)
 
     // Apply filters
@@ -133,13 +134,13 @@ class User {
     if (active !== undefined) {
       query = query.where('is_active', active)
     }
-    
+
     if (search) {
-      query = query.where(function() {
+      query = query.where(function () {
         this.whereILike('first_name', `%${search}%`)
-            .orWhereILike('last_name', `%${search}%`)
-            .orWhereILike('email', `%${search}%`)
-            .orWhereILike('department', `%${search}%`)
+          .orWhereILike('last_name', `%${search}%`)
+          .orWhereILike('email', `%${search}%`)
+          .orWhereILike('department', `%${search}%`)
       })
     }
 

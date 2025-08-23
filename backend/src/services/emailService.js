@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer')
 const config = require('../config')
 const { logger } = require('../utils/logger')
+const { EMAIL } = require('../constants')
 
 class EmailService {
   constructor() {
@@ -27,7 +28,7 @@ class EmailService {
         secure: config.smtp.port === 465, // true for 465, false for other ports
         auth: {
           user: config.smtp.user,
-          pass: config.smtp.pass,
+          pass: config.smtp.pass
         },
         tls: {
           rejectUnauthorized: false // Allow self-signed certificates in development
@@ -85,7 +86,7 @@ class EmailService {
       }
 
       const info = await this.transporter.sendMail(mailOptions)
-      
+
       logger.info('Email sent successfully', {
         messageId: info.messageId,
         to: mailOptions.to,
@@ -94,8 +95,8 @@ class EmailService {
         rejected: info.rejected
       })
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         messageId: info.messageId,
         accepted: info.accepted,
         rejected: info.rejected
@@ -226,9 +227,9 @@ ProcessPilot System
     const escalationApprovers = await db('users')
       .select('email', 'first_name', 'last_name')
       .where('role', 'admin')
-      .orWhere(function() {
+      .orWhere(function () {
         this.where('role', 'manager')
-            .where('department', user.department)
+          .where('department', user.department)
       })
       .where('is_active', true)
 
@@ -292,7 +293,7 @@ ProcessPilot System
 
   async getWorkflowApprovers(workflow, request) {
     const { db } = require('../database/connection')
-    
+
     // Get current step from workflow
     const currentStep = workflow.steps[request.current_step_index || 0]
     if (!currentStep) {
@@ -319,7 +320,7 @@ ProcessPilot System
   // Batch send for multiple notifications
   async sendBulkNotifications(notifications) {
     const results = []
-    
+
     for (const notification of notifications) {
       const result = await this.sendEmail(
         notification.to,
@@ -327,7 +328,7 @@ ProcessPilot System
         notification.text,
         notification.html
       )
-      
+
       results.push({
         to: notification.to,
         subject: notification.subject,
@@ -335,7 +336,7 @@ ProcessPilot System
       })
 
       // Add small delay to avoid overwhelming the SMTP server
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise(resolve => setTimeout(resolve, EMAIL.RETRY_DELAY))
     }
 
     return results

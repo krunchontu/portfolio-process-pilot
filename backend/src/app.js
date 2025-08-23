@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser')
 
 const config = require('./config')
 const { logger, stream, requestLogger } = require('./utils/logger')
+const { TIME, HTTP_STATUS } = require('./constants')
 const { apiResponseMiddleware } = require('./utils/apiResponse')
 const { globalErrorHandler, notFound } = require('./middleware/errorHandler')
 const { testConnection } = require('./database/connection')
@@ -15,6 +16,7 @@ const csrfProtection = require('./middleware/csrf')
 const { sanitizeInput, preventSqlInjection } = require('./middleware/sanitization')
 const { specs, swaggerUi, swaggerOptions } = require('./config/swagger')
 const { progressiveLimiter, rateLimitInfo, burstProtection } = require('./middleware/rateLimiting')
+const { additionalCorsHeaders, logCorsEvents } = require('./config/cors')
 
 // Import routes
 const authRoutes = require('./routes/auth')
@@ -32,8 +34,10 @@ app.set('trust proxy', 1)
 // Security middleware
 app.use(helmet())
 
-// CORS configuration
+// CORS configuration with additional security headers and logging
 app.use(cors(config.cors))
+app.use(logCorsEvents)
+app.use(additionalCorsHeaders)
 
 // Compression middleware
 app.use(compression())
@@ -54,7 +58,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: TIME.DAY // 24 hours
   }
 }))
 
@@ -124,7 +128,7 @@ app.get('/api', (req, res) => {
     health: '/health'
   }
 
-  res.success(200, 'API information retrieved', apiInfo)
+  res.success(HTTP_STATUS.OK, 'API information retrieved', apiInfo)
 })
 
 // Handle unmatched routes

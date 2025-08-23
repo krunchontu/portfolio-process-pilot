@@ -6,6 +6,7 @@
  */
 
 const { logger } = require('./logger')
+const { HTTP_STATUS } = require('../constants')
 
 /**
  * Standard API Response Structure:
@@ -33,7 +34,7 @@ const { logger } = require('./logger')
  * @param {any} data - Response data
  * @param {object} meta - Additional metadata
  */
-const success = (res, statusCode = 200, message = 'Operation successful', data = null, meta = {}) => {
+const success = (res, statusCode = HTTP_STATUS.OK, message = 'Operation successful', data = null, meta = {}) => {
   const response = {
     success: true,
     message,
@@ -60,7 +61,7 @@ const success = (res, statusCode = 200, message = 'Operation successful', data =
  * @param {string} code - Error code for client handling
  * @param {any} details - Additional error details
  */
-const error = (res, statusCode = 500, message = 'An error occurred', code = 'INTERNAL_ERROR', details = null) => {
+const error = (res, statusCode = HTTP_STATUS.INTERNAL_SERVER_ERROR, message = 'An error occurred', code = 'INTERNAL_ERROR', details = null) => {
   const response = {
     success: false,
     error: message,
@@ -88,7 +89,7 @@ const error = (res, statusCode = 500, message = 'An error occurred', code = 'INT
  * @param {string} message - Custom message
  */
 const validationError = (res, errors, message = 'Validation failed') => {
-  return error(res, 400, message, 'VALIDATION_ERROR', {
+  return error(res, HTTP_STATUS.BAD_REQUEST, message, 'VALIDATION_ERROR', {
     validation_errors: Array.isArray(errors) ? errors : [errors]
   })
 }
@@ -104,7 +105,7 @@ const notFound = (res, resource = 'Resource', identifier = null) => {
     ? `${resource} with identifier '${identifier}' not found`
     : `${resource} not found`
 
-  return error(res, 404, message, 'RESOURCE_NOT_FOUND', {
+  return error(res, HTTP_STATUS.NOT_FOUND, message, 'RESOURCE_NOT_FOUND', {
     resource,
     identifier
   })
@@ -116,7 +117,7 @@ const notFound = (res, resource = 'Resource', identifier = null) => {
  * @param {string} message - Custom message
  */
 const unauthorized = (res, message = 'Authentication required') => {
-  return error(res, 401, message, 'UNAUTHORIZED')
+  return error(res, HTTP_STATUS.UNAUTHORIZED, message, 'UNAUTHORIZED')
 }
 
 /**
@@ -125,7 +126,7 @@ const unauthorized = (res, message = 'Authentication required') => {
  * @param {string} message - Custom message
  */
 const forbidden = (res, message = 'Access denied') => {
-  return error(res, 403, message, 'FORBIDDEN')
+  return error(res, HTTP_STATUS.FORBIDDEN, message, 'FORBIDDEN')
 }
 
 /**
@@ -135,7 +136,7 @@ const forbidden = (res, message = 'Access denied') => {
  * @param {any} details - Conflict details
  */
 const conflict = (res, message = 'Resource conflict', details = null) => {
-  return error(res, 409, message, 'CONFLICT', details)
+  return error(res, HTTP_STATUS.CONFLICT, message, 'CONFLICT', details)
 }
 
 /**
@@ -144,7 +145,7 @@ const conflict = (res, message = 'Resource conflict', details = null) => {
  * @param {string} message - Custom message
  */
 const tooManyRequests = (res, message = 'Rate limit exceeded') => {
-  return error(res, 429, message, 'RATE_LIMIT_EXCEEDED')
+  return error(res, HTTP_STATUS.TOO_MANY_REQUESTS, message, 'RATE_LIMIT_EXCEEDED')
 }
 
 /**
@@ -161,7 +162,7 @@ const internalError = (res, message = 'Internal server error', err = null) => {
     }
     : null
 
-  return error(res, 500, message, 'INTERNAL_ERROR', details)
+  return error(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, message, 'INTERNAL_ERROR', details)
 }
 
 /**
@@ -172,7 +173,7 @@ const internalError = (res, message = 'Internal server error', err = null) => {
  * @param {object} meta - Additional metadata
  */
 const created = (res, message = 'Resource created successfully', data = null, meta = {}) => {
-  return success(res, 201, message, data, meta)
+  return success(res, HTTP_STATUS.CREATED, message, data, meta)
 }
 
 /**
@@ -180,7 +181,7 @@ const created = (res, message = 'Resource created successfully', data = null, me
  * @param {object} res - Express response object
  */
 const noContent = (res) => {
-  return res.status(204).send()
+  return res.status(HTTP_STATUS.NO_CONTENT).send()
 }
 
 /**
@@ -197,7 +198,7 @@ const paginated = (res, data, page, limit, total, message = 'Data retrieved succ
   const hasNext = page < totalPages
   const hasPrev = page > 1
 
-  return success(res, 200, message, data, {
+  return success(res, HTTP_STATUS.OK, message, data, {
     pagination: {
       current_page: page,
       per_page: limit,

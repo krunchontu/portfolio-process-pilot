@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 // Helper function to login as test user
 async function loginAsTestUser(page) {
   await page.goto('/login')
-  await page.fill('input[type="email"]', 'test@example.com')
+  await page.fill('input[type="email"]', 'employee@test.com')
   await page.fill('input[type="password"]', 'password123')
   await page.click('button[type="submit"]')
   await expect(page).toHaveURL('/dashboard')
