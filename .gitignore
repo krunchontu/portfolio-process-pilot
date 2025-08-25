@@ -121,3 +121,8 @@ coverage.xml
 
 # JetBrains IDEs
 .idea/
+
+# AI Development Tools
+.bmad-core/
+.claude/
+web-bundles/
