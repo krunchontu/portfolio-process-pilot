@@ -25,9 +25,13 @@ describe('Auth Routes', () => {
       expect(response.body.message).toBe('Login successful');
       expect(response.body.user).toBeDefined();
       expect(response.body.user.password_hash).toBeUndefined();
-      expect(response.body.tokens).toBeDefined();
-      expect(response.body.tokens.access_token).toBeDefined();
-      expect(response.body.tokens.refresh_token).toBeDefined();
+      // Tokens should not be in response body (cookie-based auth)
+      expect(response.body.tokens).toBeUndefined();
+      // Check that cookies are set
+      const cookies = response.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      expect(cookies.some(cookie => cookie.includes('access_token'))).toBe(true);
+      expect(cookies.some(cookie => cookie.includes('refresh_token'))).toBe(true);
     });
     
     it('should reject invalid email', async () => {

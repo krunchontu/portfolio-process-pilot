@@ -190,6 +190,8 @@ Burst Protection: 60/30 requests per minute (authenticated/anonymous)
 
 ## 📚 **Documentation & Setup Guides**
 
+- **Primary Architecture**: `docs/architecture.md` - Comprehensive technical reference
+- **Advanced Patterns**: `docs/architecture-patterns.md` - Sophisticated architectural patterns
 - **BaaS Setup Guide**: `docs/BaaS-Setup-Guide.md`
 - **Provider Comparison**: Comprehensive analysis of all supported database providers
 - **Environment Examples**: `.env.baas.example` with configurations for all providers

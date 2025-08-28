@@ -1,7 +1,7 @@
 const express = require('express')
 const { authenticateToken, requireRole } = require('../middleware/auth')
 const { validateRequest, validateQuery, validateParams } = require('../middleware/validation')
-const { workflowsSchema } = require('../schemas/workflows')
+const workflowsSchema = require('../schemas/workflows')
 const Workflow = require('../models/Workflow')
 const { apiResponse } = require('../utils/apiResponse')
 const logger = require('../utils/logger')

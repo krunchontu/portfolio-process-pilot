@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
-import { authAPI, setTokens, clearTokens } from '../services/api'
+import { authAPI } from '../services/api'
 import { toast } from 'react-hot-toast'
 
 // Auth context
@@ -68,12 +68,11 @@ export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
   const queryClient = useQueryClient()
 
-  // Query to get current user profile
+  // Query to get current user profile (relies on cookies)
   const { data: userData, isLoading: isLoadingProfile } = useQuery(
     'profile',
     authAPI.getProfile,
     {
-      enabled: !!localStorage.getItem('access_token'),
       retry: false,
       onSuccess: (response) => {
         dispatch({
@@ -83,7 +82,6 @@ export const AuthProvider = ({ children }) => {
       },
       onError: (error) => {
         if (error.response?.status === 401) {
-          clearTokens()
           dispatch({ type: 'LOGOUT' })
         }
       }
@@ -96,12 +94,9 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'LOGIN_START' })
     },
     onSuccess: (response) => {
-      const { user, tokens } = response.data
+      const { user } = response.data
 
-      // Store tokens
-      setTokens(tokens.access_token, tokens.refresh_token)
-
-      // Update state
+      // Update state (tokens handled by cookies)
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: { user }
@@ -136,14 +131,12 @@ export const AuthProvider = ({ children }) => {
   // Logout mutation
   const logoutMutation = useMutation(authAPI.logout, {
     onSuccess: () => {
-      clearTokens()
       dispatch({ type: 'LOGOUT' })
       queryClient.clear()
       toast.success('Logged out successfully')
     },
     onError: () => {
       // Even if API call fails, clear local state
-      clearTokens()
       dispatch({ type: 'LOGOUT' })
       queryClient.clear()
     }
@@ -160,21 +153,15 @@ export const AuthProvider = ({ children }) => {
     }
   })
 
-  // Initialize auth state on app load
+  // Initialize auth state on app load (cookie-based)
   useEffect(() => {
-    const token = localStorage.getItem('access_token')
-    if (!token) {
-      dispatch({ type: 'SET_LOADING', payload: false })
-    }
+    // Auth state will be determined by profile query
+    // No localStorage check needed
   }, [])
 
   // Update loading state based on profile query
   useEffect(() => {
-    if (!localStorage.getItem('access_token')) {
-      dispatch({ type: 'SET_LOADING', payload: false })
-    } else {
-      dispatch({ type: 'SET_LOADING', payload: isLoadingProfile })
-    }
+    dispatch({ type: 'SET_LOADING', payload: isLoadingProfile })
   }, [isLoadingProfile])
 
   // Auth methods

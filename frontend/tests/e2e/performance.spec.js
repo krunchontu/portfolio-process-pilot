@@ -381,3 +381,158 @@ test.describe('Caching and Data Management', () => {
     }
   })
 })
+
+test.describe('Cookie Authentication Performance', () => {
+  test('should maintain API response times with cookie authentication', async ({ page }) => {
+    // Login to establish cookie authentication
+    await page.goto('/login')
+    await page.fill('input[type="email"]', 'test@example.com')
+    await page.fill('input[type="password"]', 'password123')
+    await page.click('button[type="submit"]')
+    
+    await page.waitForURL('/dashboard', { timeout: 10000 })
+    
+    // Measure API response times with cookies
+    const apiResponseTimes = []
+    
+    page.on('response', response => {
+      if (response.url().includes('/api/') && response.status() === 200) {
+        const timing = response.timing()
+        if (timing) {
+          const totalTime = timing.responseEnd - timing.requestStart
+          apiResponseTimes.push(totalTime)
+        }
+      }
+    })
+    
+    // Make several API calls
+    await page.goto('/requests')
+    await page.waitForLoadState('networkidle')
+    await page.goto('/dashboard')
+    await page.waitForLoadState('networkidle')
+    await page.goto('/profile')
+    await page.waitForLoadState('networkidle')
+    
+    // All API calls should be under 200ms on average
+    if (apiResponseTimes.length > 0) {
+      const averageTime = apiResponseTimes.reduce((a, b) => a + b, 0) / apiResponseTimes.length
+      expect(averageTime).toBeLessThan(200)
+    }
+  })
+
+  test('should handle token refresh without performance degradation', async ({ page, context }) => {
+    // Login first
+    await page.goto('/login')
+    await page.fill('input[type="email"]', 'test@example.com')
+    await page.fill('input[type="password"]', 'password123')
+    await page.click('button[type="submit"]')
+    
+    await page.waitForURL('/dashboard', { timeout: 10000 })
+    
+    // Simulate token refresh scenario by making multiple API calls
+    let refreshCount = 0
+    page.on('response', response => {
+      if (response.url().includes('/api/auth/refresh')) {
+        refreshCount++
+      }
+    })
+    
+    const startTime = Date.now()
+    
+    // Make multiple requests that might trigger refresh
+    for (let i = 0; i < 5; i++) {
+      await page.goto('/requests')
+      await page.waitForLoadState('networkidle')
+      await page.goto('/dashboard')
+      await page.waitForLoadState('networkidle')
+      await page.waitForTimeout(500) // Small delay between requests
+    }
+    
+    const totalTime = Date.now() - startTime
+    
+    // Even with potential token refresh, navigation should be smooth
+    expect(totalTime).toBeLessThan(15000) // 15 seconds for 10 page loads
+    
+    // Should not refresh excessively
+    expect(refreshCount).toBeLessThan(3)
+  })
+
+  test('should load authenticated pages without localStorage dependency', async ({ page }) => {
+    // Clear localStorage to ensure no dependency
+    await page.evaluate(() => localStorage.clear())
+    
+    // Login (which sets httpOnly cookies)
+    await page.goto('/login')
+    await page.fill('input[type="email"]', 'test@example.com')
+    await page.fill('input[type="password"]', 'password123')
+    await page.click('button[type="submit"]')
+    
+    await page.waitForURL('/dashboard', { timeout: 10000 })
+    
+    // Clear localStorage again to verify no dependency
+    await page.evaluate(() => localStorage.clear())
+    
+    // Navigate to different authenticated pages
+    const authenticatedPages = ['/requests', '/profile', '/dashboard']
+    
+    for (const pagePath of authenticatedPages) {
+      const startTime = Date.now()
+      await page.goto(pagePath)
+      await page.waitForLoadState('networkidle')
+      const loadTime = Date.now() - startTime
+      
+      // Should load quickly without localStorage tokens
+      expect(loadTime).toBeLessThan(3000)
+      
+      // Should be authenticated (no redirect to login)
+      expect(page.url()).toContain(pagePath)
+    }
+  })
+
+  test('should optimize cookie authentication under load', async ({ page }) => {
+    await page.goto('/login')
+    await page.fill('input[type="email"]', 'test@example.com')
+    await page.fill('input[type="password"]', 'password123')
+    await page.click('button[type="submit"]')
+    
+    await page.waitForURL('/dashboard', { timeout: 10000 })
+    
+    // Measure authentication check performance
+    const authCheckTimes = []
+    
+    // Navigate rapidly between authenticated pages
+    const pages = ['/dashboard', '/requests', '/profile', '/requests/create']
+    
+    for (let cycle = 0; cycle < 3; cycle++) {
+      for (const pagePath of pages) {
+        const startTime = Date.now()
+        await page.goto(pagePath)
+        
+        // Wait for authentication check to complete
+        await page.waitForFunction(() => {
+          // Check if page is loaded and not redirected to login
+          return !window.location.pathname.includes('/login') && 
+                 document.readyState === 'complete'
+        }, { timeout: 5000 })
+        
+        const authCheckTime = Date.now() - startTime
+        authCheckTimes.push(authCheckTime)
+      }
+    }
+    
+    // Authentication checks should be consistently fast
+    const averageAuthTime = authCheckTimes.reduce((a, b) => a + b, 0) / authCheckTimes.length
+    const maxAuthTime = Math.max(...authCheckTimes)
+    
+    expect(averageAuthTime).toBeLessThan(1000) // Average under 1 second
+    expect(maxAuthTime).toBeLessThan(2000) // Max under 2 seconds
+    
+    // Performance should be consistent (low variance)
+    const variance = authCheckTimes.reduce((acc, time) => {
+      return acc + Math.pow(time - averageAuthTime, 2)
+    }, 0) / authCheckTimes.length
+    
+    const standardDeviation = Math.sqrt(variance)
+    expect(standardDeviation).toBeLessThan(500) // Low variance indicates consistent performance
+  })
+})

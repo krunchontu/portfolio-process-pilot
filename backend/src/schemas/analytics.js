@@ -229,6 +229,7 @@ const customAnalyticsSchema = Joi.object({
     .optional()
 })
 
+// Export individual schemas
 module.exports = {
   dashboardAnalyticsSchema,
   requestMetricsSchema,
@@ -236,4 +237,14 @@ module.exports = {
   userActivitySchema,
   departmentMetricsSchema,
   customAnalyticsSchema
+}
+
+// Export as analyticsSchema object for backward compatibility
+module.exports.analyticsSchema = {
+  dashboardQuery: dashboardAnalyticsSchema,
+  requestMetrics: requestMetricsSchema,
+  workflowMetrics: workflowMetricsSchema,
+  userActivity: userActivitySchema,
+  departmentMetrics: departmentMetricsSchema,
+  customAnalytics: customAnalyticsSchema
 }

@@ -5,42 +5,18 @@ import { toast } from 'react-hot-toast'
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 10000,
+  withCredentials: true, // Include cookies in all requests
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-// Token management
+// Token refresh management (cookies handled by browser)
 let tokenRefreshPromise = null
 
-const getAuthToken = () => {
-  return localStorage.getItem('access_token')
-}
-
-const getRefreshToken = () => {
-  return localStorage.getItem('refresh_token')
-}
-
-const setTokens = (accessToken, refreshToken) => {
-  localStorage.setItem('access_token', accessToken)
-  if (refreshToken) {
-    localStorage.setItem('refresh_token', refreshToken)
-  }
-}
-
-const clearTokens = () => {
-  localStorage.removeItem('access_token')
-  localStorage.removeItem('refresh_token')
-}
-
-// Request interceptor to add auth token
+// Request interceptor for debugging (auth handled by cookies)
 api.interceptors.request.use(
   (config) => {
-    const token = getAuthToken()
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-
     // Add request ID for debugging
     config.metadata = {
       requestStartedAt: new Date().getTime(),
@@ -71,7 +47,7 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // Handle token expiration
+    // Handle token expiration (cookie-based)
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 
@@ -81,26 +57,18 @@ api.interceptors.response.use(
         return api(originalRequest)
       }
 
-      const refreshToken = getRefreshToken()
-      if (refreshToken) {
-        tokenRefreshPromise = refreshAccessToken(refreshToken)
+      // Try to refresh token using cookies
+      tokenRefreshPromise = refreshAccessToken()
 
-        try {
-          const newToken = await tokenRefreshPromise
-          originalRequest.headers.Authorization = `Bearer ${newToken}`
-          return api(originalRequest)
-        } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError)
-          clearTokens()
-          window.location.href = '/login'
-          return Promise.reject(refreshError)
-        } finally {
-          tokenRefreshPromise = null
-        }
-      } else {
-        // No refresh token, redirect to login
-        clearTokens()
+      try {
+        await tokenRefreshPromise
+        return api(originalRequest)
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError)
         window.location.href = '/login'
+        return Promise.reject(refreshError)
+      } finally {
+        tokenRefreshPromise = null
       }
     }
 
@@ -130,19 +98,15 @@ api.interceptors.response.use(
   }
 )
 
-// Refresh access token
-const refreshAccessToken = async (refreshToken) => {
+// Refresh access token using cookies
+const refreshAccessToken = async () => {
   try {
-    const response = await axios.post('/api/auth/refresh', {
-      refresh_token: refreshToken
+    const response = await axios.post('/api/auth/refresh', {}, {
+      withCredentials: true
     })
 
-    const { access_token } = response.data
-    setTokens(access_token, refreshToken)
-
-    return access_token
+    return response.data
   } catch (error) {
-    clearTokens()
     throw error
   }
 }
@@ -154,7 +118,7 @@ export const authAPI = {
   logout: () => api.post('/auth/logout'),
   getProfile: () => api.get('/auth/me'),
   changePassword: (data) => api.post('/auth/change-password', data),
-  refreshToken: (refreshToken) => api.post('/auth/refresh', { refresh_token: refreshToken })
+  refreshToken: () => api.post('/auth/refresh')
 }
 
 export const requestsAPI = {
@@ -210,7 +174,6 @@ export const isAuthError = (error) => {
   return error.response?.status === 401 || error.response?.status === 403
 }
 
-// Export token management functions
-export { setTokens, clearTokens, getAuthToken }
+// Cookie-based authentication - no token management functions needed
 
 export default api

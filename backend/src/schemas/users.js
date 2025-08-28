@@ -194,6 +194,7 @@ const adminPasswordChangeSchema = Joi.object({
     .optional()
 })
 
+// Export individual schemas
 module.exports = {
   updateUserSchema,
   listUsersSchema,
@@ -201,4 +202,14 @@ module.exports = {
   userActivationSchema,
   bulkUserOperationSchema,
   adminPasswordChangeSchema
+}
+
+// Export as usersSchema object for backward compatibility
+module.exports.usersSchema = {
+  update: updateUserSchema,
+  listQuery: listUsersSchema,
+  params: userIdSchema,
+  activation: userActivationSchema,
+  bulkOperation: bulkUserOperationSchema,
+  adminPasswordChange: adminPasswordChangeSchema
 }

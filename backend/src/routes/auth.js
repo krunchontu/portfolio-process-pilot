@@ -184,13 +184,8 @@ router.post('/login', authLimiter, validateRequest(loginSchema), async (req, res
     delete user.password_hash
 
     return res.success(200, 'Login successful', {
-      user,
-      // Still provide tokens for API clients that need them
-      tokens: {
-        access_token: accessToken,
-        refresh_token: refreshToken,
-        expires_in: config.jwt.expiresIn
-      }
+      user
+      // Tokens are now sent via httpOnly cookies only for security
     })
   } catch (error) {
     return res.internalError('Login failed', error)
@@ -227,12 +222,8 @@ router.post('/register', validateRequest(registerSchema), async (req, res) => {
 // Refresh token endpoint
 router.post('/refresh', async (req, res) => {
   try {
-    // Try to get refresh token from cookie first, then from body
-    let refreshToken = req.cookies?.refresh_token
-
-    if (!refreshToken && req.body.refresh_token) {
-      refreshToken = req.body.refresh_token
-    }
+    // Get refresh token from httpOnly cookie only
+    const refreshToken = req.cookies?.refresh_token
 
     if (!refreshToken) {
       return res.unauthorized('Refresh token required')
@@ -259,10 +250,8 @@ router.post('/refresh', async (req, res) => {
     // Set new access token in cookie
     setTokenCookies(res, accessToken, refreshToken)
 
-    return res.success(200, 'Token refreshed successfully', {
-      access_token: accessToken,
-      expires_in: config.jwt.expiresIn
-    })
+    return res.success(200, 'Token refreshed successfully')
+    // Tokens are sent via httpOnly cookies only for security
   } catch (error) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return res.unauthorized('Invalid or expired refresh token')

@@ -180,5 +180,6 @@ module.exports = {
   createWorkflowSchema,
   updateWorkflowSchema,
   listWorkflowsSchema,
+  listQuery: listWorkflowsSchema, // Alias for route compatibility
   workflowIdSchema
 }

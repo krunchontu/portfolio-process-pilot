@@ -82,7 +82,7 @@ const createRateLimiter = (options = {}) => {
     prefix = 'api',
     skipSuccessfulRequests = false,
     skipFailedRequests = false,
-    onLimitReached = null
+    onExceeded = null
   } = options
 
   return rateLimit({
@@ -114,7 +114,7 @@ const createRateLimiter = (options = {}) => {
       // Skip rate limiting for health checks and monitoring
       return req.path.startsWith('/health') || req.path.startsWith('/metrics')
     },
-    onLimitReached: (req, res, options) => {
+    onExceeded: (req, res, options) => {
       const userId = req.user?.id || 'anonymous'
       const ip = req.ip
       const limit = req.user ? authenticated.max : anonymous.max
@@ -130,8 +130,8 @@ const createRateLimiter = (options = {}) => {
         severity: 'medium'
       })
 
-      if (onLimitReached) {
-        onLimitReached(req, res, options)
+      if (onExceeded) {
+        onExceeded(req, res, options)
       }
     },
     handler: (req, res) => {

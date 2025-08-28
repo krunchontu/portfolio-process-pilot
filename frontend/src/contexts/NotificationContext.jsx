@@ -65,11 +65,9 @@ export const NotificationProvider = ({ children }) => {
     let socket = null
 
     if (isAuthenticated && user) {
-      // Initialize socket connection
+      // Initialize socket connection (cookie-based auth)
       socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:5000', {
-        auth: {
-          token: localStorage.getItem('access_token')
-        },
+        withCredentials: true, // Use cookies for authentication
         transports: ['websocket', 'polling']
       })
 
