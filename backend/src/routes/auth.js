@@ -92,7 +92,7 @@ const User = require('../models/User')
 const config = require('../config')
 const { generateToken, generateRefreshToken, authenticateToken, setTokenCookies, clearTokenCookies } = require('../middleware/auth')
 const { validateRequest } = require('../middleware/validation')
-const { loginSchema, registerSchema, refreshTokenSchema, changePasswordSchema } = require('../schemas/auth')
+const { loginSchema, registerSchema, changePasswordSchema } = require('../schemas/auth')
 const { authLimiter } = require('../middleware/rateLimiting')
 const { loggers } = require('../utils/logger')
 
@@ -180,11 +180,11 @@ router.post('/login', authLimiter, validateRequest(loginSchema), async (req, res
     // Set tokens in httpOnly cookies
     setTokenCookies(res, accessToken, refreshToken)
 
-    // Remove sensitive data
-    delete user.password_hash
+    // Get user data for API response (camelCase format)
+    const apiUser = User.mapToApiResponse(user)
 
     return res.success(200, 'Login successful', {
-      user
+      user: apiUser
       // Tokens are now sent via httpOnly cookies only for security
     })
   } catch (error) {
@@ -195,7 +195,7 @@ router.post('/login', authLimiter, validateRequest(loginSchema), async (req, res
 // Register endpoint (admin only or open based on config)
 router.post('/register', validateRequest(registerSchema), async (req, res) => {
   try {
-    const { email, password, first_name, last_name, role = 'employee', department } = req.body
+    const { email, password, firstName, lastName, role = 'employee', department } = req.body
 
     // Check if user already exists
     const existingUser = await User.findByEmail(email)
@@ -207,8 +207,8 @@ router.post('/register', validateRequest(registerSchema), async (req, res) => {
     const newUser = await User.create({
       email,
       password,
-      first_name,
-      last_name,
+      first_name: firstName,
+      last_name: lastName,
       role,
       department
     })
@@ -313,19 +313,19 @@ router.post('/logout', authenticateToken, async (req, res) => {
 // Password change endpoint
 router.post('/change-password', authenticateToken, validateRequest(changePasswordSchema), async (req, res) => {
   try {
-    const { current_password, new_password } = req.body
+    const { currentPassword, newPassword } = req.body
 
     // Get user with password hash
     const userWithPassword = await User.findByEmail(req.user.email)
 
     // Verify current password
-    const isCurrentPasswordValid = await User.validatePassword(current_password, userWithPassword.password_hash)
+    const isCurrentPasswordValid = await User.validatePassword(currentPassword, userWithPassword.password_hash)
     if (!isCurrentPasswordValid) {
       return res.unauthorized('Current password is incorrect')
     }
 
     // Update password
-    await User.update(req.user.id, { password: new_password })
+    await User.update(req.user.id, { password: newPassword })
 
     return res.success(200, 'Password changed successfully')
   } catch (error) {

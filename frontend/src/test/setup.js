@@ -106,12 +106,12 @@ global.testUtils = {
   mockUser: {
     id: '1',
     email: 'test@example.com',
-    first_name: 'Test',
-    last_name: 'User',
+    firstName: 'Test',
+    lastName: 'User',
     role: 'employee',
     department: 'IT',
     is_active: true,
-    created_at: '2024-01-01T00:00:00Z',
+    createdAt: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z'
   },
 
@@ -119,12 +119,12 @@ global.testUtils = {
   mockAdmin: {
     id: '2',
     email: 'admin@example.com',
-    first_name: 'Admin',
-    last_name: 'User',
+    firstName: 'Admin',
+    lastName: 'User',
     role: 'admin',
     department: 'IT',
     is_active: true,
-    created_at: '2024-01-01T00:00:00Z',
+    createdAt: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z'
   },
 
@@ -132,12 +132,12 @@ global.testUtils = {
   mockManager: {
     id: '3',
     email: 'manager@example.com',
-    first_name: 'Manager',
-    last_name: 'User',
+    firstName: 'Manager',
+    lastName: 'User',
     role: 'manager',
     department: 'HR',
     is_active: true,
-    created_at: '2024-01-01T00:00:00Z',
+    createdAt: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z'
   },
 
@@ -153,8 +153,8 @@ global.testUtils = {
       reason: 'Vacation'
     },
     submitted_at: '2024-01-15T10:00:00Z',
-    creator_first_name: 'Test',
-    creator_last_name: 'User',
+    creatorFirstName: 'Test',
+    creatorLastName: 'User',
     creator_email: 'test@example.com',
     workflow_name: 'Leave Request Approval'
   },

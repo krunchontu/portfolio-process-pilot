@@ -83,7 +83,7 @@
     "baas"
   ],
   "optionalDependencies": {
-    "@supabase/supabase-js": "^2.39.0",
+    "@supabase/supabase-js": "^2.56.1",
     "mysql2": "^3.6.5"
   },
   "author": "Your Name",

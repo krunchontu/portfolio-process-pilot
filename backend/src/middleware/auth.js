@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken')
 const config = require('../config')
 const User = require('../models/User')
+const { logger } = require('../utils/logger')
 
 // Generate JWT token
 const generateToken = (payload) => {
@@ -18,9 +19,10 @@ const generateRefreshToken = (payload) => {
 
 // Verify JWT token middleware
 const authenticateToken = async (req, res, next) => {
+  let token
   try {
     // Try to get token from httpOnly cookie first, then fallback to Authorization header
-    let token = req.cookies?.access_token
+    token = req.cookies?.access_token
 
     // Fallback to Authorization header for API clients
     if (!token) {
@@ -53,8 +55,8 @@ const authenticateToken = async (req, res, next) => {
       })
     }
 
-    // Attach user to request
-    req.user = user
+    // Attach user to request (mapped to camelCase for API consumption)
+    req.user = User.mapToApiResponse(user)
     next()
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
@@ -71,7 +73,13 @@ const authenticateToken = async (req, res, next) => {
       })
     }
 
-    console.error('Authentication error:', error)
+    logger.error('Authentication error:', {
+      error: error.message,
+      stack: error.stack,
+      tokenPresent: !!token,
+      userAgent: req.get('User-Agent'),
+      ip: req.ip
+    })
     return res.status(500).json({
       error: 'Authentication failed',
       code: 'AUTH_ERROR'
@@ -124,7 +132,7 @@ const canActOnRequest = async (req, res, next) => {
     }
 
     // Users can only act on their own requests (for viewing)
-    if (request.created_by === user.id) {
+    if (request.createdBy === user.id) {
       req.targetRequest = request
       return next()
     }
@@ -143,7 +151,14 @@ const canActOnRequest = async (req, res, next) => {
       code: 'REQUEST_ACCESS_DENIED'
     })
   } catch (error) {
-    console.error('Authorization error:', error)
+    logger.error('Authorization error:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.id,
+      requestId: req.params.id,
+      method: req.method,
+      path: req.path
+    })
     return res.status(500).json({
       error: 'Authorization check failed',
       code: 'AUTH_CHECK_ERROR'
@@ -170,7 +185,7 @@ const optionalAuth = async (req, res, next) => {
     const user = await User.findById(decoded.userId)
 
     if (user && user.is_active) {
-      req.user = user
+      req.user = User.mapToApiResponse(user)
     }
 
     next()

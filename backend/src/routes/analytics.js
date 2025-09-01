@@ -1,6 +1,6 @@
 const express = require('express')
 const { authenticateToken, requireRole } = require('../middleware/auth')
-const { validateRequest, validateQuery, validateParams } = require('../middleware/validation')
+const { validateRequest: _validateRequest, validateQuery, validateParams: _validateParams } = require('../middleware/validation')
 const { analyticsSchema } = require('../schemas/analytics')
 const { db } = require('../database/connection')
 const { apiResponse } = require('../utils/apiResponse')
@@ -18,7 +18,7 @@ router.get('/dashboard',
   async (req, res) => {
     try {
       const { timeframe = '30d', department } = req.query
-      const userId = req.user.userId
+      const userId = req.user.id
       const userRole = req.user.role
 
       logger.info('Fetching dashboard analytics', {
@@ -102,7 +102,7 @@ router.get('/dashboard',
       return apiResponse.success(res, analytics, 'Dashboard analytics retrieved successfully')
     } catch (error) {
       logger.error('Dashboard analytics error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         error: error.message,
         stack: error.stack
       })
@@ -117,7 +117,7 @@ router.get('/requests',
   async (req, res) => {
     try {
       const { timeframe = '30d', type, status, department } = req.query
-      const userId = req.user.userId
+      const userId = req.user.id
       const userRole = req.user.role
 
       logger.info('Fetching request metrics', {
@@ -212,7 +212,7 @@ router.get('/requests',
       return apiResponse.success(res, result, 'Request metrics retrieved successfully')
     } catch (error) {
       logger.error('Request metrics error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         error: error.message,
         stack: error.stack
       })
@@ -227,7 +227,7 @@ router.get('/workflows',
   async (req, res) => {
     try {
       const { timeframe = '30d' } = req.query
-      const userId = req.user.userId
+      const userId = req.user.id
 
       logger.info('Fetching workflow analytics', { userId, timeframe })
 
@@ -310,7 +310,7 @@ router.get('/workflows',
       return apiResponse.success(res, result, 'Workflow analytics retrieved successfully')
     } catch (error) {
       logger.error('Workflow analytics error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         error: error.message,
         stack: error.stack
       })
@@ -325,7 +325,7 @@ router.get('/users',
   async (req, res) => {
     try {
       const { timeframe = '30d', department, role } = req.query
-      const userId = req.user.userId
+      const userId = req.user.id
 
       logger.info('Fetching user analytics', { userId, timeframe, department, role })
 
@@ -434,7 +434,7 @@ router.get('/users',
       return apiResponse.success(res, result, 'User analytics retrieved successfully')
     } catch (error) {
       logger.error('User analytics error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         error: error.message,
         stack: error.stack
       })
@@ -449,7 +449,7 @@ router.get('/departments',
   async (req, res) => {
     try {
       const { timeframe = '30d' } = req.query
-      const userId = req.user.userId
+      const userId = req.user.id
       const userRole = req.user.role
 
       logger.info('Fetching department analytics', { userId, userRole, timeframe })
@@ -569,7 +569,7 @@ router.get('/departments',
       return apiResponse.success(res, result, 'Department analytics retrieved successfully')
     } catch (error) {
       logger.error('Department analytics error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         error: error.message,
         stack: error.stack
       })

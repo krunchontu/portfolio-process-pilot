@@ -4,7 +4,7 @@
  * Provides environment-specific CORS settings with security best practices
  */
 
-const { CORS, HTTP_STATUS, ENVIRONMENT } = require('../constants')
+const { CORS } = require('../constants')
 
 // Note: We avoid importing logger here to prevent circular dependencies
 // Logging is handled by the middleware that uses this config
@@ -89,7 +89,7 @@ function createCorsConfig() {
   } else {
     // Production: Strict origin validation
     if (!corsOrigin) {
-      logger.error('❌ CORS_ORIGIN must be configured for production environment')
+      console.error('❌ CORS_ORIGIN must be configured for production environment')
       throw new Error('CORS_ORIGIN is required in production')
     }
 

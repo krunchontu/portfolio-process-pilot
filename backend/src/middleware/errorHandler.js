@@ -1,5 +1,6 @@
 const config = require('../config')
 const { error: sendErrorResponse } = require('../utils/apiResponse')
+const { logger } = require('../utils/logger')
 
 // Custom error class for application errors
 class AppError extends Error {
@@ -15,7 +16,12 @@ class AppError extends Error {
 
 // Handle different types of errors
 const handleDatabaseError = (err) => {
-  console.error('Database Error:', err)
+  logger.error('Database Error:', {
+    code: err.code,
+    message: err.message,
+    constraint: err.constraint,
+    detail: err.detail
+  })
 
   if (err.code === '23505') { // Unique violation
     return new AppError('Resource already exists', 409, 'DUPLICATE_RESOURCE')
@@ -61,13 +67,18 @@ const sendErrorProd = (err, res) => {
     return sendErrorResponse(res, err.statusCode, err.message, err.code)
   } else {
     // Log error and send generic message
-    console.error('ERROR 💥', err)
+    logger.error('Unhandled application error:', {
+      message: err.message,
+      stack: err.stack,
+      statusCode: err.statusCode,
+      isOperational: err.isOperational
+    })
     return sendErrorResponse(res, 500, 'Something went wrong!', 'INTERNAL_ERROR')
   }
 }
 
 // Global error handling middleware
-const globalErrorHandler = (err, req, res, next) => {
+const globalErrorHandler = (err, req, res, _next) => {
   err.statusCode = err.statusCode || 500
 
   if (config.nodeEnv === 'development') {

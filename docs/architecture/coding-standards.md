@@ -57,10 +57,47 @@ frontend/src/
 - **Columns**: snake_case (`created_at`, `user_id`) 
 - **Indexes**: descriptive (`idx_requests_status_created`)
 
-### Current Naming Issues (Technical Debt)
-- **Backend**: Mix of camelCase and snake_case in model properties
-- **Database**: Some columns use camelCase (`currentStepIndex`) vs snake_case (`created_at`)
-- **Impact**: Low priority cosmetic issue, maintain consistency within each module
+### Standardized Naming Convention (Story 2.1)
+- **Database Columns**: snake_case (`created_at`, `user_id`, `workflow_id`) - PostgreSQL standard
+- **JavaScript Properties**: camelCase (`createdAt`, `userId`, `workflowId`) - JavaScript standard
+- **API Responses**: camelCase for consistency with frontend consumption
+- **Constants**: UPPER_SNAKE_CASE (`MAX_RETRY_COUNT`, `API_TIMEOUT`)
+- **Components/Classes**: PascalCase (`RequestCard`, `UserModel`)
+
+### Database-JavaScript Property Mapping Strategy
+- Use camelCase in JavaScript/JSON for API responses and frontend consumption
+- Use snake_case for database column names following PostgreSQL conventions
+- Implement consistent property mapping in model layers to convert between conventions
+- Database queries should use snake_case column names directly
+- API responses should present camelCase properties to frontend
+
+#### Property Mapping Examples
+```javascript
+// ✅ Good: Consistent database to JavaScript mapping
+const mapDatabaseToJavaScript = (dbRecord) => ({
+  id: dbRecord.id,
+  userId: dbRecord.user_id,           // snake_case → camelCase
+  workflowId: dbRecord.workflow_id,   // snake_case → camelCase  
+  createdAt: dbRecord.created_at,     // snake_case → camelCase
+  updatedAt: dbRecord.updated_at,     // snake_case → camelCase
+  currentStepIndex: dbRecord.current_step_index
+})
+
+// ✅ Good: API response format (camelCase for frontend)
+{
+  "id": "123",
+  "userId": "456", 
+  "workflowId": "789",
+  "createdAt": "2024-01-01T00:00:00Z",
+  "updatedAt": "2024-01-01T00:00:00Z"
+}
+
+// ✅ Good: Database query (snake_case columns)
+const user = await db('users')
+  .select('id', 'user_name', 'created_at', 'updated_at')
+  .where('user_id', userId)
+  .first()
+```
 
 ## 📝 Code Style
 
@@ -362,6 +399,47 @@ const getCachedUserProfile = async (userId) => {
   cache.set(`user:${userId}`, profile, 300) // 5 minute cache
   return profile
 }
+```
+
+## 🔍 Naming Convention Enforcement
+
+### ESLint Rules for Naming Consistency
+```javascript
+// .eslintrc.js - Add naming convention rules
+{
+  "rules": {
+    // Enforce camelCase for variables and functions
+    "camelcase": ["error", { 
+      "properties": "always",
+      "ignoreDestructuring": false,
+      "ignoreImports": false,
+      "ignoreGlobals": false
+    }],
+    // Allow snake_case for database column references
+    "camelcase": ["error", {
+      "allow": ["^[a-z]+(_[a-z]+)*$"] // Allow snake_case patterns
+    }]
+  }
+}
+```
+
+### Automated Naming Validation
+```javascript
+// Example: Utility function to validate API response naming
+const validateApiResponseNaming = (response) => {
+  const invalidKeys = Object.keys(response).filter(key => {
+    // Check if key contains underscores (should be camelCase)
+    return key.includes('_') && !['__proto__', '__defineGetter__'].includes(key)
+  })
+  
+  if (invalidKeys.length > 0) {
+    console.warn(`API response contains snake_case properties: ${invalidKeys.join(', ')}`)
+  }
+}
+
+// Database property mapping utility
+const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+const toSnakeCase = (str) => str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
 ```
 
 ## 🔧 Development Workflow

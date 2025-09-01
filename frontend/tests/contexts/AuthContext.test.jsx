@@ -97,8 +97,8 @@ describe('AuthContext with Cookie Authentication', () => {
       const mockUser = {
         id: '1',
         email: 'test@example.com',
-        first_name: 'Test',
-        last_name: 'User',
+        firstName: 'Test',
+        lastName: 'User',
         role: 'employee'
       }
 
@@ -111,7 +111,7 @@ describe('AuthContext with Cookie Authentication', () => {
       await waitFor(() => {
         expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('true')
         expect(screen.getByTestId('isLoading')).toHaveTextContent('false')
-        expect(screen.getByTestId('user')).toContain('test@example.com')
+        expect(screen.getByTestId('user')).toHaveTextContent('test@example.com')
       })
 
       // Should call getProfile which relies on cookies
@@ -138,8 +138,8 @@ describe('AuthContext with Cookie Authentication', () => {
       const mockUser = {
         id: '1',
         email: 'test@example.com',
-        first_name: 'Test',
-        last_name: 'User',
+        firstName: 'Test',
+        lastName: 'User',
         role: 'employee'
       }
 
@@ -162,7 +162,7 @@ describe('AuthContext with Cookie Authentication', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('true')
-        expect(screen.getByTestId('user')).toContain('test@example.com')
+        expect(screen.getByTestId('user')).toHaveTextContent('test@example.com')
       })
 
       // Verify no tokens were stored in localStorage
@@ -197,7 +197,7 @@ describe('AuthContext with Cookie Authentication', () => {
       const mockUser = {
         id: '1',
         email: 'test@example.com',
-        first_name: 'Test',
+        firstName: 'Test',
         last_name: 'User'
       }
 
@@ -241,7 +241,7 @@ describe('AuthContext with Cookie Authentication', () => {
       const mockUser = {
         id: '1',
         email: 'test@example.com',
-        first_name: 'Test',
+        firstName: 'Test',
         last_name: 'User'
       }
 
@@ -275,8 +275,8 @@ describe('AuthContext with Cookie Authentication', () => {
       const mockUser = {
         id: '1',
         email: 'test@example.com',
-        first_name: 'Test',
-        last_name: 'User',
+        firstName: 'Test',
+        lastName: 'User',
         role
       }
 
@@ -331,10 +331,9 @@ describe('AuthContext with Cookie Authentication', () => {
       const mockUser = {
         id: '1',
         email: 'test@example.com',
-        first_name: 'Test',
-        last_name: 'User',
-        role: 'employee',
-        password_hash: 'should-not-be-exposed'
+        firstName: 'Test',
+        lastName: 'User',
+        role: 'employee'
       }
 
       authAPI.getProfile.mockResolvedValue({

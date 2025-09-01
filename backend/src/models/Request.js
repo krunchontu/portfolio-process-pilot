@@ -6,41 +6,75 @@ class Request {
     return 'requests'
   }
 
+  // Convert database record to API response format (snake_case → camelCase)
+  static mapToApiResponse(request) {
+    if (!request) return null
+
+    return {
+      id: request.id,
+      type: request.type,
+      workflowId: request.workflow_id,
+      createdBy: request.created_by,
+      payload: request.payload,
+      steps: request.steps,
+      status: request.status,
+      currentStepIndex: request.current_step_index,
+      slaHours: request.sla_hours,
+      slaDeadline: request.sla_deadline,
+      submittedAt: request.submitted_at,
+      completedAt: request.completed_at,
+      createdAt: request.created_at,
+      updatedAt: request.updated_at,
+      // Include joined fields if present
+      creatorFirstName: request.creator_first_name,
+      creatorLastName: request.creator_last_name,
+      creatorEmail: request.creator_email,
+      workflowName: request.workflow_name,
+      // Include history if present
+      history: request.history
+    }
+  }
+
+  // Convert multiple database records to API response format
+  static mapArrayToApiResponse(requests) {
+    return requests.map(request => this.mapToApiResponse(request))
+  }
+
   // Create new request
   static async create(requestData) {
-    const { created_by, workflow_id, type, payload, steps } = requestData
+    const { createdBy, workflowId, type, payload, steps } = requestData
 
     // Calculate SLA deadline if steps have SLA hours
-    let sla_hours = null
-    let sla_deadline = null
+    let slaHours = null
+    let slaDeadline = null
 
     if (steps && steps.length > 0 && steps[0].slaHours) {
-      sla_hours = steps[0].slaHours
-      sla_deadline = new Date(Date.now() + sla_hours * 60 * 60 * 1000)
+      slaHours = steps[0].slaHours
+      slaDeadline = new Date(Date.now() + slaHours * 60 * 60 * 1000)
     }
 
     const [request] = await db(this.tableName)
       .insert({
         type,
-        workflow_id,
-        created_by,
+        workflow_id: workflowId,
+        created_by: createdBy,
         payload,
         steps,
-        sla_hours,
-        sla_deadline
+        sla_hours: slaHours,
+        sla_deadline: slaDeadline
       })
       .returning('*')
 
     // Create initial history entry
     await RequestHistory.create({
-      request_id: request.id,
-      actor_id: created_by,
+      requestId: request.id,
+      actorId: createdBy,
       action: 'submit',
       comment: 'Request submitted',
       metadata: { payload }
     })
 
-    return request
+    return this.mapToApiResponse(request)
   }
 
   // Find request by ID with full details
@@ -61,9 +95,10 @@ class Request {
     if (request) {
       // Get request history
       request.history = await RequestHistory.findByRequestId(id)
+      return this.mapToApiResponse(request)
     }
 
-    return request
+    return null
   }
 
   // List requests with filters
@@ -109,29 +144,30 @@ class Request {
       query = query.where('requests.sla_deadline', '<', new Date())
     }
 
-    return await query.orderBy('requests.submitted_at', 'desc')
+    const requests = await query.orderBy('requests.submitted_at', 'desc')
+    return this.mapArrayToApiResponse(requests)
   }
 
   // Update request status and step
-  static async updateStatus(id, status, current_step_index = null, completed_at = null) {
+  static async updateStatus(id, status, currentStepIndex = null, completedAt = null) {
     const updates = {
       status,
       updated_at: new Date()
     }
 
-    if (current_step_index !== null) {
-      updates.current_step_index = current_step_index
+    if (currentStepIndex !== null) {
+      updates.current_step_index = currentStepIndex
     }
 
-    if (completed_at) {
-      updates.completed_at = completed_at
+    if (completedAt) {
+      updates.completed_at = completedAt
     }
 
     // Calculate new SLA if moving to next step
-    if (current_step_index !== null && status === 'pending') {
+    if (currentStepIndex !== null && status === 'pending') {
       const request = await this.findById(id)
-      if (request && request.steps[current_step_index]?.slaHours) {
-        updates.sla_hours = request.steps[current_step_index].slaHours
+      if (request && request.steps[currentStepIndex]?.slaHours) {
+        updates.sla_hours = request.steps[currentStepIndex].slaHours
         updates.sla_deadline = new Date(Date.now() + updates.sla_hours * 60 * 60 * 1000)
       }
     }
@@ -141,7 +177,7 @@ class Request {
       .update(updates)
       .returning('*')
 
-    return updatedRequest
+    return this.mapToApiResponse(updatedRequest)
   }
 
   // Get current step details
@@ -161,21 +197,25 @@ class Request {
   static async getSLAWarnings(hoursBeforeDeadline = 4) {
     const warningTime = new Date(Date.now() + hoursBeforeDeadline * 60 * 60 * 1000)
 
-    return await db(this.tableName)
+    const requests = await db(this.tableName)
       .leftJoin('users as creator', 'requests.created_by', 'creator.id')
       .select('requests.*', 'creator.email as creator_email')
       .where('requests.status', 'pending')
       .where('requests.sla_deadline', '<=', warningTime)
       .where('requests.sla_deadline', '>', new Date())
+
+    return this.mapArrayToApiResponse(requests)
   }
 
   // Get overdue requests
   static async getOverdueRequests() {
-    return await db(this.tableName)
+    const requests = await db(this.tableName)
       .leftJoin('users as creator', 'requests.created_by', 'creator.id')
       .select('requests.*', 'creator.email as creator_email')
       .where('requests.status', 'pending')
       .where('requests.sla_deadline', '<', new Date())
+
+    return this.mapArrayToApiResponse(requests)
   }
 
   // Analytics queries

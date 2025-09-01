@@ -21,8 +21,8 @@ const RegisterPage = () => {
   } = useForm({
     mode: 'onChange',
     defaultValues: {
-      first_name: '',
-      last_name: '',
+      firstName: '',
+      lastName: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -103,11 +103,11 @@ const RegisterPage = () => {
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="first_name" className="label">
+                <label htmlFor="firstName" className="label">
                   First name
                 </label>
                 <input
-                  {...register('first_name', {
+                  {...register('firstName', {
                     required: 'First name is required',
                     minLength: {
                       value: 2,
@@ -115,26 +115,26 @@ const RegisterPage = () => {
                     }
                   })}
                   type="text"
-                  id="first_name"
-                  name="first_name"
+                  id="firstName"
+                  name="firstName"
                   autoComplete="given-name"
-                  className={errors.first_name ? 'input-error' : 'input'}
+                  className={errors.firstName ? 'input-error' : 'input'}
                   placeholder="First name"
                   data-testid="first-name-input"
                 />
-                {errors.first_name && (
+                {errors.firstName && (
                   <p className="mt-1 text-sm text-error-600" data-testid="first-name-error">
-                    {errors.first_name.message}
+                    {errors.firstName.message}
                   </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="last_name" className="label">
+                <label htmlFor="lastName" className="label">
                   Last name
                 </label>
                 <input
-                  {...register('last_name', {
+                  {...register('lastName', {
                     required: 'Last name is required',
                     minLength: {
                       value: 2,
@@ -142,16 +142,16 @@ const RegisterPage = () => {
                     }
                   })}
                   type="text"
-                  id="last_name"
-                  name="last_name"
+                  id="lastName"
+                  name="lastName"
                   autoComplete="family-name"
-                  className={errors.last_name ? 'input-error' : 'input'}
+                  className={errors.lastName ? 'input-error' : 'input'}
                   placeholder="Last name"
                   data-testid="last-name-input"
                 />
-                {errors.last_name && (
+                {errors.lastName && (
                   <p className="mt-1 text-sm text-error-600" data-testid="last-name-error">
-                    {errors.last_name.message}
+                    {errors.lastName.message}
                   </p>
                 )}
               </div>

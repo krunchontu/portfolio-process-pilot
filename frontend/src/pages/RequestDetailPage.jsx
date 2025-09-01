@@ -447,7 +447,7 @@ const RequestDetailPage = () => {
                         {entry.action} by {entry.user_name}
                       </p>
                       <p className="text-sm text-secondary-600">
-                        {formatDate(entry.created_at)}
+                        {formatDate(entry.createdAt)}
                       </p>
                       {entry.comment && (
                         <p className="text-sm text-secondary-700 mt-1">
@@ -475,7 +475,7 @@ const RequestDetailPage = () => {
                 <div className="flex items-center space-x-2 mt-1">
                   <User className="w-4 h-4 text-secondary-400" />
                   <span className="text-secondary-900" data-testid="creator-name">
-                    {requestData.creator_first_name} {requestData.creator_last_name}
+                    {requestData.creatorFirstName} {requestData.creatorLastName}
                   </span>
                 </div>
               </div>

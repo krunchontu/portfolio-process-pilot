@@ -13,8 +13,8 @@ const ProfilePage = () => {
   // Profile form
   const profileForm = useForm({
     defaultValues: {
-      first_name: user?.first_name || '',
-      last_name: user?.last_name || '',
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
       email: user?.email || '',
       department: user?.department || ''
     }
@@ -95,7 +95,7 @@ const ProfilePage = () => {
               <div>
                 <label className="label">First name</label>
                 <input
-                  {...profileForm.register('first_name', { required: true })}
+                  {...profileForm.register('firstName', { required: true })}
                   type="text"
                   className="input"
                   disabled
@@ -105,7 +105,7 @@ const ProfilePage = () => {
               <div>
                 <label className="label">Last name</label>
                 <input
-                  {...profileForm.register('last_name', { required: true })}
+                  {...profileForm.register('lastName', { required: true })}
                   type="text"
                   className="input"
                   disabled

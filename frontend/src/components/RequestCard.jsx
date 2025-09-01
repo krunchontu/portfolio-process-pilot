@@ -107,11 +107,11 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
 
           {/* Request Details */}
           <div className="space-y-2 text-sm text-secondary-600 mb-4">
-            {showCreator && request.creator_first_name && (
+            {showCreator && request.creatorFirstName && (
               <div className="flex items-center space-x-2" data-testid="creator-info">
                 <User className="w-4 h-4" />
                 <span>
-                  {request.creator_first_name} {request.creator_last_name}
+                  {request.creatorFirstName} {request.creatorLastName}
                   {request.creator_email && (
                     <span className="text-xs ml-1">({request.creator_email})</span>
                   )}
@@ -211,7 +211,7 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
                 onClick={(e) => {
                   e.preventDefault()
                   // TODO: Implement cancel functionality
-                  console.log('Cancel request:', request.id)
+                  // Cancel functionality will be implemented in future story
                 }}
               >
                 Cancel

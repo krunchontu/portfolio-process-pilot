@@ -7,21 +7,65 @@ class User {
     return 'users'
   }
 
+  // Convert database record to API response format (snake_case → camelCase)
+  static mapToApiResponse(user) {
+    if (!user) return null
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      role: user.role,
+      department: user.department,
+      isActive: user.is_active,
+      lastLogin: user.last_login,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at
+    }
+  }
+
+  // Convert multiple database records to API response format
+  static mapArrayToApiResponse(users) {
+    return users.map(user => this.mapToApiResponse(user))
+  }
+
+  // Convert camelCase input to snake_case for database operations
+  static mapToDbColumns(userData) {
+    const mapping = {
+      firstName: 'first_name',
+      lastName: 'last_name',
+      isActive: 'is_active',
+      createdAt: 'created_at',
+      updatedAt: 'updated_at'
+    }
+
+    const dbData = {}
+    for (const [key, value] of Object.entries(userData)) {
+      const dbKey = mapping[key] || key
+      dbData[dbKey] = value
+    }
+    return dbData
+  }
+
   // Create new user
   static async create(userData) {
     const { password, ...rest } = userData
-    const password_hash = await bcrypt.hash(password, DATABASE.BCRYPT_SALT_ROUNDS)
+    const passwordHash = await bcrypt.hash(password, DATABASE.BCRYPT_SALT_ROUNDS)
+
+    // Convert camelCase to snake_case for database
+    const dbData = this.mapToDbColumns(rest)
 
     const [user] = await db(this.tableName)
-      .insert({ ...rest, password_hash })
+      .insert({ ...dbData, password_hash: passwordHash })
       .returning('*')
 
     // Remove password hash from returned object
     delete user.password_hash
-    return user
+    return this.mapToApiResponse(user)
   }
 
-  // Find user by ID
+  // Find user by ID (returns raw database record for internal use)
   static async findById(id) {
     const user = await db(this.tableName)
       .where('id', id)
@@ -33,11 +77,27 @@ class User {
     return user
   }
 
-  // Find user by email
+  // Find user by ID for API response (returns mapped camelCase)
+  static async findByIdForApi(id) {
+    const user = await this.findById(id)
+    return this.mapToApiResponse(user)
+  }
+
+  // Find user by email (returns raw database record for authentication)
   static async findByEmail(email) {
     return await db(this.tableName)
       .where('email', email)
       .first()
+  }
+
+  // Find user by email for API response (returns mapped camelCase)
+  static async findByEmailForApi(email) {
+    const user = await this.findByEmail(email)
+    if (user) {
+      delete user.password_hash
+      return this.mapToApiResponse(user)
+    }
+    return null
   }
 
   // Validate password
@@ -47,20 +107,24 @@ class User {
 
   // Update user
   static async update(id, updates) {
+    // Convert camelCase to snake_case for database
+    const dbUpdates = this.mapToDbColumns(updates)
+
     if (updates.password) {
-      updates.password_hash = await bcrypt.hash(updates.password, DATABASE.BCRYPT_SALT_ROUNDS)
-      delete updates.password
+      dbUpdates.password_hash = await bcrypt.hash(updates.password, DATABASE.BCRYPT_SALT_ROUNDS)
+      delete dbUpdates.password
     }
 
     const [user] = await db(this.tableName)
       .where('id', id)
-      .update({ ...updates, updated_at: new Date() })
+      .update({ ...dbUpdates, updated_at: new Date() })
       .returning('*')
 
     if (user) {
       delete user.password_hash
+      return this.mapToApiResponse(user)
     }
-    return user
+    return null
   }
 
   // Update last login
@@ -110,10 +174,12 @@ class User {
       })
     }
 
-    return await query
+    const users = await query
       .orderBy('created_at', 'desc')
       .limit(limit)
       .offset(offset)
+
+    return this.mapArrayToApiResponse(users)
   }
 
   // Count users with filters
@@ -157,11 +223,13 @@ class User {
 
   // Get managers for department
   static async getManagersByDepartment(department) {
-    return await db(this.tableName)
+    const managers = await db(this.tableName)
       .select('id', 'email', 'first_name', 'last_name')
       .where('role', 'manager')
       .where('department', department)
       .where('is_active', true)
+
+    return this.mapArrayToApiResponse(managers)
   }
 }
 

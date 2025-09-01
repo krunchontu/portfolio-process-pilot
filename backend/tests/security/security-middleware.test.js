@@ -7,21 +7,21 @@
 
 const request = require('supertest')
 const app = require('../../src/app')
-const { setupTestDb, clearTestDb, createTestUser } = require('../test-utils/dbSetup')
+const { testDbManager, testUtils } = require('../../src/test-utils/dbSetup')
 
 describe('Security Middleware Integration', () => {
   let testUser
 
   beforeAll(async () => {
-    await setupTestDb()
-    testUser = await createTestUser({
+    await testDbManager.setupTestDb()
+    testUser = await testUtils.createTestUser({
       email: 'middleware.test@example.com',
       role: 'employee'
     })
   })
 
   afterAll(async () => {
-    await clearTestDb()
+    await testDbManager.cleanupTestDb()
   })
 
   describe('🛡️ Security Headers (Helmet)', () => {

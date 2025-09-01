@@ -93,7 +93,7 @@ const DashboardPage = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-secondary-900">
-          Welcome back, {user?.first_name}!
+          Welcome back, {user?.firstName}!
         </h1>
         <p className="text-secondary-600 mt-2">
           Here's what's happening with your workflows today.
@@ -349,7 +349,7 @@ const DashboardPage = () => {
                         )}
                       </div>
                       <p className="text-sm text-secondary-600 mt-1">
-                        From {request.creator_first_name} {request.creator_last_name} •
+                        From {request.creatorFirstName} {request.creatorLastName} •
                         {formatDistanceToNow(new Date(request.submitted_at), { addSuffix: true })}
                       </p>
                     </div>

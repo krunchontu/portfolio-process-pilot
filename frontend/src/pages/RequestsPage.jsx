@@ -130,7 +130,7 @@ const RequestsPage = () => {
   // Export requests (placeholder)
   const exportRequests = () => {
     // TODO: Implement export functionality
-    console.log('Export requests with params:', queryParams)
+    // Export feature will be implemented in future story
   }
 
   // Get unique request types for filter
@@ -433,7 +433,7 @@ const RequestsPage = () => {
             className="btn-outline"
             onClick={() => {
               // TODO: Implement load more functionality
-              console.log('Load more requests')
+              // Load more functionality will be implemented in future story
             }}
             data-testid="load-more-button"
           >

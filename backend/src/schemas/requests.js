@@ -11,7 +11,7 @@ const createRequestSchema = Joi.object({
       'any.only': 'Request type must be one of: leave-request, expense-approval, equipment-request'
     }),
 
-  workflow_id: uuid().optional().messages({
+  workflowId: uuid().optional().messages({
     'string.guid': 'Workflow ID must be a valid UUID'
   }),
 

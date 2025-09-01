@@ -7,23 +7,23 @@
 
 const request = require('supertest')
 const app = require('../../src/app')
-const { setupTestDb, clearTestDb, createTestUser } = require('../test-utils/dbSetup')
+const { testDbManager, testUtils } = require('../../src/test-utils/dbSetup')
 
 describe('Authentication Security', () => {
   let testUser
   let agent
 
   beforeAll(async () => {
-    await setupTestDb()
+    await testDbManager.setupTestDb()
   })
 
   afterAll(async () => {
-    await clearTestDb()
+    await testDbManager.cleanupTestDb()
   })
 
   beforeEach(async () => {
     // Create test user for authentication tests
-    testUser = await createTestUser({
+    testUser = await testUtils.createTestUser({
       email: 'security.test@example.com',
       password: 'SecureTestPass123!',
       first_name: 'Security',

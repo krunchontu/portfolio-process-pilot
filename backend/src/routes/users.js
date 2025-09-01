@@ -25,7 +25,7 @@ router.get('/',
         limit = 50,
         offset = 0
       } = req.query
-      const userId = req.user.userId
+      const userId = req.user.id
       const userRole = req.user.role
 
       logger.info('Fetching users list', {
@@ -74,7 +74,7 @@ router.get('/',
       return apiResponse.success(res, result, 'Users retrieved successfully')
     } catch (error) {
       logger.error('Get users error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         error: error.message,
         stack: error.stack
       })
@@ -89,7 +89,7 @@ router.get('/:id',
   async (req, res) => {
     try {
       const targetUserId = parseInt(req.params.id)
-      const userId = req.user.userId
+      const userId = req.user.id
       const userRole = req.user.role
 
       logger.info('Fetching user by ID', { userId, userRole, targetUserId })
@@ -119,7 +119,7 @@ router.get('/:id',
       return apiResponse.success(res, { user }, 'User retrieved successfully')
     } catch (error) {
       logger.error('Get user error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         targetUserId: req.params.id,
         error: error.message,
         stack: error.stack
@@ -136,7 +136,7 @@ router.put('/:id',
   async (req, res) => {
     try {
       const targetUserId = parseInt(req.params.id)
-      const userId = req.user.userId
+      const userId = req.user.id
       const updateData = req.body
 
       logger.info('Updating user', {
@@ -182,7 +182,7 @@ router.put('/:id',
       return apiResponse.success(res, { user: updatedUser }, 'User updated successfully')
     } catch (error) {
       logger.error('Update user error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         targetUserId: req.params.id,
         error: error.message,
         stack: error.stack
@@ -203,7 +203,7 @@ router.patch('/:id/deactivate',
   async (req, res) => {
     try {
       const targetUserId = parseInt(req.params.id)
-      const userId = req.user.userId
+      const userId = req.user.id
 
       logger.info('Deactivating user', { userId, targetUserId })
 
@@ -257,7 +257,7 @@ router.patch('/:id/deactivate',
       )
     } catch (error) {
       logger.error('Deactivate user error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         targetUserId: req.params.id,
         error: error.message,
         stack: error.stack
@@ -273,7 +273,7 @@ router.patch('/:id/activate',
   async (req, res) => {
     try {
       const targetUserId = parseInt(req.params.id)
-      const userId = req.user.userId
+      const userId = req.user.id
 
       logger.info('Activating user', { userId, targetUserId })
 
@@ -301,7 +301,7 @@ router.patch('/:id/activate',
       )
     } catch (error) {
       logger.error('Activate user error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         targetUserId: req.params.id,
         error: error.message,
         stack: error.stack
@@ -317,7 +317,7 @@ router.get('/:id/requests',
   async (req, res) => {
     try {
       const targetUserId = parseInt(req.params.id)
-      const userId = req.user.userId
+      const userId = req.user.id
       const userRole = req.user.role
       const { status, limit = 20, offset = 0 } = req.query
 
@@ -394,7 +394,7 @@ router.get('/:id/requests',
       return apiResponse.success(res, result, 'User requests retrieved successfully')
     } catch (error) {
       logger.error('Get user requests error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         targetUserId: req.params.id,
         error: error.message,
         stack: error.stack
@@ -409,7 +409,7 @@ router.post('/',
   validateRequest(usersSchema.create),
   async (req, res) => {
     try {
-      const userId = req.user.userId
+      const userId = req.user.id
       const userData = req.body
 
       logger.info('Creating new user', {
@@ -440,7 +440,7 @@ router.post('/',
       return apiResponse.created(res, { user: newUser }, 'User created successfully')
     } catch (error) {
       logger.error('Create user error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         error: error.message,
         stack: error.stack
       })

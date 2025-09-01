@@ -5,45 +5,76 @@ class RequestHistory {
     return 'request_history'
   }
 
+  // Convert database record to API response format (snake_case → camelCase)
+  static mapToApiResponse(history) {
+    if (!history) return null
+
+    return {
+      id: history.id,
+      requestId: history.request_id,
+      actorId: history.actor_id,
+      actorEmail: history.actor_email,
+      actorRole: history.actor_role,
+      action: history.action,
+      stepId: history.step_id,
+      comment: history.comment,
+      metadata: history.metadata,
+      performedAt: history.performed_at,
+      createdAt: history.created_at,
+      // Include joined fields if present
+      actorFirstName: history.actor_first_name,
+      actorLastName: history.actor_last_name,
+      currentActorEmail: history.current_actor_email,
+      requestType: history.request_type,
+      creatorFirstName: history.creator_first_name,
+      creatorLastName: history.creator_last_name
+    }
+  }
+
+  // Convert multiple database records to API response format
+  static mapArrayToApiResponse(historyRecords) {
+    return historyRecords.map(history => this.mapToApiResponse(history))
+  }
+
   // Create new history entry
   static async create(historyData) {
-    const { request_id, actor_id, action, step_id, comment, metadata } = historyData
+    const { requestId, actorId, action, stepId, comment, metadata } = historyData
 
     // Get actor details for backup
-    let actor_email = null
-    let actor_role = null
+    let actorEmail = null
+    let actorRole = null
 
-    if (actor_id) {
+    if (actorId) {
       const actor = await db('users')
         .select('email', 'role')
-        .where('id', actor_id)
+        .where('id', actorId)
         .first()
 
       if (actor) {
-        actor_email = actor.email
-        actor_role = actor.role
+        actorEmail = actor.email
+        actorRole = actor.role
       }
     }
 
     const [history] = await db(this.tableName)
       .insert({
-        request_id,
-        actor_id,
-        actor_email,
-        actor_role,
+        request_id: requestId,
+        actor_id: actorId,
+        actor_email: actorEmail,
+        actor_role: actorRole,
         action,
-        step_id,
+        step_id: stepId,
         comment,
         metadata
       })
       .returning('*')
 
-    return history
+    return this.mapToApiResponse(history)
   }
 
   // Find history by request ID
   static async findByRequestId(requestId) {
-    return await db(this.tableName)
+    const historyRecords = await db(this.tableName)
       .leftJoin('users', 'request_history.actor_id', 'users.id')
       .select(
         'request_history.*',
@@ -53,11 +84,13 @@ class RequestHistory {
       )
       .where('request_id', requestId)
       .orderBy('performed_at', 'asc')
+
+    return this.mapArrayToApiResponse(historyRecords)
   }
 
   // Get recent activity
   static async getRecentActivity(limit = 50) {
-    return await db(this.tableName)
+    const activities = await db(this.tableName)
       .leftJoin('requests', 'request_history.request_id', 'requests.id')
       .leftJoin('users as actor', 'request_history.actor_id', 'actor.id')
       .leftJoin('users as creator', 'requests.created_by', 'creator.id')
@@ -74,11 +107,13 @@ class RequestHistory {
       )
       .orderBy('request_history.performed_at', 'desc')
       .limit(limit)
+
+    return this.mapArrayToApiResponse(activities)
   }
 
   // Get activity by actor
   static async getActivityByActor(actorId, limit = 20) {
-    return await db(this.tableName)
+    const activities = await db(this.tableName)
       .leftJoin('requests', 'request_history.request_id', 'requests.id')
       .select(
         'request_history.performed_at',
@@ -90,6 +125,8 @@ class RequestHistory {
       .where('request_history.actor_id', actorId)
       .orderBy('request_history.performed_at', 'desc')
       .limit(limit)
+
+    return this.mapArrayToApiResponse(activities)
   }
 
   // Analytics: Actions by type over time

@@ -1,5 +1,6 @@
 const sanitizeHtml = require('sanitize-html')
-const { body, query, param, validationResult } = require('express-validator')
+const { body, param, validationResult } = require('express-validator')
+const { logger } = require('../utils/logger')
 
 /**
  * Input Sanitization Middleware
@@ -73,7 +74,13 @@ const sanitizeInput = (options = {}) => {
 
       next()
     } catch (error) {
-      console.error('Sanitization error:', error)
+      logger.error('Input sanitization failed:', {
+        error: error.message,
+        stack: error.stack,
+        path: req.path,
+        method: req.method,
+        body: req.body ? 'present' : 'absent'
+      })
       res.status(400).json({
         error: 'Invalid input data',
         code: 'SANITIZATION_ERROR'
@@ -190,8 +197,8 @@ const preventSqlInjection = (req, res, next) => {
   const sqlInjectionPatterns = [
     /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/i,
     /(\b(OR|AND)\s+\d+\s*=\s*\d+)/i,
-    /([\'\";])/,
-    /(\-\-)/,
+    /(['"";])/,
+    /(--)/,
     /\/\*/,
     /\*\//
   ]

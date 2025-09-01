@@ -61,11 +61,11 @@ const CreateRequestPage = () => {
     try {
       const payload = { ...data }
       delete payload.type
-      delete payload.workflow_id
+      delete payload.workflowId
 
       await createRequestMutation.mutateAsync({
         type: data.type,
-        workflow_id: data.workflow_id,
+        workflow_id: data.workflowId,
         payload
       })
     } catch (error) {
@@ -453,7 +453,7 @@ const CreateRequestPage = () => {
               onChange={(e) => {
                 setValue('type', e.target.value)
                 // Reset workflow selection when type changes
-                setValue('workflow_id', '')
+                setValue('workflowId', '')
                 setSelectedWorkflow(null)
               }}
             >
@@ -473,12 +473,12 @@ const CreateRequestPage = () => {
           {/* Workflow Selection */}
           {requestType && workflowsData && workflowsData.length > 0 && (
             <div className="mt-4">
-              <label htmlFor="workflow_id" className="label">
+              <label htmlFor="workflowId" className="label">
                 Approval Workflow *
               </label>
               <select
-                id="workflow_id"
-                {...register('workflow_id', { required: 'Workflow selection is required' })}
+                id="workflowId"
+                {...register('workflowId', { required: 'Workflow selection is required' })}
                 className="input"
                 data-testid="workflow-select"
                 onChange={(e) => {
@@ -498,8 +498,8 @@ const CreateRequestPage = () => {
                     </option>
                   ))}
               </select>
-              {errors.workflow_id && (
-                <p className="error-message">{errors.workflow_id.message}</p>
+              {errors.workflowId && (
+                <p className="error-message">{errors.workflowId.message}</p>
               )}
 
               {/* Workflow Preview */}

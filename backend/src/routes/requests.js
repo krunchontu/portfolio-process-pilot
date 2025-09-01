@@ -3,7 +3,7 @@ const Request = require('../models/Request')
 const RequestHistory = require('../models/RequestHistory')
 const Workflow = require('../models/Workflow')
 const User = require('../models/User')
-const { authenticateToken, requireRole, canActOnRequest } = require('../middleware/auth')
+const { authenticateToken, requireRole: _requireRole, canActOnRequest } = require('../middleware/auth')
 const { validateRequest, validateQuery, validateParams } = require('../middleware/validation')
 const { catchAsync, AppError } = require('../middleware/errorHandler')
 const emailService = require('../services/emailService')
@@ -22,11 +22,11 @@ router.use(authenticateToken)
 
 // Create new request
 router.post('/', validateRequest(createRequestSchema), catchAsync(async (req, res) => {
-  const { type, workflow_id, payload } = req.body
+  const { type, workflowId, payload } = req.body
 
   // Get workflow configuration
-  const workflow = workflow_id
-    ? await Workflow.findById(workflow_id)
+  const workflow = workflowId
+    ? await Workflow.findById(workflowId)
     : await Workflow.findByFlowId(type)
 
   if (!workflow) {
@@ -59,7 +59,7 @@ router.post('/', validateRequest(createRequestSchema), catchAsync(async (req, re
 
   // Send email notification to approvers
   try {
-    const user = await User.findById(req.user.userId)
+    const user = await User.findById(req.user.id)
     if (user) {
       await emailService.sendRequestSubmittedNotification(fullRequest, user, workflow)
       logger.info('Request submission notification sent', {
@@ -72,7 +72,7 @@ router.post('/', validateRequest(createRequestSchema), catchAsync(async (req, re
     // Don't fail the request creation if email fails
     logger.error('Failed to send request submission notification', {
       requestId: fullRequest.id,
-      userId: req.user.userId,
+      userId: req.user.id,
       error: emailError.message
     })
   }
@@ -148,19 +148,17 @@ router.post('/:id/action',
       comment
     })
 
-    let updatedRequest
-
     if (action === 'reject') {
     // Reject the request
-      updatedRequest = await Request.updateStatus(request.id, 'rejected', null, new Date())
+      await Request.updateStatus(request.id, 'rejected', null, new Date())
     } else if (action === 'approve') {
     // Check if this is the final step
       if (Request.isFinalStep(request)) {
-        updatedRequest = await Request.updateStatus(request.id, 'approved', null, new Date())
+        await Request.updateStatus(request.id, 'approved', null, new Date())
       } else {
       // Move to next step
-        const nextStepIndex = request.current_step_index + 1
-        updatedRequest = await Request.updateStatus(request.id, 'pending', nextStepIndex)
+        const nextStepIndex = request.currentStepIndex + 1
+        await Request.updateStatus(request.id, 'pending', nextStepIndex)
       }
     }
 
@@ -169,9 +167,9 @@ router.post('/:id/action',
     // Send email notifications
     try {
       const [user, workflow, approver] = await Promise.all([
-        User.findById(request.user_id || request.created_by),
-        Workflow.findById(request.workflow_id),
-        User.findById(req.user.userId)
+        User.findById(request.userId || request.createdBy),
+        Workflow.findById(request.workflowId),
+        User.findById(req.user.id)
       ])
 
       if (user && workflow && approver) {
@@ -196,7 +194,7 @@ router.post('/:id/action',
       logger.error('Failed to send request action notification', {
         requestId: fullRequest.id,
         action,
-        userId: req.user.userId,
+        userId: req.user.id,
         error: emailError.message
       })
     }
@@ -216,7 +214,7 @@ router.post('/:id/cancel',
     }
 
     // Only the requestor or admin can cancel
-    if (request.created_by !== req.user.id && req.user.role !== 'admin') {
+    if (request.createdBy !== req.user.id && req.user.role !== 'admin') {
       throw new AppError('You can only cancel your own requests', 403, 'CANCEL_NOT_ALLOWED')
     }
 
@@ -232,7 +230,7 @@ router.post('/:id/cancel',
       comment: req.body.comment || 'Request cancelled by requestor'
     })
 
-    const updatedRequest = await Request.updateStatus(request.id, 'cancelled', null, new Date())
+    await Request.updateStatus(request.id, 'cancelled', null, new Date())
 
     const fullRequest = await Request.findById(request.id)
     return res.success(200, 'Request cancelled successfully', { request: fullRequest })

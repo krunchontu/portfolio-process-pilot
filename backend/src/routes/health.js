@@ -105,7 +105,7 @@ const { supabaseAdapter } = require('../adapters/supabase')
 const emailService = require('../services/emailService')
 
 const router = express.Router()
-const execAsync = promisify(exec)
+const _execAsync = promisify(exec)
 
 // Cache for health check results (to avoid hammering services)
 const healthCache = new Map()
@@ -488,14 +488,14 @@ async function checkExternalServices() {
   // Add other external service checks here
   // Example: Redis, external APIs, etc.
 
-  const overall_status = totalCount === 0
+  const overallStatus = totalCount === 0
     ? 'healthy'
     : (healthyCount === totalCount
       ? 'healthy'
       : (healthyCount > 0 ? 'degraded' : 'unhealthy'))
 
   return {
-    overall_status,
+    overall_status: overallStatus,
     healthy_services: healthyCount,
     total_services: totalCount,
     services
@@ -513,7 +513,7 @@ function determineOverallStatus(statuses) {
 
 async function generatePrometheusMetrics() {
   const memUsage = process.memoryUsage()
-  const systemMetrics = await getSystemMetrics()
+  const _systemMetrics = await getSystemMetrics()
   const dbHealth = await healthCheck()
 
   const metrics = [

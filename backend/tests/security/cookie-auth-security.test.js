@@ -1,7 +1,7 @@
 const request = require('supertest')
 const { app } = require('../../src/app')
 const User = require('../../src/models/User')
-const testUtils = require('../test-utils/dbSetup')
+const { testDbManager, testUtils } = require('../../src/test-utils/dbSetup')
 
 describe('Cookie Authentication Security Tests', () => {
   let testUser

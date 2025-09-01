@@ -226,12 +226,12 @@ const Layout = ({ children }) => {
                 <HeadlessMenu.Button className="flex items-center space-x-2 text-sm rounded-lg p-2 hover:bg-secondary-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                   <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                     <span className="text-white font-medium text-sm">
-                      {user?.first_name?.[0]}{user?.last_name?.[0]}
+                      {user?.firstName?.[0]}{user?.lastName?.[0]}
                     </span>
                   </div>
                   <div className="hidden md:block text-left">
                     <div className="text-sm font-medium text-secondary-900">
-                      {user?.first_name} {user?.last_name}
+                      {user?.firstName} {user?.lastName}
                     </div>
                     <div className="text-xs text-secondary-500 capitalize">
                       {user?.role}

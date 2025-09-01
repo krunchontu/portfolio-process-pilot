@@ -105,7 +105,7 @@ export const AuthProvider = ({ children }) => {
       // Invalidate profile query to refetch
       queryClient.invalidateQueries('profile')
 
-      toast.success(`Welcome back, ${user.first_name}!`)
+      toast.success(`Welcome back, ${user.firstName}!`)
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.error || 'Login failed'

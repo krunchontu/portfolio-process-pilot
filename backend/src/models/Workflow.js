@@ -5,18 +5,46 @@ class Workflow {
     return 'workflows'
   }
 
+  // Convert database record to API response format (snake_case → camelCase)
+  static mapToApiResponse(workflow) {
+    if (!workflow) return null
+
+    return {
+      id: workflow.id,
+      name: workflow.name,
+      flowId: workflow.flow_id,
+      description: workflow.description,
+      steps: workflow.steps,
+      notifications: workflow.notifications,
+      isActive: workflow.is_active,
+      createdBy: workflow.created_by,
+      updatedBy: workflow.updated_by,
+      createdAt: workflow.created_at,
+      updatedAt: workflow.updated_at,
+      // Include joined fields if present
+      creatorFirstName: workflow.creator_first_name,
+      creatorLastName: workflow.creator_last_name,
+      creatorEmail: workflow.creator_email
+    }
+  }
+
+  // Convert multiple database records to API response format
+  static mapArrayToApiResponse(workflows) {
+    return workflows.map(workflow => this.mapToApiResponse(workflow))
+  }
+
   // Create new workflow
   static async create(workflowData) {
     const [workflow] = await db(this.tableName)
       .insert(workflowData)
       .returning('*')
 
-    return workflow
+    return this.mapToApiResponse(workflow)
   }
 
   // Find workflow by ID
   static async findById(id) {
-    return await db(this.tableName)
+    const workflow = await db(this.tableName)
       .leftJoin('users as creator', 'workflows.created_by', 'creator.id')
       .select(
         'workflows.*',
@@ -26,19 +54,23 @@ class Workflow {
       )
       .where('workflows.id', id)
       .first()
+
+    return this.mapToApiResponse(workflow)
   }
 
   // Find workflow by flow_id
   static async findByFlowId(flowId) {
-    return await db(this.tableName)
+    const workflow = await db(this.tableName)
       .where('flow_id', flowId)
       .where('is_active', true)
       .first()
+
+    return this.mapToApiResponse(workflow)
   }
 
   // List all active workflows
   static async listActive() {
-    return await db(this.tableName)
+    const workflows = await db(this.tableName)
       .leftJoin('users as creator', 'workflows.created_by', 'creator.id')
       .select(
         'workflows.*',
@@ -47,6 +79,8 @@ class Workflow {
       )
       .where('workflows.is_active', true)
       .orderBy('workflows.name', 'asc')
+
+    return this.mapArrayToApiResponse(workflows)
   }
 
   // List workflows with filtering and pagination
@@ -75,10 +109,12 @@ class Workflow {
       })
     }
 
-    return await query
+    const workflows = await query
       .orderBy('workflows.created_at', 'desc')
       .limit(limit)
       .offset(offset)
+
+    return this.mapArrayToApiResponse(workflows)
   }
 
   // Count workflows with filtering
@@ -111,7 +147,7 @@ class Workflow {
       .update({ ...updates, updated_at: new Date() })
       .returning('*')
 
-    return workflow
+    return this.mapToApiResponse(workflow)
   }
 
   // Deactivate workflow
@@ -130,7 +166,7 @@ class Workflow {
       .update(updateData)
       .returning('*')
 
-    return workflow
+    return this.mapToApiResponse(workflow)
   }
 
   // Get workflow usage statistics

@@ -344,7 +344,7 @@ const validators = {
 
   url: (value, schema, key) => {
     try {
-      new URL(value)
+      new URL(value) // eslint-disable-line no-new
       return true
     } catch (error) {
       return `${key} must be a valid URL`

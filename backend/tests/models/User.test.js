@@ -7,8 +7,8 @@ describeWithDb('User Model', () => {
       const userData = {
         email: 'john@example.com',
         password: 'password123',
-        first_name: 'John',
-        last_name: 'Doe',
+        firstName: 'John',
+        lastName: 'Doe',
         role: 'employee',
         department: 'IT'
       };
@@ -18,22 +18,22 @@ describeWithDb('User Model', () => {
       expect(user).toBeDefined();
       expect(user.id).toBeDefined();
       expect(user.email).toBe(userData.email.toLowerCase());
-      expect(user.first_name).toBe(userData.first_name);
-      expect(user.last_name).toBe(userData.last_name);
+      expect(user.firstName).toBe(userData.firstName);
+      expect(user.lastName).toBe(userData.lastName);
       expect(user.role).toBe(userData.role);
       expect(user.department).toBe(userData.department);
-      expect(user.is_active).toBe(true);
+      expect(user.isActive).toBe(true);
       expect(user.password_hash).toBeUndefined(); // Should be removed from response
-      expect(user.created_at).toBeDefined();
-      expect(user.updated_at).toBeDefined();
+      expect(user.createdAt).toBeDefined();
+      expect(user.updatedAt).toBeDefined();
     });
     
     it('should hash the password correctly', async () => {
       const userData = {
         email: 'jane@example.com',
         password: 'password123',
-        first_name: 'Jane',
-        last_name: 'Smith'
+        firstName: 'Jane',
+        lastName: 'Smith'
       };
       
       await User.create(userData);
@@ -52,8 +52,8 @@ describeWithDb('User Model', () => {
       const userData = {
         email: 'default@example.com',
         password: 'password123',
-        first_name: 'Default',
-        last_name: 'User'
+        firstName: 'Default',
+        lastName: 'User'
       };
       
       const user = await User.create(userData);
@@ -87,8 +87,8 @@ describeWithDb('User Model', () => {
       const userData = {
         email: 'findby@example.com',
         password: 'password123',
-        first_name: 'Find',
-        last_name: 'ByEmail'
+        firstName: 'Find',
+        lastName: 'ByEmail'
       };
       
       await User.create(userData);
@@ -134,17 +134,17 @@ describeWithDb('User Model', () => {
       const user = await testUtils.createTestUser();
       
       const updates = {
-        first_name: 'Updated',
-        last_name: 'Name',
+        firstName: 'Updated',
+        lastName: 'Name',
         department: 'Marketing'
       };
       
       const updatedUser = await User.update(user.id, updates);
       
-      expect(updatedUser.first_name).toBe(updates.first_name);
-      expect(updatedUser.last_name).toBe(updates.last_name);
+      expect(updatedUser.firstName).toBe(updates.firstName);
+      expect(updatedUser.lastName).toBe(updates.lastName);
       expect(updatedUser.department).toBe(updates.department);
-      expect(updatedUser.updated_at).toBeDefined();
+      expect(updatedUser.updatedAt).toBeDefined();
     });
     
     it('should hash new password when updating', async () => {
@@ -166,19 +166,19 @@ describeWithDb('User Model', () => {
         email: 'emp1@example.com', 
         role: 'employee', 
         department: 'IT',
-        is_active: true 
+        isActive: true 
       });
       await testUtils.createTestUser({ 
         email: 'mgr1@example.com', 
         role: 'manager', 
         department: 'IT',
-        is_active: true 
+        isActive: true 
       });
       await testUtils.createTestUser({ 
         email: 'emp2@example.com', 
         role: 'employee', 
         department: 'HR',
-        is_active: false 
+        isActive: false 
       });
     });
     
@@ -209,10 +209,10 @@ describeWithDb('User Model', () => {
     });
     
     it('should filter by active status', async () => {
-      const activeUsers = await User.list({ is_active: true });
+      const activeUsers = await User.list({ active: true });
       expect(activeUsers).toHaveLength(2);
       activeUsers.forEach(user => {
-        expect(user.is_active).toBe(true);
+        expect(user.isActive).toBe(true);
       });
     });
   });

@@ -44,29 +44,27 @@ describe('Logger Utilities', () => {
   describe('specialized loggers', () => {
     it('should have request logger', () => {
       expect(requestLogger).toBeDefined();
-      expect(typeof requestLogger.info).toBe('function');
+      expect(typeof requestLogger).toBe('function');
     });
 
     it('should have security logger', () => {
       expect(securityLogger).toBeDefined();
-      expect(typeof securityLogger.warn).toBe('function');
-      expect(typeof securityLogger.error).toBe('function');
+      expect(typeof securityLogger).toBe('function');
     });
 
     it('should have performance logger', () => {
       expect(performanceLogger).toBeDefined();
-      expect(typeof performanceLogger.info).toBe('function');
+      expect(typeof performanceLogger).toBe('function');
     });
 
     it('should have database logger', () => {
       expect(dbLogger).toBeDefined();
-      expect(typeof dbLogger.info).toBe('function');
-      expect(typeof dbLogger.error).toBe('function');
+      expect(typeof dbLogger).toBe('function');
     });
 
     it('should have error logger', () => {
       expect(errorLogger).toBeDefined();
-      expect(typeof errorLogger.error).toBe('function');
+      expect(typeof errorLogger).toBe('function');
     });
   });
 
@@ -161,39 +159,42 @@ describe('Logger Utilities', () => {
 
   describe('specialized logger usage', () => {
     it('should use security logger for security events', () => {
-      const securitySpy = jest.spyOn(securityLogger, 'warn').mockImplementation(() => {});
+      const securitySpy = jest.spyOn(loggers.security, 'warn').mockImplementation(() => {});
 
-      securityLogger.warn('Suspicious login attempt', {
+      securityLogger('suspicious_login', {
+        severity: 'medium',
         ip: '192.168.1.1',
         userAgent: 'suspicious-bot',
         attempts: 5
       });
 
-      expect(securitySpy).toHaveBeenCalledWith('Suspicious login attempt', {
+      expect(securitySpy).toHaveBeenCalledWith('Security Event', expect.objectContaining({
+        event: 'suspicious_login',
+        severity: 'medium',
         ip: '192.168.1.1',
         userAgent: 'suspicious-bot',
         attempts: 5
-      });
+      }));
 
       securitySpy.mockRestore();
     });
 
     it('should use performance logger for timing events', () => {
-      const perfSpy = jest.spyOn(performanceLogger, 'info').mockImplementation(() => {});
+      const perfSpy = jest.spyOn(loggers.performance, 'info').mockImplementation(() => {});
 
-      performanceLogger.info('API response time', {
+      performanceLogger('api_call', 150, {
         endpoint: '/api/users',
         method: 'GET',
-        responseTime: 150,
         statusCode: 200
       });
 
-      expect(perfSpy).toHaveBeenCalledWith('API response time', {
+      expect(perfSpy).toHaveBeenCalledWith('Performance Metric', expect.objectContaining({
+        operation: 'api_call',
+        duration: '150ms',
         endpoint: '/api/users',
         method: 'GET',
-        responseTime: 150,
         statusCode: 200
-      });
+      }));
 
       perfSpy.mockRestore();
     });

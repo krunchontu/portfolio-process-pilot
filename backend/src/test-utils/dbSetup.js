@@ -229,11 +229,11 @@ const testUtils = {
     const defaultData = {
       email: `test-${Date.now()}-${Math.random().toString(36).substr(2, 5)}@example.com`,
       password: 'password123',
-      first_name: 'Test',
-      last_name: 'User',
+      firstName: 'Test',
+      lastName: 'User',
       role: 'employee',
       department: 'IT',
-      is_active: true
+      isActive: true
     }
 
     return await User.create({ ...defaultData, ...overrides })

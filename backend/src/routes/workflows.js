@@ -17,7 +17,7 @@ router.get('/',
   async (req, res) => {
     try {
       const { active, search, limit = 50, offset = 0 } = req.query
-      const userId = req.user.userId
+      const userId = req.user.id
       const userRole = req.user.role
 
       logger.info('Fetching workflows list', {
@@ -55,7 +55,7 @@ router.get('/',
       return apiResponse.success(res, result, 'Workflows retrieved successfully')
     } catch (error) {
       logger.error('Get workflows error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         error: error.message,
         stack: error.stack
       })
@@ -69,7 +69,7 @@ router.get('/:id',
   async (req, res) => {
     try {
       const workflowId = parseInt(req.params.id)
-      const userId = req.user.userId
+      const userId = req.user.id
 
       logger.info('Fetching workflow by ID', { userId, workflowId })
 
@@ -84,7 +84,7 @@ router.get('/:id',
       return apiResponse.success(res, { workflow }, 'Workflow retrieved successfully')
     } catch (error) {
       logger.error('Get workflow error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         workflowId: req.params.id,
         error: error.message,
         stack: error.stack
@@ -99,7 +99,7 @@ router.post('/',
   validateRequest(workflowsSchema.create),
   async (req, res) => {
     try {
-      const userId = req.user.userId
+      const userId = req.user.id
       const workflowData = {
         ...req.body,
         created_by: userId
@@ -134,7 +134,7 @@ router.post('/',
       return apiResponse.created(res, { workflow }, 'Workflow created successfully')
     } catch (error) {
       logger.error('Create workflow error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         error: error.message,
         stack: error.stack
       })
@@ -155,7 +155,7 @@ router.put('/:id',
   async (req, res) => {
     try {
       const workflowId = parseInt(req.params.id)
-      const userId = req.user.userId
+      const userId = req.user.id
       const updateData = req.body
 
       logger.info('Updating workflow', {
@@ -205,7 +205,7 @@ router.put('/:id',
       return apiResponse.success(res, { workflow: updatedWorkflow }, 'Workflow updated successfully')
     } catch (error) {
       logger.error('Update workflow error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         workflowId: req.params.id,
         error: error.message,
         stack: error.stack
@@ -226,7 +226,7 @@ router.delete('/:id',
   async (req, res) => {
     try {
       const workflowId = parseInt(req.params.id)
-      const userId = req.user.userId
+      const userId = req.user.id
 
       logger.info('Deleting workflow', { userId, workflowId })
 
@@ -271,7 +271,7 @@ router.delete('/:id',
       )
     } catch (error) {
       logger.error('Delete workflow error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         workflowId: req.params.id,
         error: error.message,
         stack: error.stack
@@ -286,7 +286,7 @@ router.get('/flow/:flowId',
   async (req, res) => {
     try {
       const flowId = req.params.flowId
-      const userId = req.user.userId
+      const userId = req.user.id
 
       logger.info('Fetching workflow by flow_id', { userId, flowId })
 
@@ -301,7 +301,7 @@ router.get('/flow/:flowId',
       return apiResponse.success(res, { workflow }, 'Workflow retrieved successfully')
     } catch (error) {
       logger.error('Get workflow by flow_id error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         flowId: req.params.flowId,
         error: error.message,
         stack: error.stack
@@ -317,7 +317,7 @@ router.patch('/:id/activate',
   async (req, res) => {
     try {
       const workflowId = parseInt(req.params.id)
-      const userId = req.user.userId
+      const userId = req.user.id
 
       logger.info('Activating workflow', { userId, workflowId })
 
@@ -344,7 +344,7 @@ router.patch('/:id/activate',
       )
     } catch (error) {
       logger.error('Activate workflow error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         workflowId: req.params.id,
         error: error.message,
         stack: error.stack
@@ -360,7 +360,7 @@ router.patch('/:id/deactivate',
   async (req, res) => {
     try {
       const workflowId = parseInt(req.params.id)
-      const userId = req.user.userId
+      const userId = req.user.id
 
       logger.info('Deactivating workflow', { userId, workflowId })
 
@@ -384,7 +384,7 @@ router.patch('/:id/deactivate',
       )
     } catch (error) {
       logger.error('Deactivate workflow error', {
-        userId: req.user.userId,
+        userId: req.user.id,
         workflowId: req.params.id,
         error: error.message,
         stack: error.stack

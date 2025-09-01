@@ -9,7 +9,7 @@
 
 require('dotenv').config()
 const { databaseConfig, getConnectionInfo } = require('../config/database')
-const { logger } = require('../utils/logger')
+const { logger: _logger } = require('../utils/logger')
 
 async function checkCompatibility() {
   console.log('🔍 Checking database compatibility...\n')

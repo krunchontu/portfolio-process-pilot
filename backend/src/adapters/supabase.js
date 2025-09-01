@@ -232,7 +232,7 @@ class SupabaseAdapter {
       const client = this.getClient()
 
       // Test database connection
-      const { data, error } = await client.from('users').select('count').limit(1)
+      const { error } = await client.from('users').select('count').limit(1)
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" which is ok
         throw error
