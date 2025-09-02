@@ -103,6 +103,7 @@ const { loggers } = require('../utils/logger')
 const config = require('../config')
 const { supabaseAdapter } = require('../adapters/supabase')
 const emailService = require('../services/emailService')
+const backupMonitoringService = require('../services/backupMonitoringService')
 
 const router = express.Router()
 const _execAsync = promisify(exec)
@@ -217,15 +218,17 @@ router.get('/detailed', async (req, res) => {
     const startTime = Date.now()
 
     // Run health checks in parallel
-    const [dbHealth, systemMetrics, serviceHealth] = await Promise.all([
+    const [dbHealth, systemMetrics, serviceHealth, backupHealth] = await Promise.all([
       getFromCache('database', async () => await healthCheck()),
       getFromCache('system', async () => await getSystemMetrics()),
-      getFromCache('services', async () => await checkExternalServices())
+      getFromCache('services', async () => await checkExternalServices()),
+      getFromCache('backups', async () => await backupMonitoringService.getBackupStatus())
     ])
 
     const overallStatus = determineOverallStatus([
       dbHealth.status,
-      serviceHealth.overall_status
+      serviceHealth.overall_status,
+      backupHealth.overall_status
     ])
 
     const healthData = {
@@ -239,6 +242,7 @@ router.get('/detailed', async (req, res) => {
         database: dbHealth,
         ...serviceHealth
       },
+      backups: backupHealth,
       system: systemMetrics,
       configuration: {
         node_version: process.version,
@@ -337,6 +341,78 @@ router.get('/readiness', async (req, res) => {
   } catch (error) {
     loggers.main.error('Readiness check failed', { error: error.message })
     res.status(503).send('NOT READY')
+  }
+})
+
+/**
+ * @swagger
+ * /health/backups:
+ *   get:
+ *     summary: Backup system health check
+ *     description: Detailed backup monitoring and status information
+ *     tags: [Health]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Backup system is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         overall_status:
+ *                           type: string
+ *                           enum: [healthy, warning, critical]
+ *                         last_backup_age_hours:
+ *                           type: number
+ *                         providers:
+ *                           type: object
+ *                         storage:
+ *                           type: object
+ *                         alerts:
+ *                           type: array
+ *       503:
+ *         description: Backup system issues detected
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get('/backups', async (req, res) => {
+  try {
+    const backupStatus = await backupMonitoringService.getBackupStatus()
+
+    const statusCode = backupStatus.overall_status === 'healthy' ? 200 : 503
+
+    loggers.main.info('Backup health check performed', {
+      status: backupStatus.overall_status,
+      lastBackupAge: backupStatus.last_backup_age_hours,
+      alertCount: backupStatus.alerts?.length || 0
+    })
+
+    return res.status(statusCode).json({
+      success: true,
+      message: 'Backup health check completed',
+      data: backupStatus,
+      meta: {
+        timestamp: new Date().toISOString()
+      }
+    })
+  } catch (error) {
+    loggers.main.error('Backup health check failed', { error: error.message })
+    return res.status(503).json({
+      success: false,
+      error: 'Backup health check failed',
+      code: 'BACKUP_HEALTH_CHECK_ERROR',
+      meta: {
+        timestamp: new Date().toISOString()
+      }
+    })
   }
 })
 
@@ -515,6 +591,7 @@ async function generatePrometheusMetrics() {
   const memUsage = process.memoryUsage()
   const _systemMetrics = await getSystemMetrics()
   const dbHealth = await healthCheck()
+  const backupMetrics = await backupMonitoringService.getPrometheusMetrics()
 
   const metrics = [
     '# HELP process_uptime_seconds Process uptime in seconds',
@@ -539,7 +616,9 @@ async function generatePrometheusMetrics() {
     `database_connections_used ${dbHealth.pool_status?.used || 0}`,
     `database_connections_free ${dbHealth.pool_status?.free || 0}`,
     `database_connections_max ${dbHealth.pool_status?.max || 0}`,
-    ''
+    '',
+    '# Backup Monitoring Metrics',
+    backupMetrics
   ]
 
   return metrics.join('\n')
