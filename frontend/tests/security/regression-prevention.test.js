@@ -11,7 +11,7 @@ describe('Security Regression Prevention', () => {
     it('should not use localStorage for token storage in API service', async () => {
       const apiServicePath = path.join(__dirname, '../../src/services/api.js')
       const apiServiceContent = fs.readFileSync(apiServicePath, 'utf8')
-      
+
       // Check for prohibited localStorage usage
       const prohibitedPatterns = [
         /localStorage\.setItem\s*\(\s*['"`].*token.*['"`]/i,
@@ -23,11 +23,11 @@ describe('Security Regression Prevention', () => {
         /getAuthToken.*localStorage/i,
         /clearTokens.*localStorage/i
       ]
-      
+
       prohibitedPatterns.forEach(pattern => {
         expect(apiServiceContent).not.toMatch(pattern)
       })
-      
+
       // Ensure withCredentials is used for cookie authentication
       expect(apiServiceContent).toMatch(/withCredentials:\s*true/)
     })
@@ -35,7 +35,7 @@ describe('Security Regression Prevention', () => {
     it('should not use localStorage for token storage in AuthContext', async () => {
       const authContextPath = path.join(__dirname, '../../src/contexts/AuthContext.jsx')
       const authContextContent = fs.readFileSync(authContextPath, 'utf8')
-      
+
       // Check for prohibited localStorage usage
       const prohibitedPatterns = [
         /localStorage\.setItem.*token/i,
@@ -45,7 +45,7 @@ describe('Security Regression Prevention', () => {
         /getAuthToken/,
         /clearTokens/
       ]
-      
+
       prohibitedPatterns.forEach(pattern => {
         expect(authContextContent).not.toMatch(pattern)
       })
@@ -54,13 +54,13 @@ describe('Security Regression Prevention', () => {
     it('should not export token management functions from API service', async () => {
       // Dynamic import to check current exports
       const apiModule = await import('../../src/services/api.js')
-      
+
       // These functions should not exist
       expect(apiModule.setTokens).toBeUndefined()
       expect(apiModule.getAuthToken).toBeUndefined()
       expect(apiModule.clearTokens).toBeUndefined()
       expect(apiModule.removeTokens).toBeUndefined()
-      
+
       // Only cookie-based authentication should be available
       expect(apiModule.authAPI).toBeDefined()
       expect(apiModule.default).toBeDefined() // axios instance
@@ -72,18 +72,18 @@ describe('Security Regression Prevention', () => {
       const mockGetItem = vi.fn()
       const mockSetItem = vi.fn()
       const mockRemoveItem = vi.fn()
-      
+
       global.localStorage = {
         ...originalLocalStorage,
         getItem: mockGetItem,
         setItem: mockSetItem,
         removeItem: mockRemoveItem
       }
-      
+
       try {
         // Import and test that no components access localStorage for tokens
         // This would be caught in component tests if they try to access tokens
-        
+
         const tokenKeys = [
           'access_token',
           'refresh_token',
@@ -91,24 +91,24 @@ describe('Security Regression Prevention', () => {
           'authToken',
           'jwt'
         ]
-        
+
         // Simulate what would happen if components try to access tokens
         tokenKeys.forEach(key => {
           expect(() => {
             localStorage.getItem(key)
           }).not.toThrow()
         })
-        
+
         // Check if any token-related localStorage calls were made
-        const tokenCalls = mockGetItem.mock.calls.filter(call => 
-          call[0] && tokenKeys.some(key => 
+        const tokenCalls = mockGetItem.mock.calls.filter(call =>
+          call[0] && tokenKeys.some(key =>
             call[0].toLowerCase().includes(key.toLowerCase())
           )
         )
-        
+
         // Should not access tokens from localStorage
         expect(tokenCalls.length).toBe(0)
-        
+
       } finally {
         global.localStorage = originalLocalStorage
       }
@@ -119,7 +119,7 @@ describe('Security Regression Prevention', () => {
     it('should ensure axios is configured for cookie authentication', async () => {
       const apiModule = await import('../../src/services/api.js')
       const axiosInstance = apiModule.default
-      
+
       // Check that withCredentials is set to true
       expect(axiosInstance.defaults.withCredentials).toBe(true)
     })
@@ -127,7 +127,7 @@ describe('Security Regression Prevention', () => {
     it('should validate refresh token endpoint uses cookies only', async () => {
       const apiModule = await import('../../src/services/api.js')
       const { authAPI } = apiModule
-      
+
       // Mock axios to verify refresh call
       const mockPost = vi.fn().mockResolvedValue({ data: { success: true } })
       vi.mock('axios', () => ({
@@ -143,9 +143,9 @@ describe('Security Regression Prevention', () => {
           })
         }
       }))
-      
+
       await authAPI.refreshToken()
-      
+
       // Should call refresh without token in body
       expect(mockPost).toHaveBeenCalledWith('/auth/refresh')
       expect(mockPost).not.toHaveBeenCalledWith(
@@ -162,16 +162,16 @@ describe('Security Regression Prevention', () => {
       // This test ensures CSRF middleware is still configured
       // Would be tested in actual backend tests, but here we verify
       // frontend sends appropriate headers
-      
+
       const mockRequest = {
         method: 'POST',
         headers: {},
         setHeader: vi.fn()
       }
-      
+
       // Simulate what frontend should do for CSRF protection
       mockRequest.setHeader('X-CSRF-Token', 'mock-token')
-      
+
       expect(mockRequest.setHeader).toHaveBeenCalledWith('X-CSRF-Token', 'mock-token')
     })
 
@@ -179,13 +179,13 @@ describe('Security Regression Prevention', () => {
       // This test would verify that httpOnly, secure, sameSite attributes
       // are properly configured on the backend
       // Here we just ensure frontend expects them
-      
+
       const expectedCookieAttributes = [
         'HttpOnly',
         'SameSite=Strict'
         // 'Secure' would be environment dependent
       ]
-      
+
       expectedCookieAttributes.forEach(attr => {
         expect(attr).toBeTruthy()
       })
@@ -197,21 +197,21 @@ describe('Security Regression Prevention', () => {
       const srcDir = path.join(__dirname, '../../src')
       const checkDirectory = (dir) => {
         const files = fs.readdirSync(dir)
-        
+
         files.forEach(file => {
           const filePath = path.join(dir, file)
           const stat = fs.statSync(filePath)
-          
+
           if (stat.isDirectory()) {
             checkDirectory(filePath)
           } else if (file.match(/\.(js|jsx|ts|tsx)$/)) {
             const content = fs.readFileSync(filePath, 'utf8')
-            
+
             // Skip test files and mock files
             if (file.includes('.test.') || file.includes('.spec.') || file.includes('mock')) {
               return
             }
-            
+
             const prohibitedPatterns = [
               {
                 pattern: /localStorage\.setItem\s*\(\s*['"`].*token.*['"`]/gi,
@@ -230,7 +230,7 @@ describe('Security Regression Prevention', () => {
                 message: `Found getAuthToken function using localStorage in ${filePath}`
               }
             ]
-            
+
             prohibitedPatterns.forEach(({ pattern, message }) => {
               const matches = content.match(pattern)
               if (matches) {
@@ -240,7 +240,7 @@ describe('Security Regression Prevention', () => {
           }
         })
       }
-      
+
       expect(() => checkDirectory(srcDir)).not.toThrow()
     })
 
@@ -248,32 +248,32 @@ describe('Security Regression Prevention', () => {
       const srcDir = path.join(__dirname, '../../src')
       const checkDirectory = (dir) => {
         const files = fs.readdirSync(dir)
-        
+
         files.forEach(file => {
           const filePath = path.join(dir, file)
           const stat = fs.statSync(filePath)
-          
+
           if (stat.isDirectory()) {
             checkDirectory(filePath)
           } else if (file.match(/\.(js|jsx|ts|tsx)$/)) {
             const content = fs.readFileSync(filePath, 'utf8')
-            
+
             // Skip test files
             if (file.includes('.test.') || file.includes('.spec.')) {
               return
             }
-            
+
             // Look for potential hardcoded JWT tokens
             const jwtPattern = /eyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]*/g
             const matches = content.match(jwtPattern)
-            
+
             if (matches) {
               throw new Error(`Potential hardcoded JWT token found in ${filePath}`)
             }
           }
         })
       }
-      
+
       expect(() => checkDirectory(srcDir)).not.toThrow()
     })
   })
@@ -282,18 +282,18 @@ describe('Security Regression Prevention', () => {
     it('should have test commands that include security validation', () => {
       const packageJsonPath = path.join(__dirname, '../../../package.json')
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
-      
+
       // Verify test scripts exist
       expect(packageJson.scripts).toBeDefined()
       expect(packageJson.scripts.test).toBeDefined()
-      
+
       // Should have some form of security testing
-      const hasSecurityTests = 
+      const hasSecurityTests =
         packageJson.scripts.test.includes('security') ||
-        Object.values(packageJson.scripts).some(script => 
+        Object.values(packageJson.scripts).some(script =>
           typeof script === 'string' && script.includes('security')
         )
-      
+
       // Note: This might not be true initially, but serves as a reminder
       // to integrate security tests into CI/CD
       expect(true).toBe(true) // Always passes, but documents the requirement
@@ -311,7 +311,7 @@ describe('Security Regression Prevention', () => {
         () => window.localStorage.access_token,
         () => window.sessionStorage.refresh_token
       ]
-      
+
       xssAttempts.forEach((attempt, index) => {
         try {
           const result = attempt()
@@ -334,22 +334,22 @@ describe('Security Regression Prevention', () => {
         ok: true,
         json: () => Promise.resolve({ success: true })
       })
-      
+
       global.fetch = mockFetch
-      
+
       try {
         // Simulate API call that should include cookies
         fetch('/api/test', {
           method: 'GET',
           credentials: 'include' // Equivalent to withCredentials: true
         })
-        
-        expect(mockFetch).toHaveBeenCalledWith('/api/test', 
+
+        expect(mockFetch).toHaveBeenCalledWith('/api/test',
           expect.objectContaining({
             credentials: 'include'
           })
         )
-        
+
       } finally {
         global.fetch = originalFetch
       }

@@ -24,7 +24,7 @@ describe('API Service with Cookie Authentication', () => {
   beforeEach(() => {
     // Reset mocks
     vi.clearAllMocks()
-    
+
     // Mock axios instance
     mockAxiosInstance = {
       interceptors: {
@@ -69,15 +69,15 @@ describe('API Service with Cookie Authentication', () => {
       // Get the request interceptor
       const requestInterceptorCall = mockAxiosInstance.interceptors.request.use.mock.calls[0]
       expect(requestInterceptorCall).toBeDefined()
-      
+
       const [requestInterceptor] = requestInterceptorCall
-      
+
       const mockConfig = { headers: {} }
       const result = requestInterceptor(mockConfig)
 
       // Should not add Authorization header
       expect(result.headers.Authorization).toBeUndefined()
-      
+
       // Should add metadata for debugging
       expect(result.metadata).toBeDefined()
       expect(result.metadata.requestStartedAt).toBeDefined()
@@ -93,7 +93,7 @@ describe('API Service with Cookie Authentication', () => {
       // Get the response interceptor
       const interceptorCall = mockAxiosInstance.interceptors.response.use.mock.calls[0]
       expect(interceptorCall).toBeDefined()
-      
+
       ;[responseInterceptor, errorHandler] = interceptorCall
     })
 
@@ -120,7 +120,7 @@ describe('API Service with Cookie Authentication', () => {
 
       // Mock the retry call
       const mockRetryCall = vi.fn().mockResolvedValue({ data: 'success' })
-      
+
       const mockError = {
         response: { status: 401 },
         config: { _retry: false }
@@ -129,7 +129,7 @@ describe('API Service with Cookie Authentication', () => {
       // Mock api function for retry
       const originalApi = api
       const apiMock = vi.fn().mockResolvedValue({ data: 'success' })
-      
+
       // Call error handler
       await expect(errorHandler(mockError)).rejects.toThrow()
 
@@ -246,7 +246,7 @@ describe('API Service with Cookie Authentication', () => {
     it('should not expose token management functions', () => {
       // These functions should not exist in cookie-based implementation
       const apiModule = require('../../src/services/api')
-      
+
       expect(apiModule.setTokens).toBeUndefined()
       expect(apiModule.getAuthToken).toBeUndefined()
       expect(apiModule.clearTokens).toBeUndefined()

@@ -46,9 +46,9 @@ describe('AuthContext with Cookie Authentication', () => {
     queryClient = new QueryClient({
       defaultOptions: {
         queries: {
-          retry: false,
-        },
-      },
+          retry: false
+        }
+      }
     })
     vi.clearAllMocks()
   })
@@ -71,9 +71,9 @@ describe('AuthContext with Cookie Authentication', () => {
     it('should initialize with loading state', () => {
       // Mock getProfile to return pending promise
       authAPI.getProfile.mockImplementation(() => new Promise(() => {}))
-      
+
       renderWithProviders()
-      
+
       expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('false')
       expect(screen.getByTestId('isLoading')).toHaveTextContent('true')
       expect(screen.getByTestId('user')).toHaveTextContent('null')
@@ -81,13 +81,13 @@ describe('AuthContext with Cookie Authentication', () => {
 
     it('should not check localStorage for tokens', () => {
       const getItemSpy = vi.spyOn(localStorage, 'getItem')
-      
+
       renderWithProviders()
-      
+
       // Should not access localStorage for access_token or refresh_token
       expect(getItemSpy).not.toHaveBeenCalledWith('access_token')
       expect(getItemSpy).not.toHaveBeenCalledWith('refresh_token')
-      
+
       getItemSpy.mockRestore()
     })
   })
@@ -155,7 +155,7 @@ describe('AuthContext with Cookie Authentication', () => {
 
       // Mock localStorage to verify no token storage
       const setItemSpy = vi.spyOn(localStorage, 'setItem')
-      
+
       // Trigger login
       const loginButton = screen.getByText('Login')
       loginButton.click()
@@ -168,7 +168,7 @@ describe('AuthContext with Cookie Authentication', () => {
       // Verify no tokens were stored in localStorage
       expect(setItemSpy).not.toHaveBeenCalledWith('access_token', expect.anything())
       expect(setItemSpy).not.toHaveBeenCalledWith('refresh_token', expect.anything())
-      
+
       setItemSpy.mockRestore()
     })
 
@@ -198,7 +198,7 @@ describe('AuthContext with Cookie Authentication', () => {
         id: '1',
         email: 'test@example.com',
         firstName: 'Test',
-        last_name: 'User'
+        lastName: 'User'
       }
 
       authAPI.getProfile.mockResolvedValue({
@@ -242,7 +242,7 @@ describe('AuthContext with Cookie Authentication', () => {
         id: '1',
         email: 'test@example.com',
         firstName: 'Test',
-        last_name: 'User'
+        lastName: 'User'
       }
 
       authAPI.getProfile.mockResolvedValue({
@@ -345,7 +345,7 @@ describe('AuthContext with Cookie Authentication', () => {
       await waitFor(() => {
         expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('true')
         const userData = screen.getByTestId('user').textContent
-        expect(userData).not.toContain('password_hash')
+        expect(userData).not.toContain('passwordHash')
       })
     })
   })

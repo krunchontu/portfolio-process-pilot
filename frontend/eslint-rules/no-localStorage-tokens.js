@@ -9,16 +9,16 @@ module.exports = {
     docs: {
       description: 'Disallow localStorage usage for authentication tokens',
       category: 'Security',
-      recommended: true,
+      recommended: true
     },
     fixable: null,
     schema: [],
     messages: {
       noLocalStorageTokens: 'Using localStorage for authentication tokens is prohibited for security reasons. Use httpOnly cookies instead.',
-      noLocalStorageAccess: 'Accessing localStorage for token-related keys is prohibited. Use httpOnly cookies for authentication.',
-    },
+      noLocalStorageAccess: 'Accessing localStorage for token-related keys is prohibited. Use httpOnly cookies for authentication.'
+    }
   },
-  
+
   create(context) {
     const tokenKeys = [
       'access_token',
@@ -33,16 +33,16 @@ module.exports = {
       'bearer',
       'Bearer'
     ]
-    
+
     const isTokenRelated = (value) => {
       if (typeof value !== 'string') return false
       const lowerValue = value.toLowerCase()
-      return tokenKeys.some(key => 
+      return tokenKeys.some(key =>
         lowerValue.includes(key.toLowerCase()) ||
         lowerValue === key.toLowerCase()
       )
     }
-    
+
     const checkMemberExpression = (node) => {
       // Check for localStorage.setItem, localStorage.getItem, etc.
       if (
@@ -55,7 +55,7 @@ module.exports = {
       }
       return false
     }
-    
+
     const checkCallExpression = (node) => {
       // Check localStorage.setItem('token', ...) or localStorage.getItem('token')
       if (
@@ -76,17 +76,17 @@ module.exports = {
       }
       return false
     }
-    
+
     return {
       CallExpression(node) {
         if (checkCallExpression(node)) {
           context.report({
             node,
-            messageId: 'noLocalStorageTokens',
+            messageId: 'noLocalStorageTokens'
           })
         }
       },
-      
+
       MemberExpression(node) {
         // Check for localStorage access in general token context
         if (
@@ -97,11 +97,11 @@ module.exports = {
         ) {
           context.report({
             node,
-            messageId: 'noLocalStorageAccess',
+            messageId: 'noLocalStorageAccess'
           })
         }
       },
-      
+
       // Check variable assignments that might store tokens in localStorage
       AssignmentExpression(node) {
         if (
@@ -113,10 +113,10 @@ module.exports = {
         ) {
           context.report({
             node,
-            messageId: 'noLocalStorageTokens',
+            messageId: 'noLocalStorageTokens'
           })
         }
       }
     }
-  },
+  }
 }

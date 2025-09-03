@@ -4,15 +4,15 @@ module.exports = {
     es2022: true,
     node: true
   },
-  
+
   plugins: [
     'security'
   ],
-  
+
   extends: [
     'plugin:security/recommended'
   ],
-  
+
   rules: {
     // Security-specific rules for authentication
     'security/detect-object-injection': 'warn',
@@ -24,7 +24,7 @@ module.exports = {
     'security/detect-eval-with-expression': 'error',
     'security/detect-no-csrf-before-method-override': 'error',
     'security/detect-pseudoRandomBytes': 'error',
-    
+
     // Custom rules for localStorage token prevention
     'no-restricted-globals': [
       'error',
@@ -33,7 +33,7 @@ module.exports = {
         message: 'Avoid direct localStorage access. For authentication, use httpOnly cookies instead.'
       }
     ],
-    
+
     'no-restricted-syntax': [
       'error',
       {
@@ -53,14 +53,14 @@ module.exports = {
         message: 'Accessing token-related items in localStorage is prohibited for security reasons. Use httpOnly cookies instead.'
       }
     ],
-    
+
     // Prevent hardcoded secrets
     'no-secrets/no-secrets': 'off', // Would need plugin installation
-    
+
     // Custom rule for detecting JWT patterns
     'no-restricted-patterns': 'off' // Custom rule would go here
   },
-  
+
   overrides: [
     {
       // Allow localStorage in test files for mocking
@@ -89,7 +89,7 @@ module.exports = {
       }
     }
   ],
-  
+
   // Custom rule definitions would go here if we had them
   settings: {
     'security/detect-object-injection': {
