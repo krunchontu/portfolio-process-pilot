@@ -254,4 +254,110 @@ describe('Auth Routes', () => {
       expect(response.body.code).toBe('PASSWORD_TOO_SHORT');
     });
   });
+
+  describe('POST /api/auth/refresh', () => {
+    let testUser;
+    let refreshCookie;
+
+    beforeEach(async () => {
+      testUser = await testUtils.createTestUser({
+        email: 'refresh@example.com',
+        password: 'password123'
+      });
+
+      // Login to get refresh token cookie
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'refresh@example.com',
+          password: 'password123'
+        });
+
+      const cookies = loginResponse.headers['set-cookie'];
+      refreshCookie = cookies.find(cookie => cookie.includes('refresh_token'));
+    });
+
+    it('should refresh access token with valid refresh token cookie', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .set('Cookie', refreshCookie);
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Token refreshed');
+      // Should not return tokens in body (cookie-based)
+      expect(response.body.tokens).toBeUndefined();
+      
+      // Should set new access token cookie
+      const cookies = response.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      expect(cookies.some(cookie => cookie.includes('access_token'))).toBe(true);
+    });
+
+    it('should reject request without refresh token cookie', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh');
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Refresh token required');
+      expect(response.body.code).toBe('REFRESH_TOKEN_REQUIRED');
+    });
+
+    it('should reject invalid refresh token cookie', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .set('Cookie', 'refresh_token=invalid_token');
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Invalid or expired refresh token');
+      expect(response.body.code).toBe('INVALID_REFRESH_TOKEN');
+    });
+
+    it('should use cookie-only authentication (no Authorization header fallback)', async () => {
+      // Attempt to use Authorization header instead of cookie
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .set('Authorization', 'Bearer some_token');
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Refresh token required');
+      expect(response.body.code).toBe('REFRESH_TOKEN_REQUIRED');
+    });
+
+    it('should rotate refresh token on successful refresh', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .set('Cookie', refreshCookie);
+
+      expect(response.status).toBe(200);
+      
+      // Should set new refresh token cookie (token rotation)
+      const cookies = response.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      expect(cookies.some(cookie => cookie.includes('refresh_token'))).toBe(true);
+      
+      // New refresh token should be different from original
+      const newRefreshCookie = cookies.find(cookie => cookie.includes('refresh_token'));
+      expect(newRefreshCookie).not.toBe(refreshCookie);
+    });
+
+    it('should have httpOnly and secure cookie attributes', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .set('Cookie', refreshCookie);
+
+      expect(response.status).toBe(200);
+      
+      const cookies = response.headers['set-cookie'];
+      const refreshTokenCookie = cookies.find(cookie => cookie.includes('refresh_token'));
+      const accessTokenCookie = cookies.find(cookie => cookie.includes('access_token'));
+      
+      // Verify httpOnly attribute (XSS protection)
+      expect(refreshTokenCookie).toContain('HttpOnly');
+      expect(accessTokenCookie).toContain('HttpOnly');
+      
+      // Verify SameSite attribute (CSRF protection)
+      expect(refreshTokenCookie).toContain('SameSite=Strict');
+      expect(accessTokenCookie).toContain('SameSite=Strict');
+    });
+  });
 });

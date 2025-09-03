@@ -9,6 +9,34 @@ dotenv.config({ path: envPath });
 // Ensure NODE_ENV is set to test
 process.env.NODE_ENV = 'test';
 
+// Mock logger for test environment
+jest.mock('../src/utils/logger', () => {
+  const mockLogger = {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn()
+  };
+  
+  return {
+    logger: mockLogger,
+    loggers: {
+      database: mockLogger,
+      api: mockLogger,
+      security: mockLogger,
+      workflow: mockLogger,
+      performance: mockLogger
+    },
+    stream: { write: jest.fn() },
+    requestLogger: jest.fn(),
+    securityLogger: mockLogger,
+    performanceLogger: mockLogger,
+    dbLogger: mockLogger,
+    errorLogger: mockLogger,
+    createChildLogger: jest.fn(() => mockLogger)
+  };
+});
+
 const { testDbManager, testUtils } = require('../src/test-utils/dbSetup');
 
 // Global test setup
