@@ -100,16 +100,16 @@ test.describe('Logout Flow', () => {
     await page.fill('input[type="email"]', 'employee@test.com')
     await page.fill('input[type="password"]', 'password123')
     await page.click('button[type="submit"]')
-    
+
     await expect(page).toHaveURL('/dashboard')
-    
+
     // Logout
     await page.click('[data-testid="user-menu"]')
     await page.click('text=Logout')
-    
+
     // Try to access protected route
     await page.goto('/requests')
-    
+
     // Should redirect to login
     await expect(page).toHaveURL('/login')
   })
@@ -118,11 +118,11 @@ test.describe('Logout Flow', () => {
 test.describe('Password Reset Flow', () => {
   test('should display forgot password option', async ({ page }) => {
     await page.goto('/login')
-    
+
     const forgotPasswordLink = page.locator('text=Forgot Password?, text=Reset Password')
     if (await forgotPasswordLink.isVisible()) {
       await forgotPasswordLink.click()
-      
+
       // Should navigate to password reset page
       await expect(page).toHaveURL(/\/reset-password|\/forgot-password/)
       await expect(page.locator('input[type="email"]')).toBeVisible()
@@ -137,12 +137,12 @@ test.describe('Session Management', () => {
     await page.fill('input[type="email"]', 'employee@test.com')
     await page.fill('input[type="password"]', 'password123')
     await page.click('button[type="submit"]')
-    
+
     await expect(page).toHaveURL('/dashboard')
-    
+
     // Refresh page
     await page.reload()
-    
+
     // Should still be logged in
     await expect(page).toHaveURL('/dashboard')
     await expect(page.locator('[data-testid="user-menu"]')).toBeVisible()
@@ -151,34 +151,34 @@ test.describe('Session Management', () => {
   test('should handle concurrent sessions properly', async ({ browser }) => {
     const context1 = await browser.newContext()
     const context2 = await browser.newContext()
-    
+
     const page1 = await context1.newPage()
     const page2 = await context2.newPage()
-    
+
     try {
       // Login in first session
       await page1.goto('http://localhost:3000/login')
       await page1.fill('input[type="email"]', 'employee@test.com')
       await page1.fill('input[type="password"]', 'password123')
       await page1.click('button[type="submit"]')
-      
+
       await expect(page1).toHaveURL('/dashboard')
-      
+
       // Login in second session
       await page2.goto('http://localhost:3000/login')
       await page2.fill('input[type="email"]', 'employee@test.com')
       await page2.fill('input[type="password"]', 'password123')
       await page2.click('button[type="submit"]')
-      
+
       await expect(page2).toHaveURL('/dashboard')
-      
+
       // Both sessions should work independently
       await page1.goto('/requests')
       await expect(page1).toHaveURL('/requests')
-      
+
       await page2.goto('/profile')
       await expect(page2).toHaveURL('/profile')
-      
+
     } finally {
       await context1.close()
       await context2.close()

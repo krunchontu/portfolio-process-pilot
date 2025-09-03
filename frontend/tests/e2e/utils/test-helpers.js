@@ -10,7 +10,7 @@ export const TEST_USERS = {
     role: 'employee'
   },
   manager: {
-    email: 'manager@test.com', 
+    email: 'manager@test.com',
     password: 'password123',
     role: 'manager'
   },
@@ -34,7 +34,7 @@ export async function loginAs(page, userRole) {
   await page.fill('input[type="email"]', user.email)
   await page.fill('input[type="password"]', user.password)
   await page.click('button[type="submit"]')
-  
+
   // Wait for successful login
   await expect(page).toHaveURL('/dashboard')
   return user
@@ -48,7 +48,7 @@ export const TEST_REQUESTS = {
     type: 'leave-request',
     data: {
       startDate: '2024-04-01',
-      endDate: '2024-04-05', 
+      endDate: '2024-04-05',
       leaveType: 'vacation',
       reason: 'Family vacation - E2E test request'
     }
@@ -84,10 +84,10 @@ export async function createTestRequest(page, requestType) {
   }
 
   await page.goto('/requests/create')
-  
+
   // Select request type
   await page.selectOption('[data-testid="request-type"]', requestData.type)
-  
+
   // Fill form based on request type
   switch (requestType) {
     case 'leaveRequest':
@@ -96,7 +96,7 @@ export async function createTestRequest(page, requestType) {
       await page.selectOption('[data-testid="leave-type"]', requestData.data.leaveType)
       await page.fill('[data-testid="reason"]', requestData.data.reason)
       break
-      
+
     case 'expenseRequest':
       await page.fill('[data-testid="amount"]', requestData.data.amount)
       await page.selectOption('[data-testid="currency"]', requestData.data.currency)
@@ -104,7 +104,7 @@ export async function createTestRequest(page, requestType) {
       await page.selectOption('[data-testid="category"]', requestData.data.category)
       await page.fill('[data-testid="description"]', requestData.data.description)
       break
-      
+
     case 'equipmentRequest':
       await page.selectOption('[data-testid="equipment-type"]', requestData.data.equipmentType)
       await page.fill('[data-testid="specifications"]', requestData.data.specifications)
@@ -112,14 +112,14 @@ export async function createTestRequest(page, requestType) {
       await page.fill('[data-testid="justification"]', requestData.data.justification)
       break
   }
-  
+
   // Submit form
   await page.click('button[type="submit"]')
-  
+
   // Wait for success
   await expect(page).toHaveURL('/requests')
   await expect(page.locator('.toast-success, [data-testid="success-message"]')).toBeVisible()
-  
+
   return requestData
 }
 
@@ -128,7 +128,7 @@ export async function createTestRequest(page, requestType) {
  */
 export async function waitForPageLoad(page) {
   await page.waitForLoadState('networkidle')
-  
+
   // Wait for any loading spinners to disappear
   const loadingSpinner = page.locator('[data-testid="loading-spinner"]')
   if (await loadingSpinner.isVisible()) {
@@ -142,16 +142,16 @@ export async function waitForPageLoad(page) {
 export async function checkAdminAccess(page) {
   const adminNavItems = [
     '[data-testid="nav-users"]',
-    '[data-testid="nav-workflows"]', 
+    '[data-testid="nav-workflows"]',
     '[data-testid="nav-analytics"]'
   ]
-  
+
   const hasAccess = []
   for (const item of adminNavItems) {
     const element = page.locator(item)
     hasAccess.push(await element.isVisible())
   }
-  
+
   return hasAccess.some(access => access)
 }
 
@@ -160,21 +160,21 @@ export async function checkAdminAccess(page) {
  */
 export async function performRequestAction(page, action, comment = '') {
   const actionButton = page.locator(`[data-testid="${action}-button"]`)
-  
+
   if (!(await actionButton.isVisible())) {
     throw new Error(`${action} button not visible - user may not have permission`)
   }
-  
+
   await actionButton.click()
-  
+
   // Fill comment if provided
   if (comment) {
     await page.fill('[data-testid="action-comment"]', comment)
   }
-  
+
   // Confirm action
   await page.click('[data-testid="confirm-action"]')
-  
+
   // Wait for success message
   await expect(page.locator('.toast-success, [data-testid="success-message"]')).toBeVisible()
 }
@@ -195,16 +195,16 @@ export async function applyFiltersAndSearch(page, filters = {}) {
   if (filters.status) {
     await page.selectOption('[data-testid="status-filter"]', filters.status)
   }
-  
+
   if (filters.type) {
     await page.selectOption('[data-testid="type-filter"]', filters.type)
   }
-  
+
   if (filters.search) {
     await page.fill('[data-testid="search-input"]', filters.search)
     await page.press('[data-testid="search-input"]', 'Enter')
   }
-  
+
   await waitForPageLoad(page)
 }
 
@@ -244,7 +244,7 @@ export async function mockApiResponse(page, endpoint, response) {
  */
 export function generateTestData(type, count = 5) {
   const data = []
-  
+
   for (let i = 0; i < count; i++) {
     switch (type) {
       case 'users':
@@ -257,7 +257,7 @@ export function generateTestData(type, count = 5) {
           department: ['IT', 'HR', 'Finance', 'Operations'][i % 4]
         })
         break
-        
+
       case 'requests':
         data.push({
           id: i + 1,
@@ -267,7 +267,7 @@ export function generateTestData(type, count = 5) {
           created_at: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)).toISOString()
         })
         break
-        
+
       case 'workflows':
         data.push({
           id: i + 1,
@@ -282,6 +282,6 @@ export function generateTestData(type, count = 5) {
         break
     }
   }
-  
+
   return data
 }
