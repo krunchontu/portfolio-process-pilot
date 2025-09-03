@@ -9,7 +9,14 @@
       "Bash(npm run lint:*)",
       "Bash(npm run build:*)",
       "Bash(git add:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(node:*)",
+      "Bash(timeout:*)",
+      "Bash(chmod:*)",
+      "Bash(./backup.sh:*)",
+      "Bash(./restore.sh:*)",
+      "Bash(npm run test:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
