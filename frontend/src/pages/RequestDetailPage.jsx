@@ -259,7 +259,7 @@ const RequestDetailPage = () => {
       return false
     }
 
-    const currentStep = requestData.steps?.[requestData.current_step_index]
+    const currentStep = requestData.steps?.[requestData.currentStepIndex]
     if (!currentStep) return false
 
     const expectedRole = currentStep.escalatedTo || currentStep.role
@@ -372,8 +372,8 @@ const RequestDetailPage = () => {
             </h2>
             <div className="space-y-4">
               {requestData.steps?.map((step, index) => {
-                const isCurrentStep = index === requestData.current_step_index
-                const isCompletedStep = index < requestData.current_step_index
+                const isCurrentStep = index === requestData.currentStepIndex
+                const isCompletedStep = index < requestData.currentStepIndex
                 const isPendingStep = requestData.status === 'pending' && isCurrentStep
 
                 return (
@@ -408,14 +408,14 @@ const RequestDetailPage = () => {
                           step.role === 'admin' ? 'Administrator' :
                             step.role.charAt(0).toUpperCase() + step.role.slice(1)} Approval
                       </p>
-                      {step.sla_hours && (
+                      {step.slaHours && (
                         <p className="text-sm text-secondary-600">
-                          SLA: {step.sla_hours} hours
+                          SLA: {step.slaHours} hours
                         </p>
                       )}
-                      {step.completed_at && (
+                      {step.completedAt && (
                         <p className="text-sm text-success-600">
-                          Completed: {formatDate(step.completed_at)}
+                          Completed: {formatDate(step.completedAt)}
                         </p>
                       )}
                     </div>
@@ -444,7 +444,7 @@ const RequestDetailPage = () => {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-secondary-900">
-                        {entry.action} by {entry.user_name}
+                        {entry.action} by {entry.userName}
                       </p>
                       <p className="text-sm text-secondary-600">
                         {formatDate(entry.createdAt)}
@@ -485,18 +485,18 @@ const RequestDetailPage = () => {
                 <div className="flex items-center space-x-2 mt-1">
                   <Calendar className="w-4 h-4 text-secondary-400" />
                   <span className="text-secondary-900" data-testid="submitted-date">
-                    {formatDate(requestData.submitted_at)}
+                    {formatDate(requestData.submittedAt)}
                   </span>
                 </div>
               </div>
 
-              {requestData.completed_at && (
+              {requestData.completedAt && (
                 <div>
                   <label className="text-sm font-medium text-secondary-700">Completed on</label>
                   <div className="flex items-center space-x-2 mt-1">
                     <CheckCircle className="w-4 h-4 text-success-500" />
                     <span className="text-secondary-900" data-testid="completed-date">
-                      {formatDate(requestData.completed_at)}
+                      {formatDate(requestData.completedAt)}
                     </span>
                   </div>
                 </div>
@@ -515,7 +515,7 @@ const RequestDetailPage = () => {
           </div>
 
           {/* SLA Information */}
-          {requestData.sla_deadline && (
+          {requestData.slaDeadline && (
             <div className="card" data-testid="sla-info">
               <h3 className="text-lg font-semibold text-secondary-900 mb-4">
                 SLA Information
@@ -526,9 +526,9 @@ const RequestDetailPage = () => {
                   <span className="text-sm text-secondary-700">Deadline:</span>
                 </div>
                 <p className="text-secondary-900" data-testid="sla-deadline">
-                  {formatDate(requestData.sla_deadline)}
+                  {formatDate(requestData.slaDeadline)}
                 </p>
-                {new Date(requestData.sla_deadline) < new Date() && requestData.status === 'pending' && (
+                {new Date(requestData.slaDeadline) < new Date() && requestData.status === 'pending' && (
                   <p className="text-error-600 text-sm font-medium">
                     ⚠️ SLA Deadline Overdue
                   </p>

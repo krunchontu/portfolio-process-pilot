@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react'
+import { createContext, useContext, useReducer, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { authAPI } from '../services/api'
 import { toast } from 'react-hot-toast'
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }) => {
   const queryClient = useQueryClient()
 
   // Query to get current user profile (relies on cookies)
-  const { data: userData, isLoading: isLoadingProfile } = useQuery(
+  const { isLoading: isLoadingProfile } = useQuery(
     'profile',
     authAPI.getProfile,
     {
@@ -119,7 +119,7 @@ export const AuthProvider = ({ children }) => {
 
   // Register mutation
   const registerMutation = useMutation(authAPI.register, {
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       toast.success('Registration successful! Please log in.')
     },
     onError: (error) => {

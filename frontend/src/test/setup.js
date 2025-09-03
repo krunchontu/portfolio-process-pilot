@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import { expect, afterEach, vi } from 'vitest'
+import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
 // Cleanup after each test case
@@ -110,9 +110,9 @@ global.testUtils = {
     lastName: 'User',
     role: 'employee',
     department: 'IT',
-    is_active: true,
+    isActive: true,
     createdAt: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
+    updatedAt: '2024-01-01T00:00:00Z'
   },
 
   // Mock admin user
@@ -123,9 +123,9 @@ global.testUtils = {
     lastName: 'User',
     role: 'admin',
     department: 'IT',
-    is_active: true,
+    isActive: true,
     createdAt: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
+    updatedAt: '2024-01-01T00:00:00Z'
   },
 
   // Mock manager user
@@ -136,9 +136,9 @@ global.testUtils = {
     lastName: 'User',
     role: 'manager',
     department: 'HR',
-    is_active: true,
+    isActive: true,
     createdAt: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
+    updatedAt: '2024-01-01T00:00:00Z'
   },
 
   // Mock request data
@@ -146,26 +146,26 @@ global.testUtils = {
     id: '1',
     type: 'leave-request',
     status: 'pending',
-    current_step_index: 0,
+    currentStepIndex: 0,
     payload: {
       startDate: '2024-02-01',
       endDate: '2024-02-05',
       reason: 'Vacation'
     },
-    submitted_at: '2024-01-15T10:00:00Z',
+    submittedAt: '2024-01-15T10:00:00Z',
     creatorFirstName: 'Test',
     creatorLastName: 'User',
-    creator_email: 'test@example.com',
-    workflow_name: 'Leave Request Approval'
+    creatorEmail: 'test@example.com',
+    workflowName: 'Leave Request Approval'
   },
 
   // Mock workflow data
   mockWorkflow: {
     id: '1',
     name: 'Leave Request',
-    flow_id: 'leave-request',
+    flowId: 'leave-request',
     description: 'Standard leave request workflow',
-    is_active: true,
+    isActive: true,
     steps: [
       {
         stepId: 'manager-approval',

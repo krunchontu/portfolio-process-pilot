@@ -30,7 +30,7 @@ const RequestsPage = () => {
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all')
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all')
-  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'submitted_at')
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'submittedAt')
   const [sortOrder, setSortOrder] = useState(searchParams.get('order') || 'desc')
   const [createdByFilter, setCreatedByFilter] = useState(searchParams.get('created_by') || 'all')
 
@@ -43,7 +43,7 @@ const RequestsPage = () => {
     if (debouncedSearchTerm) params.set('search', debouncedSearchTerm)
     if (statusFilter !== 'all') params.set('status', statusFilter)
     if (typeFilter !== 'all') params.set('type', typeFilter)
-    if (sortBy !== 'submitted_at') params.set('sort', sortBy)
+    if (sortBy !== 'submittedAt') params.set('sort', sortBy)
     if (sortOrder !== 'desc') params.set('order', sortOrder)
     if (createdByFilter !== 'all') params.set('created_by', createdByFilter)
 
@@ -71,15 +71,15 @@ const RequestsPage = () => {
 
     // Creator filter
     if (createdByFilter === 'mine') {
-      params.created_by = user?.id
+      params.createdBy = user?.id
     } else if (createdByFilter === 'pending-for-me' && isManagerOrAdmin()) {
-      params.pending_for_role = user?.role
+      params.pendingForRole = user?.role
       params.status = 'pending'
     }
 
     // Sorting
-    params.sort_by = sortBy
-    params.sort_order = sortOrder
+    params.sortBy = sortBy
+    params.sortOrder = sortOrder
 
     // Pagination
     params.limit = 20
@@ -113,7 +113,7 @@ const RequestsPage = () => {
     setStatusFilter('all')
     setTypeFilter('all')
     setCreatedByFilter('all')
-    setSortBy('submitted_at')
+    setSortBy('submittedAt')
     setSortOrder('desc')
   }
 
@@ -271,10 +271,10 @@ const RequestsPage = () => {
                 <Menu.Items className="absolute left-0 z-10 mt-2 w-48 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                   <div className="py-1">
                     {[
-                      { key: 'submitted_at', label: 'Date Submitted' },
+                      { key: 'submittedAt', label: 'Date Submitted' },
                       { key: 'status', label: 'Status' },
                       { key: 'type', label: 'Request Type' },
-                      { key: 'sla_deadline', label: 'SLA Deadline' }
+                      { key: 'slaDeadline', label: 'SLA Deadline' }
                     ].map(option => (
                       <Menu.Item key={option.key}>
                         {({ active }) => (

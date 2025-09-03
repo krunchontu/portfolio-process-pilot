@@ -23,9 +23,9 @@ const ProfilePage = () => {
   // Password form
   const passwordForm = useForm({
     defaultValues: {
-      current_password: '',
-      new_password: '',
-      confirm_password: ''
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
     }
   })
 
@@ -40,8 +40,8 @@ const ProfilePage = () => {
   const onPasswordSubmit = async (data) => {
     try {
       await changePassword({
-        current_password: data.current_password,
-        new_password: data.new_password
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword
       })
       passwordForm.reset()
     } catch (error) {
@@ -163,7 +163,7 @@ const ProfilePage = () => {
               <label className="label">Current password</label>
               <div className="relative">
                 <input
-                  {...passwordForm.register('current_password', { required: true })}
+                  {...passwordForm.register('currentPassword', { required: true })}
                   type={showCurrentPassword ? 'text' : 'password'}
                   className="input pr-10"
                 />
@@ -185,7 +185,7 @@ const ProfilePage = () => {
               <label className="label">New password</label>
               <div className="relative">
                 <input
-                  {...passwordForm.register('new_password', {
+                  {...passwordForm.register('newPassword', {
                     required: true,
                     minLength: 8
                   })}
@@ -209,10 +209,10 @@ const ProfilePage = () => {
             <div>
               <label className="label">Confirm new password</label>
               <input
-                {...passwordForm.register('confirm_password', {
+                {...passwordForm.register('confirmPassword', {
                   required: true,
                   validate: (value) =>
-                    value === passwordForm.watch('new_password') || 'Passwords do not match'
+                    value === passwordForm.watch('newPassword') || 'Passwords do not match'
                 })}
                 type="password"
                 className="input"

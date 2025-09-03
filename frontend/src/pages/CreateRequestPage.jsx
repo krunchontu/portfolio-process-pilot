@@ -65,7 +65,7 @@ const CreateRequestPage = () => {
 
       await createRequestMutation.mutateAsync({
         type: data.type,
-        workflow_id: data.workflowId,
+        workflowId: data.workflowId,
         payload
       })
     } catch (error) {
@@ -489,8 +489,8 @@ const CreateRequestPage = () => {
                 <option value="">Select workflow</option>
                 {workflowsData
                   .filter(workflow =>
-                    workflow.request_types.includes(requestType) ||
-                    workflow.request_types.includes('*')
+                    workflow.requestTypes.includes(requestType) ||
+                    workflow.requestTypes.includes('*')
                   )
                   .map(workflow => (
                     <option key={workflow.id} value={workflow.id}>
@@ -519,9 +519,9 @@ const CreateRequestPage = () => {
                             step.role === 'admin' ? 'Administrator' :
                               step.role.charAt(0).toUpperCase() + step.role.slice(1)} Approval
                         </span>
-                        {step.sla_hours && (
+                        {step.slaHours && (
                           <span className="text-xs text-secondary-500">
-                            (SLA: {step.sla_hours}h)
+                            (SLA: {step.slaHours}h)
                           </span>
                         )}
                       </div>

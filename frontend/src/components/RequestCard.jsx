@@ -53,19 +53,19 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
   }
 
   const isOverdue = () => {
-    return request.sla_deadline &&
-           new Date(request.sla_deadline) < new Date() &&
+    return request.slaDeadline &&
+           new Date(request.slaDeadline) < new Date() &&
            request.status === 'pending'
   }
 
   const canCancel = () => {
-    return request.created_by === user?.id &&
+    return request.createdBy === user?.id &&
            request.status === 'pending'
   }
 
   const isPendingForUser = () => {
     // Check if this request is pending for the current user to act on
-    const currentStep = request.steps?.[request.current_step_index]
+    const currentStep = request.steps?.[request.currentStepIndex]
     if (!currentStep) return false
 
     const expectedRole = currentStep.escalatedTo || currentStep.role
@@ -112,8 +112,8 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
                 <User className="w-4 h-4" />
                 <span>
                   {request.creatorFirstName} {request.creatorLastName}
-                  {request.creator_email && (
-                    <span className="text-xs ml-1">({request.creator_email})</span>
+                  {request.creatorEmail && (
+                    <span className="text-xs ml-1">({request.creatorEmail})</span>
                   )}
                 </span>
               </div>
@@ -122,40 +122,40 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
             <div className="flex items-center space-x-2" data-testid="submitted-date">
               <Calendar className="w-4 h-4" />
               <span>
-                Submitted {formatDistanceToNow(new Date(request.submitted_at), { addSuffix: true })}
-                {request.submitted_at && (
+                Submitted {formatDistanceToNow(new Date(request.submittedAt), { addSuffix: true })}
+                {request.submittedAt && (
                   <span className="text-xs ml-1">
-                    ({format(new Date(request.submitted_at), 'MMM dd, yyyy')})
+                    ({format(new Date(request.submittedAt), 'MMM dd, yyyy')})
                   </span>
                 )}
               </span>
             </div>
 
-            {request.sla_deadline && (
+            {request.slaDeadline && (
               <div className="flex items-center space-x-2" data-testid="sla-deadline">
                 <AlertTriangle className={`w-4 h-4 ${
                   isOverdue() ? 'text-error-500' : 'text-warning-500'
                 }`}
                 />
                 <span>
-                  SLA: {formatDistanceToNow(new Date(request.sla_deadline), { addSuffix: true })}
+                  SLA: {formatDistanceToNow(new Date(request.slaDeadline), { addSuffix: true })}
                   {isOverdue() && <span className="text-error-600 font-medium ml-1">(Overdue)</span>}
                 </span>
               </div>
             )}
 
-            {request.workflow_name && (
+            {request.workflowName && (
               <div className="flex items-center space-x-2" data-testid="workflow-info">
                 <FileText className="w-4 h-4" />
-                <span>Workflow: {request.workflow_name}</span>
+                <span>Workflow: {request.workflowName}</span>
               </div>
             )}
 
-            {request.completed_at && (
+            {request.completedAt && (
               <div className="flex items-center space-x-2" data-testid="completed-date">
                 <CheckCircle className="w-4 h-4 text-success-500" />
                 <span>
-                  Completed {formatDistanceToNow(new Date(request.completed_at), { addSuffix: true })}
+                  Completed {formatDistanceToNow(new Date(request.completedAt), { addSuffix: true })}
                 </span>
               </div>
             )}

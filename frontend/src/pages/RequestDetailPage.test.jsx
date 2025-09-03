@@ -88,10 +88,10 @@ describe('RequestDetailPage', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
-    
+
     // Setup default mocks
     mockUseParams.mockReturnValue({ id: 'req-123' })
-    
+
     // Mock useAuth hook
     useAuth.mockReturnValue({
       isAuthenticated: true,
@@ -107,7 +107,7 @@ describe('RequestDetailPage', () => {
 
     // Import and setup react-query mocks
     const { useQuery, useMutation } = await import('react-query')
-    
+
     // Mock useQuery for request data (component expects nested structure)
     useQuery.mockReturnValue({
       data: mockLeaveRequest, // The component uses select to extract data.data.request
@@ -127,7 +127,7 @@ describe('RequestDetailPage', () => {
     requestsAPI.get.mockResolvedValue({
       data: mockLeaveRequest
     })
-    
+
     requestsAPI.action.mockResolvedValue({
       data: { message: 'Action completed successfully' }
     })
@@ -178,7 +178,7 @@ describe('RequestDetailPage', () => {
         status: 404,
         data: { error: 'Request not found' }
       }
-      
+
       useQuery.mockReturnValue({
         data: null,
         isLoading: false,

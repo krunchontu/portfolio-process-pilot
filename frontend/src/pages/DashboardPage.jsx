@@ -23,7 +23,7 @@ const DashboardPage = () => {
   // Fetch user's requests
   const { data: myRequestsData, isLoading: isLoadingRequests } = useQuery(
     ['requests', 'my-requests'],
-    () => requestsAPI.list({ created_by: user.id, limit: 5 }),
+    () => requestsAPI.list({ createdBy: user.id, limit: 5 }),
     {
       select: data => data.data.requests
     }
@@ -34,7 +34,7 @@ const DashboardPage = () => {
     ['requests', 'pending'],
     () => requestsAPI.list({
       status: 'pending',
-      pending_for_role: user.role,
+      pendingForRole: user.role,
       limit: 10
     }),
     {
@@ -47,8 +47,8 @@ const DashboardPage = () => {
   const { data: analyticsData, isLoading: isLoadingAnalytics } = useQuery(
     'dashboard-analytics',
     () => analyticsAPI.getOverview({
-      date_from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // Last 30 days
-      date_to: new Date().toISOString()
+      dateFrom: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // Last 30 days
+      dateTo: new Date().toISOString()
     }),
     {
       enabled: isManagerOrAdmin(),
@@ -170,7 +170,7 @@ const DashboardPage = () => {
                   <div>
                     <p className="text-sm font-medium text-secondary-600">Total Requests</p>
                     <p className="text-2xl font-bold text-secondary-900">
-                      {analyticsData?.total_requests || 0}
+                      {analyticsData?.totalRequests || 0}
                     </p>
                   </div>
                   <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
@@ -184,7 +184,7 @@ const DashboardPage = () => {
                   <div>
                     <p className="text-sm font-medium text-secondary-600">Pending</p>
                     <p className="text-2xl font-bold text-warning-600">
-                      {analyticsData?.pending_count || 0}
+                      {analyticsData?.pendingCount || 0}
                     </p>
                   </div>
                   <div className="w-8 h-8 bg-warning-100 rounded-lg flex items-center justify-center">
@@ -198,7 +198,7 @@ const DashboardPage = () => {
                   <div>
                     <p className="text-sm font-medium text-secondary-600">Approved</p>
                     <p className="text-2xl font-bold text-success-600">
-                      {analyticsData?.approved_count || 0}
+                      {analyticsData?.approvedCount || 0}
                     </p>
                   </div>
                   <div className="w-8 h-8 bg-success-100 rounded-lg flex items-center justify-center">
@@ -212,8 +212,8 @@ const DashboardPage = () => {
                   <div>
                     <p className="text-sm font-medium text-secondary-600">Avg. Completion</p>
                     <p className="text-2xl font-bold text-secondary-900">
-                      {analyticsData?.avg_completion_hours ?
-                        `${Math.round(analyticsData.avg_completion_hours)}h` :
+                      {analyticsData?.avgCompletionHours ?
+                        `${Math.round(analyticsData.avgCompletionHours)}h` :
                         'N/A'
                       }
                     </p>
@@ -271,7 +271,7 @@ const DashboardPage = () => {
                       </span>
                     </div>
                     <p className="text-sm text-secondary-600 mt-1">
-                      Submitted {formatDistanceToNow(new Date(request.submitted_at), { addSuffix: true })}
+                      Submitted {formatDistanceToNow(new Date(request.submittedAt), { addSuffix: true })}
                     </p>
                   </div>
                 </Link>
@@ -333,7 +333,7 @@ const DashboardPage = () => {
                     data-testid={`pending-request-${request.id}`}
                   >
                     <div className="flex-shrink-0">
-                      {request.sla_deadline && new Date(request.sla_deadline) < new Date() ? (
+                      {request.slaDeadline && new Date(request.slaDeadline) < new Date() ? (
                         <AlertTriangle className="w-4 h-4 text-error-500" />
                       ) : (
                         <Clock className="w-4 h-4 text-warning-500" />
@@ -344,13 +344,13 @@ const DashboardPage = () => {
                         <h3 className="text-sm font-medium text-secondary-900">
                           {formatRequestType(request.type)}
                         </h3>
-                        {request.sla_deadline && new Date(request.sla_deadline) < new Date() && (
+                        {request.slaDeadline && new Date(request.slaDeadline) < new Date() && (
                           <span className="badge-error">Overdue</span>
                         )}
                       </div>
                       <p className="text-sm text-secondary-600 mt-1">
                         From {request.creatorFirstName} {request.creatorLastName} •
-                        {formatDistanceToNow(new Date(request.submitted_at), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(request.submittedAt), { addSuffix: true })}
                       </p>
                     </div>
                   </Link>
