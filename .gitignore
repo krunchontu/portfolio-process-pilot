@@ -123,6 +123,6 @@ coverage.xml
 .idea/
 
 # AI Development Tools
-.bmad-core/
 .claude/
 web-bundles/
+# BMAD (local only)
