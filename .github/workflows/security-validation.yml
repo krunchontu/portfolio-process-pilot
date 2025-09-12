@@ -69,6 +69,10 @@ jobs:
           exit 1
         fi
         echo "No hardcoded JWT tokens detected"
+
+    - name: Validate documentation accuracy
+      run: |
+        node scripts/validate-documentation-accuracy.js
     
     - name: Validate cookie security configuration
       working-directory: ./backend

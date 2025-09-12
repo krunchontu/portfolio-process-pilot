@@ -1,5 +1,7 @@
 # ProcessPilot Security Audit & Technical Debt Report
 
+Note: This audit snapshot is preserved for history and has been superseded by `SECURITY_IMPLEMENTATION_UPDATE.md` and `SECURITY_CLEANUP_COMPLETE.md`. The critical findings listed below were resolved; see those documents for the current, authoritative security posture.
+
 **Audit Date**: August 25, 2025  
 **Auditor**: Claude Code Security Analysis  
 **Project Status**: 94% Complete (Documentation Inaccurate)  

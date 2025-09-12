@@ -8,7 +8,7 @@
 
 ProcessPilot is a comprehensive workflow and approval system that demonstrates enterprise-level request management with multi-step approvals, role-based access control, and robust security features. Users can submit various types of requests (leave, expense, equipment) that are routed through configurable approval workflows.
 
-**Current Status: 56% Complete** - Enterprise-ready infrastructure with comprehensive monitoring and documentation.
+Note on status: See PROJECT_STATUS.md for the latest, authoritative progress and security status.
 
 This project showcases:
 
@@ -224,6 +224,11 @@ tail -f backend/logs/access.log              # HTTP access logs
 
 ## 📈 Development Progress
 
+**Documentation Source of Truth**
+- The authoritative project status is maintained in `PROJECT_STATUS.md`.
+- Security posture and corrections are documented in `SECURITY_IMPLEMENTATION_UPDATE.md`.
+- Other documents may be historical snapshots; when in doubt, defer to the files above.
+
 ### ✅ **Production Ready (80% Complete)**
 - [x] **Core Business Logic** - Analytics, Workflows, Users APIs with full CRUD operations
 - [x] **Authentication & Security** - JWT with httpOnly cookies, CSRF protection, advanced rate limiting
@@ -266,6 +271,18 @@ npm run lint                  # Check code style
 npm run lint:fix             # Auto-fix issues
 npm run format               # Format with Prettier (frontend)
 ```
+
+---
+
+## 🧷 Git Hooks
+
+- Enable shared hooks to run doc encoding/garble checks pre-commit:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+- The hook blocks commits of Markdown files containing null bytes or control characters. To bypass in emergencies: `git commit --no-verify`.
 
 ---
 

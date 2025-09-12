@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "[pre-commit] Node.js is required to run doc checks. Install Node 18+ or skip by committing with --no-verify." >&2
+  exit 1
+fi
+
+# Run documentation encoding/garble guard
+if [ -f "scripts/check-doc-encoding.js" ]; then
+  node scripts/check-doc-encoding.js
+fi
+
+exit 0
+
