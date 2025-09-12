@@ -11,6 +11,59 @@ const router = express.Router()
 // All routes require authentication
 router.use(authenticateToken)
 
+/**
+ * @swagger
+ * /api/workflows:
+ *   get:
+ *     summary: List workflows
+ *     tags: [Workflows]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: active
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by name, description, or flowId
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 50
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           default: 0
+ *     responses:
+ *       200:
+ *         description: Workflows retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         workflows:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Workflow'
+ *                         pagination:
+ *                           $ref: '#/components/schemas/Pagination'
+ */
 // Get all workflows
 router.get('/',
   validateQuery(workflowsSchema.listQuery),
@@ -42,7 +95,7 @@ router.get('/',
           total,
           limit: parseInt(limit),
           offset: parseInt(offset),
-          has_more: (parseInt(offset) + parseInt(limit)) < total
+          hasMore: (parseInt(offset) + parseInt(limit)) < total
         }
       }
 
@@ -93,6 +146,53 @@ router.get('/:id',
     }
   })
 
+/**
+ * @swagger
+ * /api/workflows:
+ *   post:
+ *     summary: Create workflow
+ *     tags: [Workflows]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, flowId, steps]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               flowId:
+ *                 type: string
+ *                 enum: [leave, expense, equipment, general]
+ *               isActive:
+ *                 type: boolean
+ *                 default: true
+ *               steps:
+ *                 type: array
+ *                 items:
+ *                   $ref: '#/components/schemas/WorkflowStep'
+ *     responses:
+ *       201:
+ *         description: Workflow created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         workflow:
+ *                           $ref: '#/components/schemas/Workflow'
+ */
 // Create new workflow (admin only)
 router.post('/',
   requireRole(['admin']),
@@ -108,7 +208,7 @@ router.post('/',
       logger.info('Creating new workflow', {
         userId,
         workflowName: workflowData.name,
-        flowId: workflowData.flow_id
+        flowId: workflowData.flowId
       })
 
       // Validate workflow structure
@@ -147,6 +247,44 @@ router.post('/',
     }
   })
 
+/**
+ * @swagger
+ * /api/workflows/{id}:
+ *   put:
+ *     summary: Update workflow
+ *     tags: [Workflows]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Workflow ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Workflow'
+ *     responses:
+ *       200:
+ *         description: Workflow updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         workflow:
+ *                           $ref: '#/components/schemas/Workflow'
+ */
 // Update workflow (admin only)
 router.put('/:id',
   requireRole(['admin']),
@@ -172,7 +310,7 @@ router.put('/:id',
       }
 
       // Validate updated workflow structure if steps are being modified
-      if (updateData.steps || updateData.name || updateData.flow_id) {
+      if (updateData.steps || updateData.name || updateData.flowId) {
         const workflowToValidate = {
           ...existingWorkflow,
           ...updateData
@@ -212,7 +350,7 @@ router.put('/:id',
       })
 
       if (error.code === '23505') { // Unique violation
-        return apiResponse.conflict(res, 'Workflow with this flow_id already exists')
+        return apiResponse.conflict(res, 'Workflow with this flowId already exists')
       }
 
       return apiResponse.serverError(res, 'Failed to update workflow')
@@ -240,7 +378,7 @@ router.delete('/:id',
       // Check if workflow has pending requests
       const { db } = require('../database/connection')
       const pendingRequests = await db('requests')
-        .where('type', existingWorkflow.flow_id)
+        .where('type', existingWorkflow.flowId)
         .whereIn('status', ['pending', 'in_progress'])
         .count('* as count')
         .first()
@@ -327,13 +465,13 @@ router.patch('/:id/activate',
         return apiResponse.notFound(res, 'Workflow not found')
       }
 
-      if (workflow.is_active) {
+      if (workflow.isActive) {
         return apiResponse.badRequest(res, 'Workflow is already active')
       }
 
       const activatedWorkflow = await Workflow.update(workflowId, {
-        is_active: true,
-        updated_by: userId
+        isActive: true,
+        updatedBy: userId
       })
 
       logger.info('Workflow activated successfully', { userId, workflowId })
@@ -370,7 +508,7 @@ router.patch('/:id/deactivate',
         return apiResponse.notFound(res, 'Workflow not found')
       }
 
-      if (!workflow.is_active) {
+      if (!workflow.isActive) {
         return apiResponse.badRequest(res, 'Workflow is already inactive')
       }
 

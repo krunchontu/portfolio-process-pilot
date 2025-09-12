@@ -142,7 +142,8 @@ describe('Auth Routes', () => {
       
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('Validation failed');
-      expect(response.body.details).toBeInstanceOf(Array);
+      expect(response.body.details).toBeDefined();
+      expect(response.body.details.validationErrors).toBeInstanceOf(Array);
     });
   });
   

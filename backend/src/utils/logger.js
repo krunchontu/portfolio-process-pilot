@@ -228,12 +228,13 @@ const requestLogger = (req, res, next) => {
     userAgent: req.get('User-Agent')
   })
 
-  // Log request start
+  // Log request start with whitelisted fields only (no headers/cookies)
   req.logger.info('Request started', {
     method: req.method,
     url: req.originalUrl,
     ip: req.ip,
-    headers: req.headers
+    userAgent: req.get('User-Agent') || undefined,
+    requestId: req.requestId
   })
 
   // Log response

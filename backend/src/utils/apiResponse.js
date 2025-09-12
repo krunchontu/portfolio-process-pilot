@@ -90,7 +90,7 @@ const error = (res, statusCode = HTTP_STATUS.INTERNAL_SERVER_ERROR, message = 'A
  */
 const validationError = (res, errors, message = 'Validation failed') => {
   return error(res, HTTP_STATUS.BAD_REQUEST, message, 'VALIDATION_ERROR', {
-    validation_errors: Array.isArray(errors) ? errors : [errors]
+    validationErrors: Array.isArray(errors) ? errors : [errors]
   })
 }
 
@@ -157,7 +157,7 @@ const tooManyRequests = (res, message = 'Rate limit exceeded') => {
 const internalError = (res, message = 'Internal server error', err = null) => {
   const details = process.env.NODE_ENV === 'development' && err
     ? {
-      error_message: err.message,
+      errorMessage: err.message,
       stack: err.stack
     }
     : null
@@ -200,14 +200,14 @@ const paginated = (res, data, page, limit, total, message = 'Data retrieved succ
 
   return success(res, HTTP_STATUS.OK, message, data, {
     pagination: {
-      current_page: page,
-      per_page: limit,
-      total_items: total,
-      total_pages: totalPages,
-      has_next: hasNext,
-      has_previous: hasPrev,
-      next_page: hasNext ? page + 1 : null,
-      previous_page: hasPrev ? page - 1 : null
+      currentPage: page,
+      perPage: limit,
+      totalItems: total,
+      totalPages: totalPages,
+      hasNext: hasNext,
+      hasPrevious: hasPrev,
+      nextPage: hasNext ? page + 1 : null,
+      previousPage: hasPrev ? page - 1 : null
     }
   })
 }

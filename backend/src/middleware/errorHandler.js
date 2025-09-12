@@ -56,7 +56,7 @@ const handleJWTExpiredError = () => {
 const sendErrorDev = (err, res) => {
   const details = {
     stack: err.stack,
-    error_details: err
+    errorDetails: err
   }
   return sendErrorResponse(res, err.statusCode, err.message, err.code, details)
 }
@@ -122,7 +122,7 @@ const notFound = (req, res, next) => {
     return sendErrorResponse(res, 404, `Route ${req.originalUrl} not found`, 'ROUTE_NOT_FOUND', {
       method: req.method,
       path: req.path,
-      available_endpoints: ['/api/auth', '/api/requests', '/api/workflows', '/api/users', '/api/analytics']
+      availableEndpoints: ['/api/auth', '/api/requests', '/api/workflows', '/api/users', '/api/analytics']
     })
   }
 

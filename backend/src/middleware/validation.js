@@ -14,12 +14,7 @@ const validateRequest = (schema) => {
         message: detail.message,
         type: detail.type
       }))
-
-      return res.status(400).json({
-        error: 'Validation failed',
-        code: 'VALIDATION_ERROR',
-        details: validationErrors
-      })
+      return res.validationError(validationErrors)
     }
 
     // Replace req.body with validated/sanitized data
@@ -42,12 +37,7 @@ const validateQuery = (schema) => {
         message: detail.message,
         type: detail.type
       }))
-
-      return res.status(400).json({
-        error: 'Query validation failed',
-        code: 'QUERY_VALIDATION_ERROR',
-        details: validationErrors
-      })
+      return res.validationError(validationErrors, 'Query validation failed')
     }
 
     req.query = value
@@ -69,12 +59,7 @@ const validateParams = (schema) => {
         message: detail.message,
         type: detail.type
       }))
-
-      return res.status(400).json({
-        error: 'Parameter validation failed',
-        code: 'PARAMS_VALIDATION_ERROR',
-        details: validationErrors
-      })
+      return res.validationError(validationErrors, 'Parameter validation failed')
     }
 
     req.params = value

@@ -1,6 +1,7 @@
 const { db } = require('../database/connection')
 const bcrypt = require('bcryptjs')
 const { DATABASE } = require('../constants')
+const { keysToCamel, keysToSnake } = require('../utils/caseMapping')
 
 class User {
   static get tableName() {
@@ -10,19 +11,9 @@ class User {
   // Convert database record to API response format (snake_case → camelCase)
   static mapToApiResponse(user) {
     if (!user) return null
-
-    return {
-      id: user.id,
-      email: user.email,
-      firstName: user.first_name,
-      lastName: user.last_name,
-      role: user.role,
-      department: user.department,
-      isActive: user.is_active,
-      lastLogin: user.last_login,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at
-    }
+    const mapped = keysToCamel(user, { deep: false })
+    delete mapped.passwordHash
+    return mapped
   }
 
   // Convert multiple database records to API response format
@@ -32,20 +23,7 @@ class User {
 
   // Convert camelCase input to snake_case for database operations
   static mapToDbColumns(userData) {
-    const mapping = {
-      firstName: 'first_name',
-      lastName: 'last_name',
-      isActive: 'is_active',
-      createdAt: 'created_at',
-      updatedAt: 'updated_at'
-    }
-
-    const dbData = {}
-    for (const [key, value] of Object.entries(userData)) {
-      const dbKey = mapping[key] || key
-      dbData[dbKey] = value
-    }
-    return dbData
+    return keysToSnake(userData, { deep: false })
   }
 
   // Create new user

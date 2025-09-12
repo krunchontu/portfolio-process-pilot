@@ -156,7 +156,7 @@ const cancelRequestSchema = Joi.object({
   })
 })
 
-// Request list query schema
+// Request list query schema (camelCase)
 const listRequestsSchema = Joi.object({
   status: Joi.string()
     .valid('pending', 'approved', 'rejected', 'cancelled')
@@ -166,15 +166,15 @@ const listRequestsSchema = Joi.object({
     .valid('leave-request', 'expense-approval', 'equipment-request')
     .optional(),
 
-  created_by: uuid().optional(),
+  createdBy: uuid().optional(),
 
-  pending_for_role: Joi.string()
+  pendingForRole: Joi.string()
     .valid('employee', 'manager', 'admin')
     .optional(),
 
-  from_date: Joi.date().iso().optional(),
+  fromDate: Joi.date().iso().optional(),
 
-  to_date: Joi.date().iso().min(Joi.ref('from_date')).optional().messages({
+  toDate: Joi.date().iso().min(Joi.ref('fromDate')).optional().messages({
     'date.min': 'To date must be after from date'
   }),
 
@@ -187,11 +187,11 @@ const listRequestsSchema = Joi.object({
     'number.min': 'Offset must not be negative'
   }),
 
-  sort_by: Joi.string()
-    .valid('created_at', 'updated_at', 'status', 'type')
-    .default('created_at'),
+  sortBy: Joi.string()
+    .valid('createdAt', 'updatedAt', 'status', 'type')
+    .default('createdAt'),
 
-  sort_order: Joi.string()
+  sortOrder: Joi.string()
     .valid('asc', 'desc')
     .default('desc')
 })

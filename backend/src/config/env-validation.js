@@ -188,18 +188,20 @@ const ENV_SCHEMA = {
   },
 
   // Security & Rate Limiting
+  // Deprecated: SESSION_SECRET (stateless CSRF no longer uses sessions)
   SESSION_SECRET: {
-    required: true,
+    required: false,
     type: 'string',
     minLength: 32,
     sensitive: true,
-    description: 'Session secret for CSRF protection',
-    validate: function (value) {
-      if (value === 'your-session-secret-for-csrf') {
-        return 'SESSION_SECRET must be changed from default value'
-      }
-      return true
-    }
+    description: 'Deprecated; retained for compatibility. Prefer CSRF_SECRET.'
+  },
+  CSRF_SECRET: {
+    required: false,
+    type: 'string',
+    minLength: 32,
+    sensitive: true,
+    description: 'Secret used to sign CSRF tokens (stateless double-submit)'
   },
   RATE_LIMIT_WINDOW_MS: {
     required: false,
@@ -471,9 +473,10 @@ function validateEnvironment(env = process.env) {
         condition: !env.JWT_REFRESH_SECRET || env.JWT_REFRESH_SECRET.includes('your-'),
         message: 'JWT_REFRESH_SECRET must be set to a secure value in production'
       },
+      // Warn if CSRF_SECRET not set; middleware will fallback to JWT_SECRET
       {
-        condition: !env.SESSION_SECRET || env.SESSION_SECRET.includes('your-'),
-        message: 'SESSION_SECRET must be set to a secure value in production'
+        condition: !env.CSRF_SECRET,
+        message: 'CSRF_SECRET not set; CSRF tokens will be signed with JWT_SECRET'
       },
       {
         condition: !env.CORS_ORIGIN || env.CORS_ORIGIN === 'http://localhost:3000',

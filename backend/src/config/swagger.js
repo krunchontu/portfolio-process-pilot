@@ -58,7 +58,7 @@ All errors follow a consistent format:
   "error": "Error message",
   "code": "ERROR_CODE",
   "details": {
-    "validation_errors": [...]
+    "validationErrors": [...]
   },
   "meta": {
     "timestamp": "2023-12-07T10:00:00.000Z"
@@ -141,7 +141,11 @@ All successful responses follow this format:
             success: { type: 'boolean', example: false },
             error: { type: 'string', example: 'An error occurred' },
             code: { type: 'string', example: 'ERROR_CODE' },
-            details: { type: 'object' },
+            details: {
+              type: 'object',
+              additionalProperties: true,
+              description: 'Optional error details, e.g., validationErrors, stack (dev)'
+            },
             meta: {
               type: 'object',
               properties: {
@@ -159,16 +163,23 @@ All successful responses follow this format:
             details: {
               type: 'object',
               properties: {
-                validation_errors: {
+                validationErrors: {
                   type: 'array',
                   items: {
                     type: 'object',
                     properties: {
                       field: { type: 'string' },
-                      message: { type: 'string' }
+                      message: { type: 'string' },
+                      type: { type: 'string' }
                     }
                   }
                 }
+              }
+            },
+            meta: {
+              type: 'object',
+              properties: {
+                timestamp: { type: 'string', format: 'date-time' }
               }
             }
           }
@@ -176,14 +187,14 @@ All successful responses follow this format:
         Pagination: {
           type: 'object',
           properties: {
-            current_page: { type: 'integer', example: 1 },
-            per_page: { type: 'integer', example: 20 },
-            total_items: { type: 'integer', example: 100 },
-            total_pages: { type: 'integer', example: 5 },
-            has_next: { type: 'boolean', example: true },
-            has_previous: { type: 'boolean', example: false },
-            next_page: { type: 'integer', nullable: true, example: 2 },
-            previous_page: { type: 'integer', nullable: true, example: null }
+            currentPage: { type: 'integer', example: 1 },
+            perPage: { type: 'integer', example: 20 },
+            totalItems: { type: 'integer', example: 100 },
+            totalPages: { type: 'integer', example: 5 },
+            hasNext: { type: 'boolean', example: true },
+            hasPrevious: { type: 'boolean', example: false },
+            nextPage: { type: 'integer', nullable: true, example: 2 },
+            previousPage: { type: 'integer', nullable: true, example: null }
           }
         },
         // Entity schemas
@@ -192,15 +203,15 @@ All successful responses follow this format:
           properties: {
             id: { type: 'string', format: 'uuid', example: '123e4567-e89b-12d3-a456-426614174000' },
             email: { type: 'string', format: 'email', example: 'user@example.com' },
-            first_name: { type: 'string', example: 'John' },
-            last_name: { type: 'string', example: 'Doe' },
+            firstName: { type: 'string', example: 'John' },
+            lastName: { type: 'string', example: 'Doe' },
             role: { type: 'string', enum: ['employee', 'manager', 'admin'], example: 'employee' },
             department: { type: 'string', example: 'Engineering' },
-            manager_id: { type: 'string', format: 'uuid', nullable: true },
-            is_active: { type: 'boolean', example: true },
-            created_at: { type: 'string', format: 'date-time' },
-            updated_at: { type: 'string', format: 'date-time' },
-            last_login: { type: 'string', format: 'date-time', nullable: true }
+            managerId: { type: 'string', format: 'uuid', nullable: true },
+            isActive: { type: 'boolean', example: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            lastLogin: { type: 'string', format: 'date-time', nullable: true }
           }
         },
         Request: {
@@ -209,20 +220,20 @@ All successful responses follow this format:
             id: { type: 'string', format: 'uuid' },
             type: { type: 'string', enum: ['leave', 'expense', 'equipment', 'general'] },
             status: { type: 'string', enum: ['pending', 'approved', 'rejected', 'cancelled'] },
-            workflow_id: { type: 'string', format: 'uuid' },
-            created_by: { type: 'string', format: 'uuid' },
-            current_step_index: { type: 'integer' },
+            workflowId: { type: 'string', format: 'uuid' },
+            createdBy: { type: 'string', format: 'uuid' },
+            currentStepIndex: { type: 'integer' },
             payload: { type: 'object' },
             steps: {
               type: 'array',
               items: { $ref: '#/components/schemas/WorkflowStep' }
             },
-            sla_deadline: { type: 'string', format: 'date-time', nullable: true },
-            completed_at: { type: 'string', format: 'date-time', nullable: true },
-            created_at: { type: 'string', format: 'date-time' },
-            updated_at: { type: 'string', format: 'date-time' },
+            slaDeadline: { type: 'string', format: 'date-time', nullable: true },
+            completedAt: { type: 'string', format: 'date-time', nullable: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
             creator: { $ref: '#/components/schemas/User' },
-            current_step: { $ref: '#/components/schemas/WorkflowStep' }
+            currentStep: { $ref: '#/components/schemas/WorkflowStep' }
           }
         },
         WorkflowStep: {
@@ -230,14 +241,14 @@ All successful responses follow this format:
           properties: {
             stepId: { type: 'integer', example: 1 },
             role: { type: 'string', enum: ['employee', 'manager', 'admin'] },
-            sla_hours: { type: 'integer', example: 24 },
+            slaHours: { type: 'integer', example: 24 },
             actions: {
               type: 'array',
               items: { type: 'string', enum: ['approve', 'reject', 'escalate'] }
             },
             required: { type: 'boolean', example: true },
-            escalation_hours: { type: 'integer', nullable: true },
-            escalation_role: { type: 'string', enum: ['manager', 'admin'], nullable: true }
+            escalationHours: { type: 'integer', nullable: true },
+            escalationRole: { type: 'string', enum: ['manager', 'admin'], nullable: true }
           }
         },
         Workflow: {
@@ -246,40 +257,47 @@ All successful responses follow this format:
             id: { type: 'string', format: 'uuid' },
             name: { type: 'string', example: 'Leave Approval Process' },
             description: { type: 'string', example: 'Standard leave request approval workflow' },
-            flow_id: { type: 'string', enum: ['leave', 'expense', 'equipment', 'general'] },
-            is_active: { type: 'boolean', example: true },
+            flowId: { type: 'string', enum: ['leave', 'expense', 'equipment', 'general'] },
+            isActive: { type: 'boolean', example: true },
             steps: {
               type: 'array',
               items: { $ref: '#/components/schemas/WorkflowStep' }
             },
-            created_by: { type: 'string', format: 'uuid' },
-            created_at: { type: 'string', format: 'date-time' },
-            updated_at: { type: 'string', format: 'date-time' }
+            createdBy: { type: 'string', format: 'uuid' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
           }
         },
         RequestHistory: {
           type: 'object',
           properties: {
             id: { type: 'string', format: 'uuid' },
-            request_id: { type: 'string', format: 'uuid' },
-            actor_id: { type: 'string', format: 'uuid' },
+            requestId: { type: 'string', format: 'uuid' },
+            actorId: { type: 'string', format: 'uuid' },
             action: { type: 'string', enum: ['SUBMIT', 'APPROVE', 'REJECT', 'CANCEL', 'ESCALATE'] },
-            step_id: { type: 'integer', nullable: true },
+            stepId: { type: 'integer', nullable: true },
             comment: { type: 'string', nullable: true },
-            created_at: { type: 'string', format: 'date-time' },
-            actor_email: { type: 'string', format: 'email' },
-            actor_role: { type: 'string', enum: ['employee', 'manager', 'admin'] }
+            createdAt: { type: 'string', format: 'date-time' },
+            actorEmail: { type: 'string', format: 'email' },
+            actorRole: { type: 'string', enum: ['employee', 'manager', 'admin'] }
           }
         },
         // Request payload schemas for different types
         LeaveRequestPayload: {
           type: 'object',
           properties: {
-            start_date: { type: 'string', format: 'date' },
-            end_date: { type: 'string', format: 'date' },
-            leave_type: { type: 'string', enum: ['annual', 'sick', 'personal', 'maternity', 'paternity'] },
+            startDate: { type: 'string', format: 'date' },
+            endDate: { type: 'string', format: 'date' },
+            leaveType: { type: 'string', enum: ['annual', 'sick', 'personal', 'maternity', 'paternity'] },
             reason: { type: 'string' },
-            days_requested: { type: 'number' }
+            daysRequested: { type: 'number' }
+          },
+          example: {
+            startDate: '2025-09-15',
+            endDate: '2025-09-20',
+            leaveType: 'annual',
+            reason: 'Family vacation',
+            daysRequested: 5
           }
         },
         ExpenseRequestPayload: {
@@ -287,23 +305,38 @@ All successful responses follow this format:
           properties: {
             amount: { type: 'number', example: 150.50 },
             currency: { type: 'string', example: 'USD' },
-            category: { type: 'string', enum: ['travel', 'meals', 'office_supplies', 'software', 'other'] },
+            category: { type: 'string', enum: ['travel', 'meals', 'officeSupplies', 'software', 'other'] },
             description: { type: 'string' },
-            receipt_urls: {
+            receiptUrls: {
               type: 'array',
               items: { type: 'string', format: 'uri' }
             },
-            date_incurred: { type: 'string', format: 'date' }
+            dateIncurred: { type: 'string', format: 'date' }
+          },
+          example: {
+            amount: 123.45,
+            currency: 'USD',
+            category: 'travel',
+            description: 'Taxi to airport',
+            receiptUrls: ['https://example.com/receipt/abc123'],
+            dateIncurred: '2025-09-10'
           }
         },
         EquipmentRequestPayload: {
           type: 'object',
           properties: {
-            equipment_type: { type: 'string', enum: ['laptop', 'monitor', 'phone', 'accessories', 'other'] },
+            equipmentType: { type: 'string', enum: ['laptop', 'monitor', 'phone', 'accessories', 'other'] },
             specifications: { type: 'string' },
             urgency: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
             justification: { type: 'string' },
-            estimated_cost: { type: 'number', nullable: true }
+            estimatedCost: { type: 'number', nullable: true }
+          },
+          example: {
+            equipmentType: 'laptop',
+            specifications: '16GB RAM, 512GB SSD, 14-inch',
+            urgency: 'high',
+            justification: 'Developer requires high-spec laptop for builds',
+            estimatedCost: 1500
           }
         }
       },
@@ -479,3 +512,179 @@ module.exports = {
   swaggerUi,
   swaggerOptions
 }
+        // Analytics Schemas (camelCase)
+        AnalyticsDashboard: {
+          type: 'object',
+          properties: {
+            totalRequests: { type: 'integer' },
+            pendingRequests: { type: 'integer' },
+            approvedRequests: { type: 'integer' },
+            rejectedRequests: { type: 'integer' },
+            inProgressRequests: { type: 'integer' },
+            avgProcessingTime: { type: 'number' },
+            recentActivity: { type: 'integer' },
+            timeframe: { type: 'string', enum: ['7d', '30d', '90d'] },
+            department: { type: 'string' }
+          }
+        },
+        AnalyticsRequestMetric: {
+          type: 'object',
+          properties: {
+            date: { type: 'string', format: 'date' },
+            type: { type: 'string' },
+            status: { type: 'string' },
+            count: { type: 'integer' },
+            avgProcessingHours: { type: 'number' }
+          }
+        },
+        AnalyticsDistributionEntry: {
+          type: 'object',
+          properties: {
+            type: { type: 'string' },
+            status: { type: 'string' },
+            count: { type: 'integer' }
+          }
+        },
+        AnalyticsRequests: {
+          type: 'object',
+          properties: {
+            metrics: { type: 'array', items: { $ref: '#/components/schemas/AnalyticsRequestMetric' } },
+            typeDistribution: { type: 'array', items: { $ref: '#/components/schemas/AnalyticsDistributionEntry' } },
+            statusDistribution: { type: 'array', items: { $ref: '#/components/schemas/AnalyticsDistributionEntry' } },
+            filters: {
+              type: 'object',
+              properties: {
+                timeframe: { type: 'string' },
+                type: { type: 'string' },
+                status: { type: 'string' },
+                department: { type: 'string' }
+              }
+            }
+          }
+        },
+        WorkflowMetricRecord: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            name: { type: 'string' },
+            flowId: { type: 'string' },
+            description: { type: 'string' },
+            totalRequests: { type: 'integer' },
+            approvedCount: { type: 'integer' },
+            rejectedCount: { type: 'integer' },
+            pendingCount: { type: 'integer' },
+            approvalRate: { type: 'number' },
+            avgProcessingHours: { type: 'number' },
+            lastUsed: { type: 'string', format: 'date-time' }
+          }
+        },
+        StepPerformanceRecord: {
+          type: 'object',
+          properties: {
+            workflowId: { type: 'string' },
+            workflowName: { type: 'string' },
+            action: { type: 'string' },
+            details: { type: 'string', nullable: true },
+            count: { type: 'integer' },
+            avgTimeToAction: { type: 'number' }
+          }
+        },
+        AnalyticsWorkflows: {
+          type: 'object',
+          properties: {
+            workflowMetrics: { type: 'array', items: { $ref: '#/components/schemas/WorkflowMetricRecord' } },
+            stepPerformance: { type: 'array', items: { $ref: '#/components/schemas/StepPerformanceRecord' } },
+            timeframe: { type: 'string' }
+          }
+        },
+        UserActivityRecord: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            email: { type: 'string', format: 'email' },
+            fullName: { type: 'string' },
+            role: { type: 'string' },
+            department: { type: 'string' },
+            isActive: { type: 'boolean' },
+            lastLogin: { type: 'string', format: 'date-time', nullable: true },
+            requestsCreated: { type: 'integer' },
+            actionsTaken: { type: 'integer' },
+            approvals: { type: 'integer' },
+            rejections: { type: 'integer' },
+            lastActivity: { type: 'string', format: 'date-time', nullable: true }
+          }
+        },
+        DepartmentSummaryRecord: {
+          type: 'object',
+          properties: {
+            department: { type: 'string' },
+            totalUsers: { type: 'integer' },
+            activeUsers: { type: 'integer' },
+            employees: { type: 'integer' },
+            managers: { type: 'integer' },
+            admins: { type: 'integer' }
+          }
+        },
+        RoleDistributionEntry: {
+          type: 'object',
+          properties: {
+            role: { type: 'string' },
+            count: { type: 'integer' }
+          }
+        },
+        AnalyticsUsers: {
+          type: 'object',
+          properties: {
+            userActivity: { type: 'array', items: { $ref: '#/components/schemas/UserActivityRecord' } },
+            departmentSummary: { type: 'array', items: { $ref: '#/components/schemas/DepartmentSummaryRecord' } },
+            roleDistribution: { type: 'array', items: { $ref: '#/components/schemas/RoleDistributionEntry' } },
+            filters: {
+              type: 'object',
+              properties: {
+                timeframe: { type: 'string' },
+                department: { type: 'string' },
+                role: { type: 'string' }
+              }
+            }
+          }
+        },
+        DepartmentMetricRecord: {
+          type: 'object',
+          properties: {
+            department: { type: 'string' },
+            totalUsers: { type: 'integer' },
+            activeUsers: { type: 'integer' },
+            totalRequests: { type: 'integer' },
+            approvedRequests: { type: 'integer' },
+            rejectedRequests: { type: 'integer' },
+            pendingRequests: { type: 'integer' },
+            approvalRate: { type: 'number' },
+            avgProcessingHours: { type: 'number' }
+          }
+        },
+        RequestTypesByDepartmentEntry: {
+          type: 'object',
+          properties: {
+            department: { type: 'string' },
+            type: { type: 'string' },
+            count: { type: 'integer' }
+          }
+        },
+        WorkloadTrendEntry: {
+          type: 'object',
+          properties: {
+            department: { type: 'string' },
+            date: { type: 'string', format: 'date' },
+            requests: { type: 'integer' }
+          }
+        },
+        AnalyticsDepartments: {
+          type: 'object',
+          properties: {
+            departmentMetrics: { type: 'array', items: { $ref: '#/components/schemas/DepartmentMetricRecord' } },
+            requestTypesByDepartment: { type: 'array', items: { $ref: '#/components/schemas/RequestTypesByDepartmentEntry' } },
+            workloadTrends: { type: 'array', items: { $ref: '#/components/schemas/WorkloadTrendEntry' } },
+            timeframe: { type: 'string' },
+            accessLevel: { type: 'string' }
+          }
+        },

@@ -34,7 +34,7 @@
  *           $ref: '#/components/schemas/DatabaseHealth'
  *         redis:
  *           $ref: '#/components/schemas/RedisHealth'
- *         external_apis:
+ *         externalApis:
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/ExternalServiceHealth'
@@ -45,10 +45,10 @@
  *         status:
  *           type: string
  *           enum: [healthy, unhealthy]
- *         response_time:
+ *         responseTime:
  *           type: string
  *           example: "15ms"
- *         pool_status:
+ *         poolStatus:
  *           type: object
  *           properties:
  *             used:
@@ -104,6 +104,8 @@ const config = require('../config')
 const { supabaseAdapter } = require('../adapters/supabase')
 const emailService = require('../services/emailService')
 const backupMonitoringService = require('../services/backupMonitoringService')
+const { keysToCamel } = require('../utils/caseMapping')
+const { authenticateToken } = require('../middleware/auth')
 
 const router = express.Router()
 const _execAsync = promisify(exec)
@@ -167,10 +169,11 @@ router.get('/', async (req, res) => {
       dbStatus: dbHealth.status
     })
 
+    const data = keysToCamel(healthData, { deep: true })
     return res.status(statusCode).json({
       success: true,
       message: 'Health check completed',
-      data: healthData,
+      data,
       meta: {
         timestamp: new Date().toISOString()
       }
@@ -213,7 +216,7 @@ router.get('/', async (req, res) => {
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get('/detailed', async (req, res) => {
+router.get('/detailed', authenticateToken, async (req, res) => {
   try {
     const startTime = Date.now()
 
@@ -261,10 +264,11 @@ router.get('/detailed', async (req, res) => {
       services: Object.keys(healthData.services).length
     })
 
+    const data = keysToCamel(healthData, { deep: true })
     return res.status(statusCode).json({
       success: true,
       message: 'Detailed health check completed',
-      data: healthData,
+      data,
       meta: {
         timestamp: new Date().toISOString()
       }
@@ -395,10 +399,11 @@ router.get('/backups', async (req, res) => {
       alertCount: backupStatus.alerts?.length || 0
     })
 
+    const data = keysToCamel(backupStatus, { deep: true })
     return res.status(statusCode).json({
       success: true,
       message: 'Backup health check completed',
-      data: backupStatus,
+      data,
       meta: {
         timestamp: new Date().toISOString()
       }
@@ -433,6 +438,26 @@ router.get('/backups', async (req, res) => {
  *               type: string
  */
 router.get('/metrics', async (req, res) => {
+  // Restrict metrics to internal/allowed IPs without changing Swagger auth model
+  const normalizeIp = (ip) => (ip || '').replace('::ffff:', '')
+  const clientIp = normalizeIp(req.ip)
+  const allowList = (process.env.METRICS_ALLOWED_IPS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+
+  const isLoopback = (ip) => ip === '127.0.0.1' || ip === '::1'
+  const isAllowed = allowList.length > 0 ? allowList.includes(clientIp) : isLoopback(clientIp)
+
+  if (!isAllowed) {
+    loggers.security.warn('Unauthorized metrics access attempt', {
+      ip: clientIp,
+      path: req.originalUrl,
+      userAgent: req.get('User-Agent')
+    })
+    res.set('Content-Type', 'text/plain')
+    return res.status(403).send('# Forbidden')
+  }
   try {
     const metrics = await generatePrometheusMetrics()
     res.set('Content-Type', 'text/plain')

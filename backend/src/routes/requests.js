@@ -49,8 +49,8 @@ router.post('/', validateRequest(createRequestSchema), catchAsync(async (req, re
 
   const request = await Request.create({
     type,
-    workflow_id: workflow.id,
-    created_by: req.user.id,
+    workflowId: workflow.id,
+    createdBy: req.user.id,
     payload,
     steps
   })
@@ -86,11 +86,11 @@ router.get('/', validateQuery(listRequestsSchema), catchAsync(async (req, res) =
 
   // Users can only see their own requests unless they're managers/admins
   if (req.user.role === 'employee') {
-    filters.created_by = req.user.id
+    filters.createdBy = req.user.id
   } else if (req.user.role === 'manager') {
     // Managers can see requests pending for their role or their own requests
-    if (!filters.created_by && !filters.pending_for_role) {
-      filters.pending_for_role = 'manager'
+    if (!filters.createdBy && !filters.pendingForRole) {
+      filters.pendingForRole = 'manager'
     }
   }
   // Admins can see all requests (no additional filters)
@@ -141,10 +141,10 @@ router.post('/:id/action',
 
     // Record the action in history
     await RequestHistory.create({
-      request_id: request.id,
-      actor_id: req.user.id,
+      requestId: request.id,
+      actorId: req.user.id,
       action: action.toUpperCase(),
-      step_id: currentStep.stepId,
+      stepId: currentStep.stepId,
       comment
     })
 
@@ -224,8 +224,8 @@ router.post('/:id/cancel',
 
     // Record cancellation
     await RequestHistory.create({
-      request_id: request.id,
-      actor_id: req.user.id,
+      requestId: request.id,
+      actorId: req.user.id,
       action: 'cancel',
       comment: req.body.comment || 'Request cancelled by requestor'
     })
@@ -241,7 +241,7 @@ router.get('/:id/history', validateParams({ id: require('../middleware/validatio
   const history = await RequestHistory.findByRequestId(req.params.id)
 
   return res.success(200, 'Request history retrieved successfully', {
-    request_id: req.params.id,
+    requestId: req.params.id,
     history
   })
 }))

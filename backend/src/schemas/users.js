@@ -4,7 +4,17 @@ const Joi = require('joi')
  * User management validation schemas
  */
 
-// Schema for updating user information (admin only)
+// Schema for creating a new user - camelCase
+const createUserSchema = Joi.object({
+  email: Joi.string().email().max(255).required(),
+  password: Joi.string().min(8).max(128).required(),
+  firstName: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s-']+$/).required(),
+  lastName: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s-']+$/).required(),
+  role: Joi.string().valid('employee', 'manager', 'admin').default('employee').optional(),
+  department: Joi.string().min(2).max(100).optional()
+})
+
+// Schema for updating user information (admin only) - camelCase
 const updateUserSchema = Joi.object({
   email: Joi.string()
     .email()
@@ -15,7 +25,7 @@ const updateUserSchema = Joi.object({
       'string.max': 'Email cannot exceed 255 characters'
     }),
 
-  first_name: Joi.string()
+  firstName: Joi.string()
     .min(2)
     .max(50)
     .pattern(/^[a-zA-Z\s-']+$/)
@@ -26,7 +36,7 @@ const updateUserSchema = Joi.object({
       'string.pattern.base': 'First name can only contain letters, spaces, hyphens, and apostrophes'
     }),
 
-  last_name: Joi.string()
+  lastName: Joi.string()
     .min(2)
     .max(50)
     .pattern(/^[a-zA-Z\s-']+$/)
@@ -53,7 +63,7 @@ const updateUserSchema = Joi.object({
       'string.max': 'Department cannot exceed 100 characters'
     }),
 
-  manager_id: Joi.string()
+  managerId: Joi.string()
     .guid({ version: 'uuidv4' })
     .allow(null)
     .optional()
@@ -61,11 +71,11 @@ const updateUserSchema = Joi.object({
       'string.guid': 'Invalid manager ID format'
     }),
 
-  is_active: Joi.boolean()
+  isActive: Joi.boolean()
     .optional()
 }).min(1) // At least one field must be provided for update
 
-// Schema for user query parameters
+// Schema for user query parameters - camelCase
 const listUsersSchema = Joi.object({
   role: Joi.string()
     .valid('employee', 'manager', 'admin')
@@ -76,7 +86,7 @@ const listUsersSchema = Joi.object({
     .max(100)
     .optional(),
 
-  is_active: Joi.boolean()
+  isActive: Joi.boolean()
     .optional(),
 
   search: Joi.string()
@@ -88,7 +98,7 @@ const listUsersSchema = Joi.object({
       'string.max': 'Search term cannot exceed 100 characters'
     }),
 
-  manager_id: Joi.string()
+  managerId: Joi.string()
     .guid({ version: 'uuidv4' })
     .optional()
     .messages({
@@ -109,7 +119,7 @@ const listUsersSchema = Joi.object({
     .optional(),
 
   sort: Joi.string()
-    .valid('first_name', 'last_name', 'email', 'role', 'department', 'created_at', 'last_login')
+    .valid('firstName', 'lastName', 'email', 'role', 'department', 'createdAt', 'lastLogin')
     .default('last_name')
     .optional(),
 
@@ -117,6 +127,13 @@ const listUsersSchema = Joi.object({
     .valid('asc', 'desc')
     .default('asc')
     .optional()
+})
+
+// Query params for user's requests
+const userRequestsQuery = Joi.object({
+  status: Joi.string().valid('pending', 'approved', 'rejected', 'cancelled').optional(),
+  limit: Joi.number().integer().min(1).max(100).default(20).optional(),
+  offset: Joi.number().integer().min(0).default(0).optional()
 })
 
 // Schema for user ID parameter
@@ -144,7 +161,7 @@ const userActivationSchema = Joi.object({
 
 // Schema for bulk user operations
 const bulkUserOperationSchema = Joi.object({
-  user_ids: Joi.array()
+  userIds: Joi.array()
     .items(
       Joi.string().guid({ version: 'uuidv4' })
     )
@@ -189,13 +206,14 @@ const adminPasswordChangeSchema = Joi.object({
       'any.required': 'New password is required'
     }),
 
-  force_change_on_login: Joi.boolean()
+  forceChangeOnLogin: Joi.boolean()
     .default(true)
     .optional()
 })
 
 // Export individual schemas
 module.exports = {
+  createUserSchema,
   updateUserSchema,
   listUsersSchema,
   userIdSchema,
@@ -206,9 +224,12 @@ module.exports = {
 
 // Export as usersSchema object for backward compatibility
 module.exports.usersSchema = {
+  create: createUserSchema,
   update: updateUserSchema,
   listQuery: listUsersSchema,
   params: userIdSchema,
+  idParams: userIdSchema,
+  requestsQuery: userRequestsQuery,
   activation: userActivationSchema,
   bulkOperation: bulkUserOperationSchema,
   adminPasswordChange: adminPasswordChangeSchema

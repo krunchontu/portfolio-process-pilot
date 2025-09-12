@@ -12,6 +12,58 @@ const router = express.Router()
 router.use(authenticateToken)
 
 // Get dashboard analytics (admin and managers only)
+/**
+ * @swagger
+ * /api/analytics/dashboard:
+ *   get:
+ *     summary: Dashboard analytics
+ *     tags: [Analytics]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeframe
+ *         schema:
+ *           type: string
+ *           enum: [7d, 30d, 90d]
+ *           default: 30d
+ *       - in: query
+ *         name: department
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Dashboard analytics retrieved
+ *         content:
+ *           application/json:
+ *             examples:
+ *               sample:
+ *                 value:
+ *                   success: true
+ *                   message: Dashboard analytics retrieved successfully
+ *                   data:
+ *                     totalRequests: 120
+ *                     pendingRequests: 18
+ *                     approvedRequests: 90
+ *                     rejectedRequests: 12
+ *                     inProgressRequests: 5
+ *                     avgProcessingTime: 12.3
+ *                     recentActivity: 8
+ *                     timeframe: 30d
+ *                     department: all
+ *                   meta:
+ *                     timestamp: "2025-09-12T12:00:00.000Z"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AnalyticsDashboard'
+ */
 router.get('/dashboard',
   requireRole(['admin', 'manager']),
   validateQuery(analyticsSchema.dashboardQuery),
@@ -87,13 +139,13 @@ router.get('/dashboard',
         .first()
 
       const analytics = {
-        total_requests: parseInt(totalRequests.count),
-        pending_requests: statusMap.pending || 0,
-        approved_requests: statusMap.approved || 0,
-        rejected_requests: statusMap.rejected || 0,
-        in_progress_requests: statusMap.in_progress || 0,
-        avg_processing_time: parseFloat(avgProcessingTime.avg_hours) || 0,
-        recent_activity: parseInt(recentActivity.count),
+        totalRequests: parseInt(totalRequests.count),
+        pendingRequests: statusMap.pending || 0,
+        approvedRequests: statusMap.approved || 0,
+        rejectedRequests: statusMap.rejected || 0,
+        inProgressRequests: statusMap.in_progress || 0,
+        avgProcessingTime: parseFloat(avgProcessingTime.avg_hours) || 0,
+        recentActivity: parseInt(recentActivity.count),
         timeframe,
         department: department || (userRole === 'manager' ? 'user_department' : 'all')
       }
@@ -111,6 +163,75 @@ router.get('/dashboard',
   })
 
 // Get request metrics (admin and managers only)
+/**
+ * @swagger
+ * /api/analytics/requests:
+ *   get:
+ *     summary: Request metrics
+ *     tags: [Analytics]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeframe
+ *         schema:
+ *           type: string
+ *           enum: [7d, 30d, 90d]
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [leave, expense, equipment, general]
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, approved, rejected, cancelled]
+ *       - in: query
+ *         name: department
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Request metrics retrieved
+ *         content:
+ *           application/json:
+ *             examples:
+ *               sample:
+ *                 value:
+ *                   success: true
+ *                   message: Request metrics retrieved successfully
+ *                   data:
+ *                     metrics:
+ *                       - date: "2025-09-10"
+ *                         type: leave
+ *                         status: approved
+ *                         count: 7
+ *                         avgProcessingHours: 10.5
+ *                     typeDistribution:
+ *                       - type: leave
+ *                         count: 60
+ *                     statusDistribution:
+ *                       - status: pending
+ *                         count: 18
+ *                     filters:
+ *                       timeframe: 30d
+ *                       type: leave
+ *                       status: approved
+ *                       department: Engineering
+ *                   meta:
+ *                     timestamp: "2025-09-12T12:00:00.000Z"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AnalyticsRequests'
+ */
 router.get('/requests',
   requireRole(['admin', 'manager']),
   validateQuery(analyticsSchema.requestsQuery),
@@ -187,13 +308,13 @@ router.get('/requests',
           type: row.type,
           status: row.status,
           count: parseInt(row.count),
-          avg_processing_hours: parseFloat(row.avg_processing_hours) || 0
+          avgProcessingHours: parseFloat(row.avg_processing_hours) || 0
         })),
-        type_distribution: typeDistribution.map(row => ({
+        typeDistribution: typeDistribution.map(row => ({
           type: row.type,
           count: parseInt(row.count)
         })),
-        status_distribution: statusDistribution.map(row => ({
+        statusDistribution: statusDistribution.map(row => ({
           status: row.status,
           count: parseInt(row.count)
         })),
@@ -221,6 +342,64 @@ router.get('/requests',
   })
 
 // Get workflow performance (admin only)
+/**
+ * @swagger
+ * /api/analytics/workflows:
+ *   get:
+ *     summary: Workflow analytics
+ *     tags: [Analytics]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeframe
+ *         schema:
+ *           type: string
+ *           enum: [7d, 30d, 90d]
+ *     responses:
+ *       200:
+ *         description: Workflow analytics retrieved
+ *         content:
+ *           application/json:
+ *             examples:
+ *               sample:
+ *                 value:
+ *                   success: true
+ *                   message: Workflow analytics retrieved successfully
+ *                   data:
+ *                     workflowMetrics:
+ *                       - id: "1"
+ *                         name: "Leave Approval"
+ *                         flowId: "leave"
+ *                         description: "Standard leave workflow"
+ *                         totalRequests: 80
+ *                         approvedCount: 60
+ *                         rejectedCount: 10
+ *                         pendingCount: 10
+ *                         approvalRate: 75.0
+ *                         avgProcessingHours: 14.2
+ *                         lastUsed: "2025-09-12T08:15:00.000Z"
+ *                     stepPerformance:
+ *                       - workflowId: "leave"
+ *                         workflowName: "Leave Approval"
+ *                         action: "approve"
+ *                         details: null
+ *                         count: 60
+ *                         avgTimeToAction: 6.1
+ *                     timeframe: 30d
+ *                   meta:
+ *                     timestamp: "2025-09-12T12:00:00.000Z"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: 'object'
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AnalyticsWorkflows'
+ */
 router.get('/workflows',
   requireRole(['admin']),
   validateQuery(analyticsSchema.workflowsQuery),
@@ -277,35 +456,35 @@ router.get('/workflows',
         .orderBy('w.flow_id')
 
       const result = {
-        workflow_metrics: workflowMetrics.map(row => ({
+        workflowMetrics: workflowMetrics.map(row => ({
           id: row.id,
           name: row.name,
-          flow_id: row.flow_id,
+          flowId: row.flow_id,
           description: row.description,
-          total_requests: parseInt(row.total_requests) || 0,
-          approved_count: parseInt(row.approved_count) || 0,
-          rejected_count: parseInt(row.rejected_count) || 0,
-          pending_count: parseInt(row.pending_count) || 0,
-          approval_rate: row.total_requests > 0
+          totalRequests: parseInt(row.total_requests) || 0,
+          approvedCount: parseInt(row.approved_count) || 0,
+          rejectedCount: parseInt(row.rejected_count) || 0,
+          pendingCount: parseInt(row.pending_count) || 0,
+          approvalRate: row.total_requests > 0
             ? ((parseInt(row.approved_count) || 0) / parseInt(row.total_requests) * 100).toFixed(1)
             : 0,
-          avg_processing_hours: parseFloat(row.avg_processing_hours) || 0,
-          last_used: row.last_used
+          avgProcessingHours: parseFloat(row.avg_processing_hours) || 0,
+          lastUsed: row.last_used
         })),
-        step_performance: stepPerformance.map(row => ({
-          workflow_id: row.flow_id,
-          workflow_name: row.workflow_name,
+        stepPerformance: stepPerformance.map(row => ({
+          workflowId: row.flow_id,
+          workflowName: row.workflow_name,
           action: row.action,
           details: row.details,
           count: parseInt(row.action_count),
-          avg_time_to_action: parseFloat(row.avg_time_to_action) || 0
+          avgTimeToAction: parseFloat(row.avg_time_to_action) || 0
         })),
         timeframe
       }
 
       logger.info('Workflow analytics retrieved', {
         userId,
-        workflowCount: result.workflow_metrics.length
+        workflowCount: result.workflowMetrics.length
       })
       return apiResponse.success(res, result, 'Workflow analytics retrieved successfully')
     } catch (error) {
@@ -319,6 +498,77 @@ router.get('/workflows',
   })
 
 // Get user activity (admin only)
+/**
+ * @swagger
+ * /api/analytics/users:
+ *   get:
+ *     summary: User analytics
+ *     tags: [Analytics]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeframe
+ *         schema:
+ *           type: string
+ *           enum: [7d, 30d, 90d]
+ *       - in: query
+ *         name: department
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [employee, manager, admin]
+ *     responses:
+ *       200:
+ *         description: User analytics retrieved
+ *         content:
+ *           application/json:
+ *             examples:
+ *               sample:
+ *                 value:
+ *                   success: true
+ *                   message: User analytics retrieved successfully
+ *                   data:
+ *                     userActivity:
+ *                       - id: "u1"
+ *                         email: "manager@example.com"
+ *                         fullName: "Mary Manager"
+ *                         role: manager
+ *                         department: Engineering
+ *                         isActive: true
+ *                         lastLogin: "2025-09-12T07:55:00.000Z"
+ *                         requestsCreated: 3
+ *                         actionsTaken: 25
+ *                         approvals: 20
+ *                         rejections: 5
+ *                         lastActivity: "2025-09-12T08:10:00.000Z"
+ *                     departmentSummary:
+ *                       - department: Engineering
+ *                         totalUsers: 25
+ *                         activeUsers: 24
+ *                         employees: 20
+ *                         managers: 4
+ *                         admins: 1
+ *                     roleDistribution:
+ *                       - role: employee
+ *                         count: 40
+ *                     filters: { timeframe: 30d }
+ *                   meta:
+ *                     timestamp: "2025-09-12T12:00:00.000Z"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: 'object'
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AnalyticsUsers'
+ */
 router.get('/users',
   requireRole(['admin']),
   validateQuery(analyticsSchema.usersQuery),
@@ -394,29 +644,29 @@ router.get('/users',
         .groupBy('role')
 
       const result = {
-        user_activity: userActivity.map(row => ({
+        userActivity: userActivity.map(row => ({
           id: row.id,
           email: row.email,
-          full_name: `${row.first_name} ${row.last_name}`,
+          fullName: `${row.first_name} ${row.last_name}`,
           role: row.role,
           department: row.department,
-          is_active: row.is_active,
-          last_login: row.last_login,
-          requests_created: parseInt(row.requests_created),
-          actions_taken: parseInt(row.actions_taken),
+          isActive: row.is_active,
+          lastLogin: row.last_login,
+          requestsCreated: parseInt(row.requests_created),
+          actionsTaken: parseInt(row.actions_taken),
           approvals: parseInt(row.approvals),
           rejections: parseInt(row.rejections),
-          last_activity: row.last_activity !== '1970-01-01T00:00:00.000Z' ? row.last_activity : null
+          lastActivity: row.last_activity !== '1970-01-01T00:00:00.000Z' ? row.last_activity : null
         })),
-        department_summary: departmentSummary.map(row => ({
+        departmentSummary: departmentSummary.map(row => ({
           department: row.department,
-          total_users: parseInt(row.total_users),
-          active_users: parseInt(row.active_users),
+          totalUsers: parseInt(row.total_users),
+          activeUsers: parseInt(row.active_users),
           employees: parseInt(row.employees),
           managers: parseInt(row.managers),
           admins: parseInt(row.admins)
         })),
-        role_distribution: roleDistribution.map(row => ({
+        roleDistribution: roleDistribution.map(row => ({
           role: row.role,
           count: parseInt(row.count)
         })),
@@ -429,7 +679,7 @@ router.get('/users',
 
       logger.info('User analytics retrieved', {
         userId,
-        userCount: result.user_activity.length
+        userCount: result.userActivity.length
       })
       return apiResponse.success(res, result, 'User analytics retrieved successfully')
     } catch (error) {
@@ -443,6 +693,64 @@ router.get('/users',
   })
 
 // Get department metrics (admin and managers only)
+/**
+ * @swagger
+ * /api/analytics/departments:
+ *   get:
+ *     summary: Department analytics
+ *     tags: [Analytics]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeframe
+ *         schema:
+ *           type: string
+ *           enum: [7d, 30d, 90d]
+ *     responses:
+ *       200:
+ *         description: Department analytics retrieved
+ *         content:
+ *           application/json:
+ *             examples:
+ *               sample:
+ *                 value:
+ *                   success: true
+ *                   message: Department analytics retrieved successfully
+ *                   data:
+ *                     departmentMetrics:
+ *                       - department: Engineering
+ *                         totalUsers: 25
+ *                         activeUsers: 24
+ *                         totalRequests: 120
+ *                         approvedRequests: 90
+ *                         rejectedRequests: 12
+ *                         pendingRequests: 18
+ *                         approvalRate: 75.0
+ *                         avgProcessingHours: 13.2
+ *                     requestTypesByDepartment:
+ *                       - department: Engineering
+ *                         type: leave
+ *                         count: 60
+ *                     workloadTrends:
+ *                       - department: Engineering
+ *                         date: "2025-09-10"
+ *                         requests: 8
+ *                     timeframe: 30d
+ *                     accessLevel: manager
+ *                   meta:
+ *                     timestamp: "2025-09-12T12:00:00.000Z"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: 'object'
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AnalyticsDepartments'
+ */
 router.get('/departments',
   requireRole(['admin', 'manager']),
   validateQuery(analyticsSchema.departmentsQuery),
@@ -534,37 +842,37 @@ router.get('/departments',
         .orderBy('date', 'desc')
 
       const result = {
-        department_metrics: departmentMetrics.map(row => ({
+        departmentMetrics: departmentMetrics.map(row => ({
           department: row.department,
-          total_users: parseInt(row.total_users),
-          active_users: parseInt(row.active_users),
-          total_requests: parseInt(row.total_requests),
-          approved_requests: parseInt(row.approved_requests),
-          rejected_requests: parseInt(row.rejected_requests),
-          pending_requests: parseInt(row.pending_requests),
-          approval_rate: row.total_requests > 0
+          totalUsers: parseInt(row.total_users),
+          activeUsers: parseInt(row.active_users),
+          totalRequests: parseInt(row.total_requests),
+          approvedRequests: parseInt(row.approved_requests),
+          rejectedRequests: parseInt(row.rejected_requests),
+          pendingRequests: parseInt(row.pending_requests),
+          approvalRate: row.total_requests > 0
             ? ((parseInt(row.approved_requests) || 0) / parseInt(row.total_requests) * 100).toFixed(1)
             : 0,
-          avg_processing_hours: parseFloat(row.avg_processing_hours) || 0
+          avgProcessingHours: parseFloat(row.avg_processing_hours) || 0
         })),
-        request_types_by_department: requestTypesByDept.map(row => ({
+        requestTypesByDepartment: requestTypesByDept.map(row => ({
           department: row.department,
           type: row.type,
           count: parseInt(row.count)
         })),
-        workload_trends: workloadTrends.map(row => ({
+        workloadTrends: workloadTrends.map(row => ({
           department: row.department,
           date: row.date,
           requests: parseInt(row.requests)
         })),
         timeframe,
-        access_level: userRole
+        accessLevel: userRole
       }
 
       logger.info('Department analytics retrieved', {
         userId,
         userRole,
-        departmentCount: result.department_metrics.length
+        departmentCount: result.departmentMetrics.length
       })
       return apiResponse.success(res, result, 'Department analytics retrieved successfully')
     } catch (error) {

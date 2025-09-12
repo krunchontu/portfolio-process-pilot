@@ -6,9 +6,23 @@ const { logger } = require('../utils/logger')
  * Implements Double Submit Cookie pattern for CSRF protection
  */
 
-// Generate CSRF token
+// HMAC-based token signing for stateless CSRF validation
+const getCsrfSecret = () => {
+  return process.env.CSRF_SECRET || process.env.SESSION_SECRET || process.env.JWT_SECRET
+}
+
+const signToken = (raw) => {
+  const secret = getCsrfSecret()
+  const hmac = crypto.createHmac('sha256', String(secret || ''))
+  hmac.update(raw)
+  return hmac.digest('hex')
+}
+
+// Generate CSRF token: raw.random + "." + hmac(raw)
 const generateCSRFToken = () => {
-  return crypto.randomBytes(32).toString('hex')
+  const raw = crypto.randomBytes(32).toString('hex')
+  const sig = signToken(raw)
+  return `${raw}.${sig}`
 }
 
 // CSRF middleware for creating and validating tokens
@@ -18,17 +32,13 @@ const csrfProtection = {
     if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
       const csrfToken = generateCSRFToken()
 
-      // Set CSRF token in cookie (httpOnly for security)
+      // Set CSRF token in cookie (readable by frontend)
       res.cookie('XSRF-TOKEN', csrfToken, {
-        httpOnly: false, // Needs to be readable by frontend
+        httpOnly: false, // client must read to echo in header
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
       })
-
-      // Also store in session for validation
-      req.session = req.session || {}
-      req.session.csrfSecret = csrfToken
 
       // Add token to response for immediate use
       res.locals.csrfToken = csrfToken
@@ -51,13 +61,13 @@ const csrfProtection = {
 
     // Get token from header or body
     const tokenFromHeader = req.get('X-CSRF-Token') || req.get('X-XSRF-Token')
-    const tokenFromBody = req.body._csrf
+    const tokenFromBody = req.body && req.body._csrf
     const csrfToken = tokenFromHeader || tokenFromBody
 
-    // Get token from session
-    const sessionToken = req.session && req.session.csrfSecret
+    // Get token from cookie
+    const cookieToken = req.cookies && req.cookies['XSRF-TOKEN']
 
-    if (!csrfToken) {
+    if (!csrfToken || !cookieToken) {
       logger.warn('CSRF token missing', {
         ip: req.ip,
         method: req.method,
@@ -70,21 +80,8 @@ const csrfProtection = {
       })
     }
 
-    if (!sessionToken) {
-      logger.warn('CSRF session token missing', {
-        ip: req.ip,
-        method: req.method,
-        path: req.path
-      })
-      return res.status(403).json({
-        success: false,
-        error: 'CSRF session invalid',
-        code: 'CSRF_SESSION_INVALID'
-      })
-    }
-
-    // Constant-time comparison to prevent timing attacks
-    if (csrfToken !== sessionToken) {
+    // Require equality between header/body token and cookie token (double submit)
+    if (csrfToken !== cookieToken) {
       logger.warn('CSRF token mismatch', {
         ip: req.ip,
         method: req.method,
@@ -95,6 +92,20 @@ const csrfProtection = {
         error: 'CSRF token invalid',
         code: 'CSRF_TOKEN_INVALID'
       })
+    }
+
+    // Verify token signature
+    const [raw, sig] = String(csrfToken).split('.')
+    if (!raw || !sig) {
+      logger.warn('CSRF token format invalid', { path: req.path, method: req.method })
+      return res.status(403).json({ success: false, error: 'CSRF token invalid', code: 'CSRF_TOKEN_INVALID' })
+    }
+    const expectedSig = signToken(raw)
+    // Use timing-safe equality
+    const validSig = expectedSig.length === sig.length && crypto.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(sig))
+    if (!validSig) {
+      logger.warn('CSRF token signature invalid', { path: req.path, method: req.method })
+      return res.status(403).json({ success: false, error: 'CSRF token invalid', code: 'CSRF_TOKEN_INVALID' })
     }
 
     next()

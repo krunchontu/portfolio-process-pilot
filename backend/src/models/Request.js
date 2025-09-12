@@ -1,5 +1,6 @@
 const { db } = require('../database/connection')
 const RequestHistory = require('./RequestHistory')
+const { keysToCamel, keysToSnake } = require('../utils/caseMapping')
 
 class Request {
   static get tableName() {
@@ -9,30 +10,9 @@ class Request {
   // Convert database record to API response format (snake_case → camelCase)
   static mapToApiResponse(request) {
     if (!request) return null
-
-    return {
-      id: request.id,
-      type: request.type,
-      workflowId: request.workflow_id,
-      createdBy: request.created_by,
-      payload: request.payload,
-      steps: request.steps,
-      status: request.status,
-      currentStepIndex: request.current_step_index,
-      slaHours: request.sla_hours,
-      slaDeadline: request.sla_deadline,
-      submittedAt: request.submitted_at,
-      completedAt: request.completed_at,
-      createdAt: request.created_at,
-      updatedAt: request.updated_at,
-      // Include joined fields if present
-      creatorFirstName: request.creator_first_name,
-      creatorLastName: request.creator_last_name,
-      creatorEmail: request.creator_email,
-      workflowName: request.workflow_name,
-      // Include history if present
-      history: request.history
-    }
+    // Only convert top-level keys to avoid mutating nested JSON like payload/steps
+    const mapped = keysToCamel(request, { deep: false })
+    return mapped
   }
 
   // Convert multiple database records to API response format
@@ -53,16 +33,18 @@ class Request {
       slaDeadline = new Date(Date.now() + slaHours * 60 * 60 * 1000)
     }
 
+    const dbInsert = keysToSnake({
+      type,
+      workflowId,
+      createdBy,
+      payload,
+      steps,
+      slaHours,
+      slaDeadline
+    }, { deep: false })
+
     const [request] = await db(this.tableName)
-      .insert({
-        type,
-        workflow_id: workflowId,
-        created_by: createdBy,
-        payload,
-        steps,
-        sla_hours: slaHours,
-        sla_deadline: slaDeadline
-      })
+      .insert(dbInsert)
       .returning('*')
 
     // Create initial history entry
@@ -103,6 +85,7 @@ class Request {
 
   // List requests with filters
   static async list(filters = {}) {
+    const f = keysToSnake(filters, { deep: false })
     let query = db(this.tableName)
       .leftJoin('users as creator', 'requests.created_by', 'creator.id')
       .leftJoin('workflows', 'requests.workflow_id', 'workflows.id')
@@ -120,27 +103,27 @@ class Request {
         'workflows.name as workflow_name'
       )
 
-    if (filters.status) {
-      query = query.where('requests.status', filters.status)
+    if (f.status) {
+      query = query.where('requests.status', f.status)
     }
 
-    if (filters.type) {
-      query = query.where('requests.type', filters.type)
+    if (f.type) {
+      query = query.where('requests.type', f.type)
     }
 
-    if (filters.created_by) {
-      query = query.where('requests.created_by', filters.created_by)
+    if (f.created_by) {
+      query = query.where('requests.created_by', f.created_by)
     }
 
-    if (filters.pending_for_role) {
+    if (f.pending_for_role) {
       // Find requests pending for specific role
       query = query.whereRaw(`
         requests.status = 'pending' AND 
         requests.steps->requests.current_step_index->>'role' = ?
-      `, [filters.pending_for_role])
+      `, [f.pending_for_role])
     }
 
-    if (filters.sla_breached) {
+    if (f.sla_breached) {
       query = query.where('requests.sla_deadline', '<', new Date())
     }
 

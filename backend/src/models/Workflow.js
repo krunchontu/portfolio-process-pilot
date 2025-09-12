@@ -1,4 +1,5 @@
 const { db } = require('../database/connection')
+const { keysToCamel, keysToSnake } = require('../utils/caseMapping')
 
 class Workflow {
   static get tableName() {
@@ -8,24 +9,7 @@ class Workflow {
   // Convert database record to API response format (snake_case → camelCase)
   static mapToApiResponse(workflow) {
     if (!workflow) return null
-
-    return {
-      id: workflow.id,
-      name: workflow.name,
-      flowId: workflow.flow_id,
-      description: workflow.description,
-      steps: workflow.steps,
-      notifications: workflow.notifications,
-      isActive: workflow.is_active,
-      createdBy: workflow.created_by,
-      updatedBy: workflow.updated_by,
-      createdAt: workflow.created_at,
-      updatedAt: workflow.updated_at,
-      // Include joined fields if present
-      creatorFirstName: workflow.creator_first_name,
-      creatorLastName: workflow.creator_last_name,
-      creatorEmail: workflow.creator_email
-    }
+    return keysToCamel(workflow, { deep: false })
   }
 
   // Convert multiple database records to API response format
@@ -35,8 +19,9 @@ class Workflow {
 
   // Create new workflow
   static async create(workflowData) {
+    const dbData = keysToSnake(workflowData, { deep: false })
     const [workflow] = await db(this.tableName)
-      .insert(workflowData)
+      .insert(dbData)
       .returning('*')
 
     return this.mapToApiResponse(workflow)
@@ -142,9 +127,10 @@ class Workflow {
 
   // Update workflow
   static async update(id, updates) {
+    const dbUpdates = keysToSnake(updates, { deep: false })
     const [workflow] = await db(this.tableName)
       .where('id', id)
-      .update({ ...updates, updated_at: new Date() })
+      .update({ ...dbUpdates, updated_at: new Date() })
       .returning('*')
 
     return this.mapToApiResponse(workflow)
@@ -196,7 +182,7 @@ class Workflow {
       errors.push('Workflow name is required')
     }
 
-    if (!workflowData.flow_id || workflowData.flow_id.trim().length === 0) {
+    if (!workflowData.flowId || workflowData.flowId.trim().length === 0) {
       errors.push('Flow ID is required')
     }
 

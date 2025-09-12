@@ -124,9 +124,9 @@ A new ${workflow.name} request has been submitted and requires your attention.
 Request Details:
 - Title: ${request.title}
 - Type: ${request.type}
-- Submitted by: ${user.first_name} ${user.last_name} (${user.email})
+- Submitted by: ${(user.first_name || user.firstName)} ${(user.last_name || user.lastName)} (${user.email})
 - Department: ${user.department || 'Not specified'}
-- Submitted on: ${request.created_at}
+- Submitted on: ${request.created_at || request.createdAt}
 
 Description:
 ${request.description || 'No description provided'}
@@ -155,14 +155,14 @@ ProcessPilot System
   async sendRequestApprovedNotification(request, user, approver, workflow) {
     const subject = `Request Approved: ${request.title}`
     const text = `
-Dear ${user.first_name} ${user.last_name},
+Dear ${(user.first_name || user.firstName)} ${(user.last_name || user.lastName)},
 
 Your ${workflow.name} request has been approved.
 
 Request Details:
 - Title: ${request.title}
 - Type: ${request.type}
-- Approved by: ${approver.first_name} ${approver.last_name}
+- Approved by: ${(approver.first_name || approver.firstName)} ${(approver.last_name || approver.lastName)}
 - Approved on: ${new Date().toISOString()}
 
 ${request.comment ? `Approval Comment: ${request.comment}` : ''}
@@ -179,14 +179,14 @@ ProcessPilot System
   async sendRequestRejectedNotification(request, user, approver, workflow, comment = null) {
     const subject = `Request Rejected: ${request.title}`
     const text = `
-Dear ${user.first_name} ${user.last_name},
+Dear ${(user.first_name || user.firstName)} ${(user.last_name || user.lastName)},
 
 Your ${workflow.name} request has been rejected.
 
 Request Details:
 - Title: ${request.title}
 - Type: ${request.type}
-- Rejected by: ${approver.first_name} ${approver.last_name}
+- Rejected by: ${(approver.first_name || approver.firstName)} ${(approver.last_name || approver.lastName)}
 - Rejected on: ${new Date().toISOString()}
 
 ${comment ? `Rejection Reason: ${comment}` : 'No reason provided'}
@@ -210,8 +210,8 @@ A ${workflow.name} request has been escalated due to SLA breach.
 Request Details:
 - Title: ${request.title}
 - Type: ${request.type}
-- Submitted by: ${user.first_name} ${user.last_name} (${user.email})
-- Submitted on: ${request.created_at}
+- Submitted by: ${(user.first_name || user.firstName)} ${(user.last_name || user.lastName)} (${user.email})
+- Submitted on: ${request.created_at || request.createdAt}
 - Escalation Level: ${escalationLevel}
 
 This request requires immediate attention.
@@ -295,7 +295,7 @@ ProcessPilot System
     const { db } = require('../database/connection')
 
     // Get current step from workflow
-    const currentStep = workflow.steps[request.current_step_index || 0]
+    const currentStep = workflow.steps[(request.current_step_index || request.currentStepIndex) || 0]
     if (!currentStep) {
       return []
     }
@@ -308,7 +308,7 @@ ProcessPilot System
 
     // If step requires same department, filter by submitter's department
     if (currentStep.sameDepartment) {
-      const submitter = await db('users').where('id', request.user_id).first()
+      const submitter = await db('users').where('id', (request.user_id || request.createdBy)).first()
       if (submitter && submitter.department) {
         query = query.where('department', submitter.department)
       }

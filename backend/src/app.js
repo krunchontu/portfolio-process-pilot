@@ -3,7 +3,6 @@ const cors = require('cors')
 const helmet = require('helmet')
 const compression = require('compression')
 const morgan = require('morgan')
-const session = require('express-session')
 const cookieParser = require('cookie-parser')
 
 const config = require('./config')
@@ -50,17 +49,7 @@ app.use('/api/', progressiveLimiter)
 // Cookie parsing middleware
 app.use(cookieParser())
 
-// Session middleware (required for CSRF protection)
-app.use(session({
-  secret: process.env.SESSION_SECRET || process.env.JWT_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: TIME.DAY // 24 hours
-  }
-}))
+// Note: express-session removed. CSRF now uses stateless double-submit cookie.
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }))
@@ -114,9 +103,9 @@ app.get('/api', (req, res) => {
     version: '1.0.0',
     description: 'Workflow & Approval Engine API',
     documentation: {
-      swagger_ui: `${req.protocol}://${req.get('host')}/docs`,
-      swagger_json: `${req.protocol}://${req.get('host')}/api/swagger.json`,
-      postman_collection: `${req.protocol}://${req.get('host')}/api/postman.json`
+      swaggerUi: `${req.protocol}://${req.get('host')}/docs`,
+      swaggerJson: `${req.protocol}://${req.get('host')}/api/swagger.json`,
+      postmanCollection: `${req.protocol}://${req.get('host')}/api/postman.json`
     },
     endpoints: {
       auth: '/api/auth',

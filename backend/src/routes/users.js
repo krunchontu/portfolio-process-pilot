@@ -11,6 +11,89 @@ const router = express.Router()
 // All routes require authentication
 router.use(authenticateToken)
 
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: List users
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [employee, manager, admin]
+ *       - in: query
+ *         name: department
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 50
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           default: 0
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         users:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/User'
+ *                         pagination:
+ *                           $ref: '#/components/schemas/Pagination'
+ *             examples:
+ *               sample:
+ *                 value:
+ *                   success: true
+ *                   message: Users retrieved successfully
+ *                   data:
+ *                     users:
+ *                       - id: "u1"
+ *                         email: "employee@example.com"
+ *                         firstName: "Evan"
+ *                         lastName: "Employee"
+ *                         role: employee
+ *                         department: Engineering
+ *                         isActive: true
+ *                     pagination:
+ *                       currentPage: 1
+ *                       perPage: 50
+ *                       totalItems: 1
+ *                       totalPages: 1
+ *                       hasNext: false
+ *                       hasPrevious: false
+ *                   meta:
+ *                     timestamp: "2025-09-12T12:00:00.000Z"
+ */
 // Get all users (admin and managers only)
 router.get('/',
   requireRole(['admin', 'manager']),
@@ -20,7 +103,7 @@ router.get('/',
       const {
         role,
         department,
-        active,
+        isActive,
         search,
         limit = 50,
         offset = 0
@@ -31,13 +114,13 @@ router.get('/',
       logger.info('Fetching users list', {
         userId,
         userRole,
-        filters: { role, department, active, search, limit, offset }
+        filters: { role, department, isActive, search, limit, offset }
       })
 
       const options = {
         role,
         department,
-        active: active !== undefined ? active === 'true' : undefined,
+        active: isActive !== undefined ? (typeof isActive === 'string' ? isActive === 'true' : !!isActive) : undefined,
         search,
         limit: parseInt(limit),
         offset: parseInt(offset)
@@ -60,7 +143,7 @@ router.get('/',
           total,
           limit: parseInt(limit),
           offset: parseInt(offset),
-          has_more: (parseInt(offset) + parseInt(limit)) < total
+          hasMore: (parseInt(offset) + parseInt(limit)) < total
         }
       }
 
@@ -82,6 +165,53 @@ router.get('/',
     }
   })
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: User retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *             examples:
+ *               sample:
+ *                 value:
+ *                   success: true
+ *                   message: User retrieved successfully
+ *                   data:
+ *                     user:
+ *                       id: "u1"
+ *                       email: "employee@example.com"
+ *                       firstName: "Evan"
+ *                       lastName: "Employee"
+ *                       role: employee
+ *                       department: Engineering
+ *                       isActive: true
+ *                   meta:
+ *                     timestamp: "2025-09-12T12:00:00.000Z"
+ */
 // Get user by ID (admin and managers only)
 router.get('/:id',
   requireRole(['admin', 'manager']),
@@ -94,7 +224,7 @@ router.get('/:id',
 
       logger.info('Fetching user by ID', { userId, userRole, targetUserId })
 
-      const user = await User.findById(targetUserId)
+      const user = await User.findByIdForApi(targetUserId)
 
       if (!user) {
         logger.warn('User not found', { userId, targetUserId })
@@ -128,6 +258,55 @@ router.get('/:id',
     }
   })
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   put:
+ *     summary: Update user
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email: { type: string, format: email }
+ *               firstName: { type: string }
+ *               lastName: { type: string }
+ *               role: { type: string, enum: [employee, manager, admin] }
+ *               department: { type: string }
+ *               managerId: { type: string, format: uuid }
+ *               isActive: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             examples:
+ *               sample:
+ *                 value:
+ *                   success: true
+ *                   message: User updated successfully
+ *                   data:
+ *                     user:
+ *                       id: "u1"
+ *                       email: "employee@example.com"
+ *                       firstName: "Evan"
+ *                       lastName: "Employee"
+ *                       role: manager
+ *                   meta:
+ *                     timestamp: "2025-09-12T12:00:00.000Z"
+ */
 // Update user (admin only)
 router.put('/:id',
   requireRole(['admin']),
@@ -196,6 +375,38 @@ router.put('/:id',
     }
   })
 
+/**
+ * @swagger
+ * /api/users/{id}/deactivate:
+ *   patch:
+ *     summary: Deactivate user
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: User deactivated successfully
+ *         content:
+ *           application/json:
+ *             examples:
+ *               sample:
+ *                 value:
+ *                   success: true
+ *                   message: User deactivated successfully
+ *                   data:
+ *                     user:
+ *                       id: "u1"
+ *                       isActive: false
+ *                   meta:
+ *                     timestamp: "2025-09-12T12:00:00.000Z"
+ */
 // Deactivate user (admin only)
 router.patch('/:id/deactivate',
   requireRole(['admin']),
@@ -245,8 +456,8 @@ router.patch('/:id/deactivate',
       }
 
       const updatedUser = await User.update(targetUserId, {
-        is_active: false,
-        deactivated_at: new Date()
+        isActive: false,
+        deactivatedAt: new Date()
       })
 
       logger.info('User deactivated successfully', { userId, targetUserId })
@@ -266,6 +477,38 @@ router.patch('/:id/deactivate',
     }
   })
 
+/**
+ * @swagger
+ * /api/users/{id}/activate:
+ *   patch:
+ *     summary: Activate user
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: User activated successfully
+ *         content:
+ *           application/json:
+ *             examples:
+ *               sample:
+ *                 value:
+ *                   success: true
+ *                   message: User activated successfully
+ *                   data:
+ *                     user:
+ *                       id: "u1"
+ *                       isActive: true
+ *                   meta:
+ *                     timestamp: "2025-09-12T12:00:00.000Z"
+ */
 // Activate user (admin only)
 router.patch('/:id/activate',
   requireRole(['admin']),
@@ -288,9 +531,9 @@ router.patch('/:id/activate',
       }
 
       const updatedUser = await User.update(targetUserId, {
-        is_active: true,
-        deactivated_at: null,
-        activated_at: new Date()
+        isActive: true,
+        deactivatedAt: null,
+        activatedAt: new Date()
       })
 
       logger.info('User activated successfully', { userId, targetUserId })
@@ -310,6 +553,81 @@ router.patch('/:id/activate',
     }
   })
 
+/**
+ * @swagger
+ * /api/users/{id}/requests:
+ *   get:
+ *     summary: List requests for a user
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, approved, rejected, cancelled]
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           default: 0
+ *     responses:
+ *       200:
+ *         description: User requests retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         requests:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Request'
+ *                         pagination:
+ *                           $ref: '#/components/schemas/Pagination'
+ *             examples:
+ *               sample:
+ *                 value:
+ *                   success: true
+ *                   message: User requests retrieved successfully
+ *                   data:
+ *                     requests:
+ *                       - id: "r1"
+ *                         type: leave
+ *                         status: pending
+ *                         workflowId: "w1"
+ *                         createdBy: "u1"
+ *                         currentStepIndex: 0
+ *                     pagination:
+ *                       currentPage: 1
+ *                       perPage: 20
+ *                       totalItems: 1
+ *                       totalPages: 1
+ *                       hasNext: false
+ *                       hasPrevious: false
+ *                   meta:
+ *                     timestamp: "2025-09-12T12:00:00.000Z"
+ */
 // Get user's requests (admin, managers for their dept, or own requests)
 router.get('/:id/requests',
   validateParams(usersSchema.idParams),
@@ -374,13 +692,16 @@ router.get('/:id/requests',
         .count('* as count')
         .first()
 
+      const Request = require('../models/Request')
+      const mappedRequests = Request.mapArrayToApiResponse(requests)
+
       const result = {
-        requests,
+        requests: mappedRequests,
         pagination: {
           total: parseInt(totalCount.count),
           limit: parseInt(limit),
           offset: parseInt(offset),
-          has_more: (parseInt(offset) + parseInt(limit)) < parseInt(totalCount.count)
+          hasMore: (parseInt(offset) + parseInt(limit)) < parseInt(totalCount.count)
         }
       }
 
@@ -403,6 +724,49 @@ router.get('/:id/requests',
     }
   })
 
+/**
+ * @swagger
+ * /api/users:
+ *   post:
+ *     summary: Create user
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *       - CookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password, firstName, lastName]
+ *             properties:
+ *               email: { type: string, format: email }
+ *               password: { type: string, minLength: 8 }
+ *               firstName: { type: string }
+ *               lastName: { type: string }
+ *               role: { type: string, enum: [employee, manager, admin], default: employee }
+ *               department: { type: string }
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             examples:
+ *               sample:
+ *                 value:
+ *                   success: true
+ *                   message: User created successfully
+ *                   data:
+ *                     user:
+ *                       id: "u2"
+ *                       email: "new@example.com"
+ *                       firstName: "New"
+ *                       lastName: "User"
+ *                       role: employee
+ *                   meta:
+ *                     timestamp: "2025-09-12T12:00:00.000Z"
+ */
 // Create new user (admin only)
 router.post('/',
   requireRole(['admin']),
