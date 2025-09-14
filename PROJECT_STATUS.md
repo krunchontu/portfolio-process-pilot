@@ -1,8 +1,12 @@
 # ProcessPilot - Project Implementation Status
 
 **Last Updated**: September 12, 2025  
-**Session**: Documentation alignment and CI doc validation  
+**Session**: Documentation alignment, CI doc validation, and encoding/emoji policy integration  
 **Completion**: 91% (29/32 tasks completed)
+
+### Documentation Encoding & Emoji Policy
+- Docs follow UTF-8 (no BOM) and a constrained emoji set. See `docs/EMOJI_ENCODING_POLICY.md`.
+- CI enforces this via `scripts/check-doc-encoding.js` (workflow: `.github/workflows/docs-encoding-check.yml`).
 
 ## 🎯 **Current Project State**
 

@@ -10,6 +10,8 @@ ProcessPilot is a comprehensive workflow and approval system that demonstrates e
 
 Note on status: See PROJECT_STATUS.md for the latest, authoritative progress and security status.
 
+Documentation Encoding & Emoji Policy: See docs/EMOJI_ENCODING_POLICY.md for rules and CI checks.
+
 This project showcases:
 
 * **Full-Stack Architecture** → Node.js/Express backend + React frontend with TypeScript

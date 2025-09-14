@@ -1,0 +1,21 @@
+name: Docs Encoding Check
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  check-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Stage repository files
+        run: git add -A
+      - name: Run documentation encoding check
+        run: node scripts/check-doc-encoding.js

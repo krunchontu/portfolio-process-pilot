@@ -42,6 +42,44 @@ function firstNonEmptyLines(str, count = 5) {
   return lines.slice(0, count)
 }
 
+// Additional helpers for mojibake and emoji policy
+function hasReplacementChar(str) {
+  return str.includes('\uFFFD')
+}
+
+function findHeadingMojibake(text) {
+  const lines = text.split(/\r?\n/)
+  const hits = []
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (/^#{1,6}\s*\?\?\b/.test(line)) {
+      hits.push({ line: i + 1, sample: line.slice(0, 120) })
+    }
+  }
+  return hits
+}
+
+// Approximate emoji matcher and enforcement of allowed set
+const EMOJI_REGEX = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu
+const variationSelector = /\uFE0F/g
+const allowedEmojis = new Set([
+  '✅','❌','⚠️','🚀','🔧','🔒','📋','🧪','📝','🧰','📦','🧭','🧠','📈','📉','💡'
+].flatMap(e => [e, e.replace(variationSelector, '')]))
+
+function findDisallowedEmojis(text) {
+  const lines = text.split(/\r?\n/)
+  const hits = []
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (EMOJI_REGEX.test(line)) {
+      const found = Array.from(line.matchAll(EMOJI_REGEX), m => (m[0] || '').replace(variationSelector, ''))
+      const bad = found.filter(ch => !allowedEmojis.has(ch))
+      if (bad.length) hits.push({ line: i + 1, sample: line.slice(0, 120), emojis: Array.from(new Set(bad)) })
+    }
+  }
+  return hits
+}
+
 function main() {
   const staged = getStagedFiles()
   const targets = staged.filter(shouldCheck)
@@ -70,6 +108,23 @@ function main() {
       if (txt.charCodeAt(0) === 0xFEFF) {
         // Not failing; just ensure awareness in output
         // No action required
+      }
+
+      // Mojibake patterns in headings (likely lost emoji)
+      const mojibake = findHeadingMojibake(txt)
+      for (const m of mojibake) {
+        violations.push({ file, reason: "heading contains '??' mojibake", sample: `L${m.line}: ${m.sample}` })
+      }
+
+      // Replacement character check
+      if (hasReplacementChar(txt)) {
+        violations.push({ file, reason: 'contains Unicode replacement character (\\uFFFD)' })
+      }
+
+      // Emoji policy enforcement
+      const disallowed = findDisallowedEmojis(txt)
+      for (const d of disallowed) {
+        violations.push({ file, reason: `uses disallowed emoji: ${d.emojis.join(', ')}`, sample: `L${d.line}: ${d.sample}` })
       }
     } catch (err) {
       violations.push({ file, reason: `read error: ${err.message}` })
