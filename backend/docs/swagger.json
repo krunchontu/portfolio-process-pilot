@@ -1,0 +1,2759 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "ProcessPilot API",
+    "version": "1.0.0",
+    "description": "\n# ProcessPilot Workflow & Approval Engine API\n\nA comprehensive REST API for managing workflow requests, approvals, and user management with enterprise-grade security and monitoring.\n\n## Features\n\n- 🔐 **JWT Authentication** with role-based access control\n- 📝 **Request Management** with multi-step approval workflows\n- 👥 **User Management** with hierarchical roles (Employee → Manager → Admin)\n- 📊 **Analytics** and reporting endpoints\n- 🔄 **Workflow Configuration** for customizable approval processes\n- 🛡️ **Security** with CSRF protection, rate limiting, and input sanitization\n- 💾 **Multi-Database Support** (PostgreSQL, Supabase, PlanetScale, Neon, Railway)\n\n## Authentication\n\nMost endpoints require authentication using JWT tokens. Include the token in requests using:\n\n```\nAuthorization: Bearer <your-jwt-token>\n```\n\nOr use httpOnly cookies (automatically handled by browsers):\n- `access_token`: Main authentication token (15min expiry)\n- `refresh_token`: Token refresh capability (7 days expiry)\n\n## Rate Limiting\n\nAPI endpoints are rate limited:\n- Authentication endpoints: 5 requests per 15 minutes\n- General endpoints: 100 requests per 15 minutes (per user/IP)\n- Rate limit headers included in responses\n\n## Error Handling\n\nAll errors follow a consistent format:\n\n```json\n{\n  \"success\": false,\n  \"error\": \"Error message\",\n  \"code\": \"ERROR_CODE\",\n  \"details\": {\n    \"validationErrors\": [...]\n  },\n  \"meta\": {\n    \"timestamp\": \"2023-12-07T10:00:00.000Z\"\n  }\n}\n```\n\n## Success Responses\n\nAll successful responses follow this format:\n\n```json\n{\n  \"success\": true,\n  \"message\": \"Operation successful\",\n  \"data\": {...},\n  \"meta\": {\n    \"timestamp\": \"2023-12-07T10:00:00.000Z\",\n    \"pagination\": {...}\n  }\n}\n```\n      ",
+    "contact": {
+      "name": "ProcessPilot Support",
+      "email": "support@processpilot.com",
+      "url": "https://github.com/your-username/portfolio-process-pilot"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.processpilot.com",
+      "description": "Production server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT authentication token"
+      },
+      "CookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "access_token",
+        "description": "JWT token in httpOnly cookie"
+      }
+    },
+    "schemas": {
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Operation successful"
+          },
+          "data": {
+            "type": "object"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              },
+              "filters": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "example": "An error occurred"
+          },
+          "code": {
+            "type": "string",
+            "example": "ERROR_CODE"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Optional error details, e.g., validationErrors, stack (dev)"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "ValidationErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "example": "Validation failed"
+          },
+          "code": {
+            "type": "string",
+            "example": "VALIDATION_ERROR"
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "validationErrors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "currentPage": {
+            "type": "integer",
+            "example": 1
+          },
+          "perPage": {
+            "type": "integer",
+            "example": 20
+          },
+          "totalItems": {
+            "type": "integer",
+            "example": 100
+          },
+          "totalPages": {
+            "type": "integer",
+            "example": 5
+          },
+          "hasNext": {
+            "type": "boolean",
+            "example": true
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "example": false
+          },
+          "nextPage": {
+            "type": "integer",
+            "nullable": true,
+            "example": 2
+          },
+          "previousPage": {
+            "type": "integer",
+            "nullable": true,
+            "example": null
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "user@example.com"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "employee",
+              "manager",
+              "admin"
+            ],
+            "example": "employee"
+          },
+          "department": {
+            "type": "string",
+            "example": "Engineering"
+          },
+          "managerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastLogin": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "Request": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "leave",
+              "expense",
+              "equipment",
+              "general"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "cancelled"
+            ]
+          },
+          "workflowId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "currentStepIndex": {
+            "type": "integer"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowStep"
+            }
+          },
+          "slaDeadline": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "creator": {
+            "$ref": "#/components/schemas/User"
+          },
+          "currentStep": {
+            "$ref": "#/components/schemas/WorkflowStep"
+          }
+        }
+      },
+      "WorkflowStep": {
+        "type": "object",
+        "properties": {
+          "stepId": {
+            "type": "integer",
+            "example": 1
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "employee",
+              "manager",
+              "admin"
+            ]
+          },
+          "slaHours": {
+            "type": "integer",
+            "example": 24
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "approve",
+                "reject",
+                "escalate"
+              ]
+            }
+          },
+          "required": {
+            "type": "boolean",
+            "example": true
+          },
+          "escalationHours": {
+            "type": "integer",
+            "nullable": true
+          },
+          "escalationRole": {
+            "type": "string",
+            "enum": [
+              "manager",
+              "admin"
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "Workflow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Leave Approval Process"
+          },
+          "description": {
+            "type": "string",
+            "example": "Standard leave request approval workflow"
+          },
+          "flowId": {
+            "type": "string",
+            "enum": [
+              "leave",
+              "expense",
+              "equipment",
+              "general"
+            ]
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowStep"
+            }
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RequestHistory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "SUBMIT",
+              "APPROVE",
+              "REJECT",
+              "CANCEL",
+              "ESCALATE"
+            ]
+          },
+          "stepId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "comment": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actorEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "actorRole": {
+            "type": "string",
+            "enum": [
+              "employee",
+              "manager",
+              "admin"
+            ]
+          }
+        }
+      },
+      "LeaveRequestPayload": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "leaveType": {
+            "type": "string",
+            "enum": [
+              "annual",
+              "sick",
+              "personal",
+              "maternity",
+              "paternity"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "daysRequested": {
+            "type": "number"
+          }
+        },
+        "example": {
+          "startDate": "2025-09-15",
+          "endDate": "2025-09-20",
+          "leaveType": "annual",
+          "reason": "Family vacation",
+          "daysRequested": 5
+        }
+      },
+      "ExpenseRequestPayload": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "example": 150.5
+          },
+          "currency": {
+            "type": "string",
+            "example": "USD"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "travel",
+              "meals",
+              "officeSupplies",
+              "software",
+              "other"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "receiptUrls": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "dateIncurred": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "example": {
+          "amount": 123.45,
+          "currency": "USD",
+          "category": "travel",
+          "description": "Taxi to airport",
+          "receiptUrls": [
+            "https://example.com/receipt/abc123"
+          ],
+          "dateIncurred": "2025-09-10"
+        }
+      },
+      "EquipmentRequestPayload": {
+        "type": "object",
+        "properties": {
+          "equipmentType": {
+            "type": "string",
+            "enum": [
+              "laptop",
+              "monitor",
+              "phone",
+              "accessories",
+              "other"
+            ]
+          },
+          "specifications": {
+            "type": "string"
+          },
+          "urgency": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "urgent"
+            ]
+          },
+          "justification": {
+            "type": "string"
+          },
+          "estimatedCost": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "example": {
+          "equipmentType": "laptop",
+          "specifications": "16GB RAM, 512GB SSD, 14-inch",
+          "urgency": "high",
+          "justification": "Developer requires high-spec laptop for builds",
+          "estimatedCost": 1500
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User's email address",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "description": "User's password",
+            "example": "SecurePass123!"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "first_name",
+          "last_name"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "newuser@example.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 8,
+            "example": "SecurePass123!"
+          },
+          "first_name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 50,
+            "example": "John"
+          },
+          "last_name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 50,
+            "example": "Doe"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "employee",
+              "manager",
+              "admin"
+            ],
+            "default": "employee"
+          },
+          "department": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "Engineering"
+          }
+        }
+      },
+      "AuthTokens": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "JWT access token"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "JWT refresh token"
+          },
+          "expires_in": {
+            "type": "string",
+            "description": "Token expiration time",
+            "example": "15m"
+          }
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string",
+            "format": "password",
+            "description": "User's current password"
+          },
+          "new_password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 8,
+            "description": "New password (min 8 characters)"
+          }
+        }
+      },
+      "HealthStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "degraded",
+              "unhealthy"
+            ],
+            "description": "Overall system health status"
+          },
+          "uptime": {
+            "type": "number",
+            "description": "System uptime in seconds"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Health check timestamp"
+          },
+          "version": {
+            "type": "string",
+            "description": "Application version"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "development",
+              "test",
+              "production"
+            ]
+          },
+          "services": {
+            "$ref": "#/components/schemas/ServiceHealthStatus"
+          },
+          "system": {
+            "$ref": "#/components/schemas/SystemMetrics"
+          }
+        }
+      },
+      "ServiceHealthStatus": {
+        "type": "object",
+        "properties": {
+          "database": {
+            "$ref": "#/components/schemas/DatabaseHealth"
+          },
+          "redis": {
+            "$ref": "#/components/schemas/RedisHealth"
+          },
+          "externalApis": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalServiceHealth"
+            }
+          }
+        }
+      },
+      "DatabaseHealth": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "unhealthy"
+            ]
+          },
+          "responseTime": {
+            "type": "string",
+            "example": "15ms"
+          },
+          "poolStatus": {
+            "type": "object",
+            "properties": {
+              "used": {
+                "type": "integer"
+              },
+              "free": {
+                "type": "integer"
+              },
+              "pending": {
+                "type": "integer"
+              },
+              "max": {
+                "type": "integer"
+              },
+              "min": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "SystemMetrics": {
+        "type": "object",
+        "properties": {
+          "memory": {
+            "type": "object",
+            "properties": {
+              "used": {
+                "type": "string",
+                "example": "125.5MB"
+              },
+              "total": {
+                "type": "string",
+                "example": "512MB"
+              },
+              "percentage": {
+                "type": "number",
+                "example": 24.5
+              }
+            }
+          },
+          "cpu": {
+            "type": "object",
+            "properties": {
+              "usage": {
+                "type": "number",
+                "example": 15.7
+              }
+            }
+          },
+          "disk": {
+            "type": "object",
+            "properties": {
+              "free": {
+                "type": "string",
+                "example": "2.5GB"
+              },
+              "used": {
+                "type": "string",
+                "example": "1.2GB"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Authentication required",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "success": false,
+              "error": "Authentication required",
+              "code": "UNAUTHORIZED",
+              "meta": {
+                "timestamp": "2023-12-07T10:00:00.000Z"
+              }
+            }
+          }
+        }
+      },
+      "ForbiddenError": {
+        "description": "Access denied",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "success": false,
+              "error": "Access denied",
+              "code": "FORBIDDEN",
+              "meta": {
+                "timestamp": "2023-12-07T10:00:00.000Z"
+              }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Validation failed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFoundError": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "success": false,
+              "error": "Resource not found",
+              "code": "RESOURCE_NOT_FOUND",
+              "meta": {
+                "timestamp": "2023-12-07T10:00:00.000Z"
+              }
+            }
+          }
+        }
+      },
+      "RateLimitError": {
+        "description": "Rate limit exceeded",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "success": false,
+              "error": "Rate limit exceeded",
+              "code": "RATE_LIMIT_EXCEEDED",
+              "meta": {
+                "timestamp": "2023-12-07T10:00:00.000Z"
+              }
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "success": false,
+              "error": "Internal server error",
+              "code": "INTERNAL_ERROR",
+              "meta": {
+                "timestamp": "2023-12-07T10:00:00.000Z"
+              }
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "PageParam": {
+        "name": "page",
+        "in": "query",
+        "description": "Page number for pagination",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "LimitParam": {
+        "name": "limit",
+        "in": "query",
+        "description": "Number of items per page",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "SortParam": {
+        "name": "sort",
+        "in": "query",
+        "description": "Sort field",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "OrderParam": {
+        "name": "order",
+        "in": "query",
+        "description": "Sort order",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "asc",
+            "desc"
+          ],
+          "default": "desc"
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    },
+    {
+      "CookieAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User authentication and authorization endpoints"
+    },
+    {
+      "name": "Requests",
+      "description": "Request management and approval workflows"
+    },
+    {
+      "name": "Users",
+      "description": "User management (admin and manager access)"
+    },
+    {
+      "name": "Workflows",
+      "description": "Workflow configuration and management"
+    },
+    {
+      "name": "Analytics",
+      "description": "Analytics and reporting endpoints"
+    },
+    {
+      "name": "Health",
+      "description": "Health checks and monitoring"
+    }
+  ],
+  "paths": {
+    "/api/analytics/dashboard": {
+      "get": {
+        "summary": "Dashboard analytics",
+        "tags": [
+          "Analytics"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "timeframe",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ],
+              "default": "30d"
+            }
+          },
+          {
+            "in": "query",
+            "name": "department",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard analytics retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AnalyticsDashboard"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "examples": {
+                  "sample": {
+                    "value": {
+                      "success": true,
+                      "message": "Dashboard analytics retrieved successfully",
+                      "data": {
+                        "totalRequests": 120,
+                        "pendingRequests": 18,
+                        "approvedRequests": 90,
+                        "rejectedRequests": 12,
+                        "inProgressRequests": 5,
+                        "avgProcessingTime": 12.3,
+                        "recentActivity": 8,
+                        "timeframe": "30d",
+                        "department": "all"
+                      },
+                      "meta": {
+                        "timestamp": "2025-09-12T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/requests": {
+      "get": {
+        "summary": "Request metrics",
+        "tags": [
+          "Analytics"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "timeframe",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "leave",
+                "expense",
+                "equipment",
+                "general"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "approved",
+                "rejected",
+                "cancelled"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "department",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request metrics retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AnalyticsRequests"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "examples": {
+                  "sample": {
+                    "value": {
+                      "success": true,
+                      "message": "Request metrics retrieved successfully",
+                      "data": {
+                        "metrics": [
+                          {
+                            "date": "2025-09-10",
+                            "type": "leave",
+                            "status": "approved",
+                            "count": 7,
+                            "avgProcessingHours": 10.5
+                          }
+                        ],
+                        "typeDistribution": [
+                          {
+                            "type": "leave",
+                            "count": 60
+                          }
+                        ],
+                        "statusDistribution": [
+                          {
+                            "status": "pending",
+                            "count": 18
+                          }
+                        ],
+                        "filters": {
+                          "timeframe": "30d",
+                          "type": "leave",
+                          "status": "approved",
+                          "department": "Engineering"
+                        }
+                      },
+                      "meta": {
+                        "timestamp": "2025-09-12T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/workflows": {
+      "get": {
+        "summary": "Workflow analytics",
+        "tags": [
+          "Analytics"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "timeframe",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow analytics retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AnalyticsWorkflows"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "examples": {
+                  "sample": {
+                    "value": {
+                      "success": true,
+                      "message": "Workflow analytics retrieved successfully",
+                      "data": {
+                        "workflowMetrics": [
+                          {
+                            "id": "1",
+                            "name": "Leave Approval",
+                            "flowId": "leave",
+                            "description": "Standard leave workflow",
+                            "totalRequests": 80,
+                            "approvedCount": 60,
+                            "rejectedCount": 10,
+                            "pendingCount": 10,
+                            "approvalRate": 75,
+                            "avgProcessingHours": 14.2,
+                            "lastUsed": "2025-09-12T08:15:00.000Z"
+                          }
+                        ],
+                        "stepPerformance": [
+                          {
+                            "workflowId": "leave",
+                            "workflowName": "Leave Approval",
+                            "action": "approve",
+                            "details": null,
+                            "count": 60,
+                            "avgTimeToAction": 6.1
+                          }
+                        ],
+                        "timeframe": "30d"
+                      },
+                      "meta": {
+                        "timestamp": "2025-09-12T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/users": {
+      "get": {
+        "summary": "User analytics",
+        "tags": [
+          "Analytics"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "timeframe",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "department",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "role",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "employee",
+                "manager",
+                "admin"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User analytics retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AnalyticsUsers"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "examples": {
+                  "sample": {
+                    "value": {
+                      "success": true,
+                      "message": "User analytics retrieved successfully",
+                      "data": {
+                        "userActivity": [
+                          {
+                            "id": "u1",
+                            "email": "manager@example.com",
+                            "fullName": "Mary Manager",
+                            "role": "manager",
+                            "department": "Engineering",
+                            "isActive": true,
+                            "lastLogin": "2025-09-12T07:55:00.000Z",
+                            "requestsCreated": 3,
+                            "actionsTaken": 25,
+                            "approvals": 20,
+                            "rejections": 5,
+                            "lastActivity": "2025-09-12T08:10:00.000Z"
+                          }
+                        ],
+                        "departmentSummary": [
+                          {
+                            "department": "Engineering",
+                            "totalUsers": 25,
+                            "activeUsers": 24,
+                            "employees": 20,
+                            "managers": 4,
+                            "admins": 1
+                          }
+                        ],
+                        "roleDistribution": [
+                          {
+                            "role": "employee",
+                            "count": 40
+                          }
+                        ],
+                        "filters": {
+                          "timeframe": "30d"
+                        }
+                      },
+                      "meta": {
+                        "timestamp": "2025-09-12T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/departments": {
+      "get": {
+        "summary": "Department analytics",
+        "tags": [
+          "Analytics"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "timeframe",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Department analytics retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AnalyticsDepartments"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "examples": {
+                  "sample": {
+                    "value": {
+                      "success": true,
+                      "message": "Department analytics retrieved successfully",
+                      "data": {
+                        "departmentMetrics": [
+                          {
+                            "department": "Engineering",
+                            "totalUsers": 25,
+                            "activeUsers": 24,
+                            "totalRequests": 120,
+                            "approvedRequests": 90,
+                            "rejectedRequests": 12,
+                            "pendingRequests": 18,
+                            "approvalRate": 75,
+                            "avgProcessingHours": 13.2
+                          }
+                        ],
+                        "requestTypesByDepartment": [
+                          {
+                            "department": "Engineering",
+                            "type": "leave",
+                            "count": 60
+                          }
+                        ],
+                        "workloadTrends": [
+                          {
+                            "department": "Engineering",
+                            "date": "2025-09-10",
+                            "requests": 8
+                          }
+                        ],
+                        "timeframe": "30d",
+                        "accessLevel": "manager"
+                      },
+                      "meta": {
+                        "timestamp": "2025-09-12T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Authenticate user and get tokens",
+        "description": "Login with email and password to receive JWT tokens. Tokens are set as httpOnly cookies and also returned in response.",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "headers": {
+              "Set-Cookie": {
+                "description": "HttpOnly cookies with access and refresh tokens",
+                "schema": {
+                  "type": "string",
+                  "example": "access_token=eyJ...; HttpOnly; Secure; SameSite=Strict"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "user": {
+                              "$ref": "#/components/schemas/User"
+                            },
+                            "tokens": {
+                              "$ref": "#/components/schemas/AuthTokens"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitError"
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "summary": "Get current user profile",
+        "description": "Retrieve the authenticated user's profile information",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "user": {
+                              "$ref": "#/components/schemas/User"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Basic health check",
+        "description": "Quick health status of the application",
+        "tags": [
+          "Health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/HealthStatus"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service is degraded or unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/detailed": {
+      "get": {
+        "summary": "Detailed health and system metrics",
+        "description": "Comprehensive health status including system metrics and service dependencies",
+        "tags": [
+          "Health"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detailed health information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/HealthStatus"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/health/liveness": {
+      "get": {
+        "summary": "Kubernetes liveness probe",
+        "description": "Simple liveness check for container orchestration",
+        "tags": [
+          "Health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Application is alive",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "OK"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/readiness": {
+      "get": {
+        "summary": "Kubernetes readiness probe",
+        "description": "Readiness check including database connectivity",
+        "tags": [
+          "Health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Application is ready to serve traffic",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "READY"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Application is not ready",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "NOT READY"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/backups": {
+      "get": {
+        "summary": "Backup system health check",
+        "description": "Detailed backup monitoring and status information",
+        "tags": [
+          "Health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Backup system is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "overall_status": {
+                              "type": "string",
+                              "enum": [
+                                "healthy",
+                                "warning",
+                                "critical"
+                              ]
+                            },
+                            "last_backup_age_hours": {
+                              "type": "number"
+                            },
+                            "providers": {
+                              "type": "object"
+                            },
+                            "storage": {
+                              "type": "object"
+                            },
+                            "alerts": {
+                              "type": "array"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Backup system issues detected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/metrics": {
+      "get": {
+        "summary": "Application metrics",
+        "description": "Prometheus-compatible metrics endpoint",
+        "tags": [
+          "Health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Metrics in Prometheus format",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "summary": "List users",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "role",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "employee",
+                "manager",
+                "admin"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "department",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "isActive",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "users": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/User"
+                              }
+                            },
+                            "pagination": {
+                              "$ref": "#/components/schemas/Pagination"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                "examples": {
+                  "sample": {
+                    "value": {
+                      "success": true,
+                      "message": "Users retrieved successfully",
+                      "data": {
+                        "users": [
+                          {
+                            "id": "u1",
+                            "email": "employee@example.com",
+                            "firstName": "Evan",
+                            "lastName": "Employee",
+                            "role": "employee",
+                            "department": "Engineering",
+                            "isActive": true
+                          }
+                        ],
+                        "pagination": {
+                          "currentPage": 1,
+                          "perPage": 50,
+                          "totalItems": 1,
+                          "totalPages": 1,
+                          "hasNext": false,
+                          "hasPrevious": false
+                        }
+                      },
+                      "meta": {
+                        "timestamp": "2025-09-12T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create user",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password",
+                  "firstName",
+                  "lastName"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "employee",
+                      "manager",
+                      "admin"
+                    ],
+                    "default": "employee"
+                  },
+                  "department": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sample": {
+                    "value": {
+                      "success": true,
+                      "message": "User created successfully",
+                      "data": {
+                        "user": {
+                          "id": "u2",
+                          "email": "new@example.com",
+                          "firstName": "New",
+                          "lastName": "User",
+                          "role": "employee"
+                        }
+                      },
+                      "meta": {
+                        "timestamp": "2025-09-12T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "summary": "Get user by ID",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "user": {
+                              "$ref": "#/components/schemas/User"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                "examples": {
+                  "sample": {
+                    "value": {
+                      "success": true,
+                      "message": "User retrieved successfully",
+                      "data": {
+                        "user": {
+                          "id": "u1",
+                          "email": "employee@example.com",
+                          "firstName": "Evan",
+                          "lastName": "Employee",
+                          "role": "employee",
+                          "department": "Engineering",
+                          "isActive": true
+                        }
+                      },
+                      "meta": {
+                        "timestamp": "2025-09-12T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update user",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "employee",
+                      "manager",
+                      "admin"
+                    ]
+                  },
+                  "department": {
+                    "type": "string"
+                  },
+                  "managerId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sample": {
+                    "value": {
+                      "success": true,
+                      "message": "User updated successfully",
+                      "data": {
+                        "user": {
+                          "id": "u1",
+                          "email": "employee@example.com",
+                          "firstName": "Evan",
+                          "lastName": "Employee",
+                          "role": "manager"
+                        }
+                      },
+                      "meta": {
+                        "timestamp": "2025-09-12T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}/deactivate": {
+      "patch": {
+        "summary": "Deactivate user",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deactivated successfully",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sample": {
+                    "value": {
+                      "success": true,
+                      "message": "User deactivated successfully",
+                      "data": {
+                        "user": {
+                          "id": "u1",
+                          "isActive": false
+                        }
+                      },
+                      "meta": {
+                        "timestamp": "2025-09-12T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}/activate": {
+      "patch": {
+        "summary": "Activate user",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User activated successfully",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sample": {
+                    "value": {
+                      "success": true,
+                      "message": "User activated successfully",
+                      "data": {
+                        "user": {
+                          "id": "u1",
+                          "isActive": true
+                        }
+                      },
+                      "meta": {
+                        "timestamp": "2025-09-12T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}/requests": {
+      "get": {
+        "summary": "List requests for a user",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "approved",
+                "rejected",
+                "cancelled"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User requests retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "requests": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/Request"
+                              }
+                            },
+                            "pagination": {
+                              "$ref": "#/components/schemas/Pagination"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                "examples": {
+                  "sample": {
+                    "value": {
+                      "success": true,
+                      "message": "User requests retrieved successfully",
+                      "data": {
+                        "requests": [
+                          {
+                            "id": "r1",
+                            "type": "leave",
+                            "status": "pending",
+                            "workflowId": "w1",
+                            "createdBy": "u1",
+                            "currentStepIndex": 0
+                          }
+                        ],
+                        "pagination": {
+                          "currentPage": 1,
+                          "perPage": 20,
+                          "totalItems": 1,
+                          "totalPages": 1,
+                          "hasNext": false,
+                          "hasPrevious": false
+                        }
+                      },
+                      "meta": {
+                        "timestamp": "2025-09-12T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows": {
+      "get": {
+        "summary": "List workflows",
+        "tags": [
+          "Workflows"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "active",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by active status"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search by name, description, or flowId"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflows retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "workflows": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/Workflow"
+                              }
+                            },
+                            "pagination": {
+                              "$ref": "#/components/schemas/Pagination"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create workflow",
+        "tags": [
+          "Workflows"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "flowId",
+                  "steps"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "flowId": {
+                    "type": "string",
+                    "enum": [
+                      "leave",
+                      "expense",
+                      "equipment",
+                      "general"
+                    ]
+                  },
+                  "isActive": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "steps": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/WorkflowStep"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Workflow created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "workflow": {
+                              "$ref": "#/components/schemas/Workflow"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/{id}": {
+      "put": {
+        "summary": "Update workflow",
+        "tags": [
+          "Workflows"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Workflow ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Workflow"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workflow updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "workflow": {
+                              "$ref": "#/components/schemas/Workflow"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

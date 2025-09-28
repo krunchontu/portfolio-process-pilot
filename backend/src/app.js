@@ -7,7 +7,7 @@ const cookieParser = require('cookie-parser')
 
 const config = require('./config')
 const { logger, stream, requestLogger } = require('./utils/logger')
-const { TIME, HTTP_STATUS } = require('./constants')
+const { HTTP_STATUS } = require('./constants')
 const { apiResponseMiddleware } = require('./utils/apiResponse')
 const { globalErrorHandler, notFound } = require('./middleware/errorHandler')
 const { testConnection } = require('./database/connection')

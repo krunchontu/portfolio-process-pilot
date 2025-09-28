@@ -203,8 +203,8 @@ const paginated = (res, data, page, limit, total, message = 'Data retrieved succ
       currentPage: page,
       perPage: limit,
       totalItems: total,
-      totalPages: totalPages,
-      hasNext: hasNext,
+      totalPages,
+      hasNext,
       hasPrevious: hasPrev,
       nextPage: hasNext ? page + 1 : null,
       previousPage: hasPrev ? page - 1 : null

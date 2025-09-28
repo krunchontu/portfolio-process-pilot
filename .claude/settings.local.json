@@ -16,7 +16,10 @@
       "Bash(./backup.sh:*)",
       "Bash(./restore.sh:*)",
       "Bash(npm run test:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm run swagger:json:*)",
+      "Bash(npm run api:types:*)",
+      "Bash(npm install)"
     ],
     "deny": [],
     "ask": []

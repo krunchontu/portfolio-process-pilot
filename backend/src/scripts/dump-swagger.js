@@ -14,4 +14,3 @@ if (!fs.existsSync(outDir)) {
 
 fs.writeFileSync(outFile, JSON.stringify(specs, null, 2))
 console.log(`✅ Wrote OpenAPI JSON to ${path.relative(process.cwd(), outFile)}`)
-

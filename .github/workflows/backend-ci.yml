@@ -49,7 +49,20 @@ jobs:
     - name: Install dependencies
       working-directory: ./backend
       run: npm ci
-    
+
+    - name: Generate Swagger JSON
+      working-directory: ./backend
+      run: npm run swagger:json
+
+    - name: Check Swagger JSON freshness
+      working-directory: ./backend
+      run: |
+        if ! git diff --exit-code docs/swagger.json; then
+          echo "❌ Swagger JSON is stale. Run: npm --prefix backend run swagger:json && git add backend/docs/swagger.json && git commit --amend --no-edit"
+          exit 1
+        fi
+        echo "✅ Swagger JSON is up to date"
+
     - name: Create logs directory
       working-directory: ./backend
       run: mkdir -p logs

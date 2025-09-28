@@ -274,6 +274,25 @@ npm run lint:fix             # Auto-fix issues
 npm run format               # Format with Prettier (frontend)
 ```
 
+### API Docs & Types
+
+```bash
+# Generate API documentation
+cd backend && npm run swagger:json    # Regenerate backend/docs/swagger.json
+
+# Preview API documentation
+cd backend && npm run dev             # Access at http://localhost:5000/docs
+# Alternative: npm run docs:serve     # Serve docs locally
+
+# Generate frontend types from API
+cd frontend && npm run api:types      # Generate TypeScript types from swagger.json
+
+# Common troubleshooting
+# - If swagger.json is stale, regenerate with: npm run swagger:json
+# - If /docs shows 404, ensure swagger.json exists in backend/docs/
+# - Output location: backend/docs/swagger.json (committed to repo)
+```
+
 ---
 
 ## 🧷 Git Hooks

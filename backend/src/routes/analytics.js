@@ -37,6 +37,13 @@ router.use(authenticateToken)
  *         description: Dashboard analytics retrieved
  *         content:
  *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AnalyticsDashboard'
  *             examples:
  *               sample:
  *                 value:
@@ -54,15 +61,6 @@ router.use(authenticateToken)
  *                     department: all
  *                   meta:
  *                     timestamp: "2025-09-12T12:00:00.000Z"
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SuccessResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       $ref: '#/components/schemas/AnalyticsDashboard'
  */
 router.get('/dashboard',
   requireRole(['admin', 'manager']),
@@ -197,6 +195,13 @@ router.get('/dashboard',
  *         description: Request metrics retrieved
  *         content:
  *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AnalyticsRequests'
  *             examples:
  *               sample:
  *                 value:
@@ -222,15 +227,6 @@ router.get('/dashboard',
  *                       department: Engineering
  *                   meta:
  *                     timestamp: "2025-09-12T12:00:00.000Z"
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SuccessResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       $ref: '#/components/schemas/AnalyticsRequests'
  */
 router.get('/requests',
   requireRole(['admin', 'manager']),
@@ -362,6 +358,13 @@ router.get('/requests',
  *         description: Workflow analytics retrieved
  *         content:
  *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: 'object'
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AnalyticsWorkflows'
  *             examples:
  *               sample:
  *                 value:
@@ -390,15 +393,6 @@ router.get('/requests',
  *                     timeframe: 30d
  *                   meta:
  *                     timestamp: "2025-09-12T12:00:00.000Z"
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SuccessResponse'
- *                 - type: 'object'
- *                   properties:
- *                     data:
- *                       $ref: '#/components/schemas/AnalyticsWorkflows'
  */
 router.get('/workflows',
   requireRole(['admin']),
@@ -527,6 +521,13 @@ router.get('/workflows',
  *         description: User analytics retrieved
  *         content:
  *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: 'object'
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AnalyticsUsers'
  *             examples:
  *               sample:
  *                 value:
@@ -559,15 +560,6 @@ router.get('/workflows',
  *                     filters: { timeframe: 30d }
  *                   meta:
  *                     timestamp: "2025-09-12T12:00:00.000Z"
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SuccessResponse'
- *                 - type: 'object'
- *                   properties:
- *                     data:
- *                       $ref: '#/components/schemas/AnalyticsUsers'
  */
 router.get('/users',
   requireRole(['admin']),
@@ -713,6 +705,13 @@ router.get('/users',
  *         description: Department analytics retrieved
  *         content:
  *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: 'object'
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AnalyticsDepartments'
  *             examples:
  *               sample:
  *                 value:
@@ -741,15 +740,6 @@ router.get('/users',
  *                     accessLevel: manager
  *                   meta:
  *                     timestamp: "2025-09-12T12:00:00.000Z"
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SuccessResponse'
- *                 - type: 'object'
- *                   properties:
- *                     data:
- *                       $ref: '#/components/schemas/AnalyticsDepartments'
  */
 router.get('/departments',
   requireRole(['admin', 'manager']),
