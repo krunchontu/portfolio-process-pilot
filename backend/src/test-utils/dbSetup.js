@@ -300,10 +300,39 @@ const testUtils = {
       config.jwt.secret,
       { expiresIn: '1h' }
     )
+  },
+
+  // Database lifecycle functions - convenience wrappers
+  async setupTestDb() {
+    return await testDbManager.setupTestDb()
+  },
+
+  async teardownTestDb() {
+    await testDbManager.cleanupTestDb()
+    await testDbManager.destroyConnection()
+  },
+
+  async cleanupTestDb() {
+    return await testDbManager.cleanupTestDb()
+  },
+
+  // Check if tests can run
+  canRunTests() {
+    return testDbManager.canRunTests()
+  },
+
+  getSkipReason() {
+    return testDbManager.getSkipReason()
   }
 }
 
 module.exports = {
   testDbManager,
-  testUtils
+  testUtils,
+  // Export convenience functions at module level for direct import
+  setupTestDb: testUtils.setupTestDb,
+  teardownTestDb: testUtils.teardownTestDb,
+  cleanupTestDb: testUtils.cleanupTestDb,
+  canRunTests: testUtils.canRunTests,
+  getSkipReason: testUtils.getSkipReason
 }
