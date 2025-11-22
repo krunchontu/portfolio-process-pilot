@@ -82,6 +82,13 @@ beforeAll(async () => {
 // Clean up after all tests
 afterAll(async () => {
   try {
+    // Close app database connections (from src/database/connection.js)
+    // This is needed for integration tests that use request(app)
+    const { closeConnection } = require('../src/database/connection');
+    await closeConnection();
+    console.log('✅ App database connection closed');
+
+    // Close test database connections (from test-utils/dbSetup.js)
     if (!global.DB_TESTS_DISABLED) {
       await testDbManager.destroyConnection();
       console.log('✅ Test database connection closed');
@@ -89,7 +96,7 @@ afterAll(async () => {
   } catch (error) {
     console.error('❌ Test cleanup failed:', error);
   }
-});
+}, 30000); // Increase timeout for cleanup
 
 // Reset database before each test
 beforeEach(async () => {
