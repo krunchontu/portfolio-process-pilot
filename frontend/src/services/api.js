@@ -143,6 +143,7 @@ export const workflowsAPI = {
 
 export const usersAPI = {
   list: (params) => api.get('/users', { params }),
+  create: (data) => api.post('/users', data),
   getById: (id) => api.get(`/users/${id}`),
   update: (id, data) => api.put(`/users/${id}`, data),
   delete: (id) => api.delete(`/users/${id}`)
