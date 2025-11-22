@@ -129,7 +129,8 @@ export const requestsAPI = {
   action: (id, action, data) => api.post(`/requests/${id}/action`, { action, ...data }),
   takeAction: (id, data) => api.post(`/requests/${id}/action`, data),
   cancel: (id, data) => api.post(`/requests/${id}/cancel`, data),
-  getHistory: (id) => api.get(`/requests/${id}/history`)
+  getHistory: (id) => api.get(`/requests/${id}/history`),
+  exportCSV: (params) => api.get('/requests/export/csv', { params, responseType: 'blob' })
 }
 
 export const workflowsAPI = {
