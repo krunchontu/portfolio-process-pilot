@@ -9,6 +9,26 @@ const { databaseConfig } = require('../config/database')
 const knex = require('knex')
 const logger = require('../utils/logger')
 
+// Safe logger wrapper that works with both real and mocked loggers
+const safeLogger = {
+  info: (...args) => {
+    if (typeof logger?.info === 'function') logger.info(...args)
+    else console.log('[INFO]', ...args)
+  },
+  warn: (...args) => {
+    if (typeof logger?.warn === 'function') logger.warn(...args)
+    else console.warn('[WARN]', ...args)
+  },
+  error: (...args) => {
+    if (typeof logger?.error === 'function') logger.error(...args)
+    else console.error('[ERROR]', ...args)
+  },
+  debug: (...args) => {
+    if (typeof logger?.debug === 'function') logger.debug(...args)
+    else if (process.env.DEBUG) console.log('[DEBUG]', ...args)
+  }
+}
+
 class TestDbManager {
   constructor() {
     this.db = null
@@ -25,7 +45,7 @@ class TestDbManager {
 
       // Test the connection
       await this.db.raw('SELECT 1')
-      logger.info('Test database connection successful')
+      safeLogger.info('Test database connection successful')
 
       // Run migrations
       await this.runMigrations()
@@ -34,7 +54,7 @@ class TestDbManager {
       return this.db
     } catch (error) {
       this.setupError = error
-      logger.error('Test database setup failed', {
+      safeLogger.error('Test database setup failed', {
         error: error.message,
         code: error.code,
         stack: error.stack
@@ -42,7 +62,7 @@ class TestDbManager {
 
       // Check if it's a connection issue
       if (this.isConnectionError(error)) {
-        logger.warn('PostgreSQL connection failed - tests will be skipped', {
+        safeLogger.warn('PostgreSQL connection failed - tests will be skipped', {
           error: error.message,
           code: error.code
         })
@@ -51,7 +71,7 @@ class TestDbManager {
 
       // If it's a database not found error, try to create it
       if (this.isDatabaseNotFoundError(error)) {
-        logger.info('Test database not found, attempting to create it')
+        safeLogger.info('Test database not found, attempting to create it')
         await this.createTestDatabase()
         return await this.setupTestDb() // Retry
       }
@@ -65,9 +85,9 @@ class TestDbManager {
       const [batchNo, migrations] = await this.db.migrate.latest()
 
       if (migrations.length === 0) {
-        logger.info('Database is up to date - no migrations needed')
+        safeLogger.info('Database is up to date - no migrations needed')
       } else {
-        logger.info('Migrations completed', {
+        safeLogger.info('Migrations completed', {
           batchNo,
           migrationsRun: migrations.length,
           migrations: migrations.map(m => m.split('/').pop())
@@ -76,7 +96,7 @@ class TestDbManager {
 
       return true
     } catch (error) {
-      logger.error('Migration failed', {
+      safeLogger.error('Migration failed', {
         error: error.message,
         stack: error.stack
       })
@@ -111,15 +131,15 @@ class TestDbManager {
         if (result.rows.length === 0) {
           // Create the test database
           await adminDb.raw(`CREATE DATABASE "${testDbName}"`)
-          logger.info('Test database created successfully', { database: testDbName })
+          safeLogger.info('Test database created successfully', { database: testDbName })
         } else {
-          logger.info('Test database already exists', { database: testDbName })
+          safeLogger.info('Test database already exists', { database: testDbName })
         }
       } finally {
         await adminDb.destroy()
       }
     } catch (error) {
-      logger.error('Failed to create test database', {
+      safeLogger.error('Failed to create test database', {
         error: error.message,
         code: error.code
       })
@@ -133,29 +153,27 @@ class TestDbManager {
     try {
       // Get list of all tables
       const tables = await this.db.raw(`
-        SELECT tablename FROM pg_tables 
-        WHERE schemaname = 'public' 
+        SELECT tablename FROM pg_tables
+        WHERE schemaname = 'public'
+        AND tablename != 'knex_migrations'
+        AND tablename != 'knex_migrations_lock'
         ORDER BY tablename DESC
       `)
 
       if (tables.rows.length > 0) {
-        // Disable foreign key checks temporarily
-        await this.db.raw('SET session_replication_role = replica')
+        // Build comma-separated list of tables
+        const tableNames = tables.rows.map(row => `"${row.tablename}"`).join(', ')
 
-        // Truncate all tables
-        for (const row of tables.rows) {
-          await this.db(row.tablename).truncate()
-        }
+        // Truncate all tables at once with CASCADE to handle foreign keys
+        // RESTART IDENTITY resets auto-increment sequences
+        await this.db.raw(`TRUNCATE ${tableNames} RESTART IDENTITY CASCADE`)
 
-        // Re-enable foreign key checks
-        await this.db.raw('SET session_replication_role = DEFAULT')
-
-        logger.debug('Test database cleaned', {
+        safeLogger.debug('Test database cleaned', {
           tablesCleared: tables.rows.length
         })
       }
     } catch (error) {
-      logger.error('Failed to cleanup test database', {
+      safeLogger.error('Failed to cleanup test database', {
         error: error.message
       })
       throw error
@@ -166,9 +184,9 @@ class TestDbManager {
     if (this.db) {
       try {
         await this.db.destroy()
-        logger.debug('Test database connection destroyed')
+        safeLogger.debug('Test database connection destroyed')
       } catch (error) {
-        logger.error('Error destroying database connection', {
+        safeLogger.error('Error destroying database connection', {
           error: error.message
         })
       }
