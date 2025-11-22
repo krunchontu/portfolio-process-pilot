@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import { requestsAPI } from '../services/api'
 import LoadingSpinner from '../components/LoadingSpinner'
+import CancelRequestModal from '../components/CancelRequestModal'
 
 const RequestDetailPage = () => {
   const { id } = useParams()
@@ -26,6 +27,7 @@ const RequestDetailPage = () => {
   const [actionComment, setActionComment] = useState('')
   const [showActionModal, setShowActionModal] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
 
   // Fetch request details
   const {
@@ -266,6 +268,11 @@ const RequestDetailPage = () => {
     return user?.role === expectedRole || user?.role === 'admin'
   }
 
+  const canCancel = () => {
+    return requestData?.createdBy === user?.id &&
+           requestData?.status === 'pending'
+  }
+
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -329,28 +336,41 @@ const RequestDetailPage = () => {
             </p>
           </div>
 
-          {canTakeAction() && (
-            <div className="mt-4 sm:mt-0 flex items-center space-x-3">
+          <div className="mt-4 sm:mt-0 flex items-center space-x-3">
+            {canTakeAction() && (
+              <>
+                <button
+                  onClick={() => handleAction('approve')}
+                  className="btn-success"
+                  data-testid="approve-button"
+                  disabled={actionMutation.isLoading}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Approve
+                </button>
+                <button
+                  onClick={() => handleAction('reject')}
+                  className="btn-error"
+                  data-testid="reject-button"
+                  disabled={actionMutation.isLoading}
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  Reject
+                </button>
+              </>
+            )}
+
+            {canCancel() && (
               <button
-                onClick={() => handleAction('approve')}
-                className="btn-success"
-                data-testid="approve-button"
-                disabled={actionMutation.isLoading}
-              >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Approve
-              </button>
-              <button
-                onClick={() => handleAction('reject')}
-                className="btn-error"
-                data-testid="reject-button"
-                disabled={actionMutation.isLoading}
+                onClick={() => setIsCancelModalOpen(true)}
+                className="btn-outline border-error-300 text-error-600 hover:bg-error-50"
+                data-testid="cancel-request-button"
               >
                 <XCircle className="w-4 h-4 mr-2" />
-                Reject
+                Cancel Request
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -600,6 +620,15 @@ const RequestDetailPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Cancel Request Modal */}
+      {requestData && (
+        <CancelRequestModal
+          isOpen={isCancelModalOpen}
+          onClose={() => setIsCancelModalOpen(false)}
+          request={requestData}
+        />
       )}
     </div>
   )

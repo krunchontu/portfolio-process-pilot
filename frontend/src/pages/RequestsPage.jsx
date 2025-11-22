@@ -33,6 +33,7 @@ const RequestsPage = () => {
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'submittedAt')
   const [sortOrder, setSortOrder] = useState(searchParams.get('order') || 'desc')
   const [createdByFilter, setCreatedByFilter] = useState(searchParams.get('created_by') || 'all')
+  const [pageLimit, setPageLimit] = useState(20)
 
   // Debounce search term to avoid excessive API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
@@ -82,10 +83,10 @@ const RequestsPage = () => {
     params.sortOrder = sortOrder
 
     // Pagination
-    params.limit = 20
+    params.limit = pageLimit
 
     return params
-  }, [debouncedSearchTerm, statusFilter, typeFilter, sortBy, sortOrder, createdByFilter, user, isManagerOrAdmin])
+  }, [debouncedSearchTerm, statusFilter, typeFilter, sortBy, sortOrder, createdByFilter, user, isManagerOrAdmin, pageLimit])
 
   // Fetch requests
   const {
@@ -107,6 +108,11 @@ const RequestsPage = () => {
   const requests = requestsData?.requests || []
   const totalCount = requestsData?.total || 0
 
+  // Reset pagination when filters change
+  React.useEffect(() => {
+    setPageLimit(20)
+  }, [debouncedSearchTerm, statusFilter, typeFilter, sortBy, sortOrder, createdByFilter])
+
   // Clear all filters
   const clearFilters = () => {
     setSearchTerm('')
@@ -115,6 +121,12 @@ const RequestsPage = () => {
     setCreatedByFilter('all')
     setSortBy('submittedAt')
     setSortOrder('desc')
+    setPageLimit(20)
+  }
+
+  // Load more requests
+  const loadMore = () => {
+    setPageLimit(prevLimit => prevLimit + 20)
   }
 
   // Toggle sort order
@@ -127,10 +139,33 @@ const RequestsPage = () => {
     }
   }
 
-  // Export requests (placeholder)
-  const exportRequests = () => {
-    // TODO: Implement export functionality
-    // Export feature will be implemented in future story
+  // Export requests to CSV
+  const exportRequests = async () => {
+    try {
+      const response = await requestsAPI.exportCSV(queryParams)
+
+      // Create blob from response
+      const blob = new Blob([response.data], { type: 'text/csv' })
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `requests-${new Date().toISOString().split('T')[0]}.csv`
+
+      // Trigger download
+      document.body.appendChild(link)
+      link.click()
+
+      // Cleanup
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toast.success(`Exported ${requests.length} request${requests.length !== 1 ? 's' : ''} to CSV`)
+    } catch (error) {
+      console.error('Export failed:', error)
+      toast.error(error.response?.data?.error || 'Failed to export requests')
+    }
   }
 
   // Get unique request types for filter
@@ -426,18 +461,31 @@ const RequestsPage = () => {
         )}
       </div>
 
-      {/* Load More Button (if pagination needed) */}
+      {/* Load More Button */}
       {requests.length > 0 && requests.length < totalCount && (
         <div className="text-center mt-8">
+          <div className="text-sm text-secondary-600 mb-3">
+            Showing {requests.length} of {totalCount} requests
+          </div>
           <button
             className="btn-outline"
-            onClick={() => {
-              // TODO: Implement load more functionality
-              // Load more functionality will be implemented in future story
-            }}
+            onClick={loadMore}
+            disabled={isFetching}
             data-testid="load-more-button"
           >
-            Load More
+            {isFetching ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                Load More
+                <span className="ml-2 text-xs">
+                  ({Math.min(20, totalCount - requests.length)} more)
+                </span>
+              </>
+            )}
           </button>
         </div>
       )}

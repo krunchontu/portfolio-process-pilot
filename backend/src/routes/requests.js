@@ -236,6 +236,59 @@ router.post('/:id/cancel',
     return res.success(200, 'Request cancelled successfully', { request: fullRequest })
   }))
 
+// Export requests to CSV
+router.get('/export/csv', authenticateToken, validateQuery(listRequestsSchema), catchAsync(async (req, res) => {
+  const { Parser } = require('json2csv')
+  const filters = { ...req.query }
+
+  // Users can only export their own requests unless they're managers/admins
+  if (req.user.role === 'employee') {
+    filters.createdBy = req.user.id
+  } else if (req.user.role === 'manager') {
+    // Managers can export requests pending for their role or their own requests
+    if (!filters.createdBy && !filters.pendingForRole) {
+      filters.pendingForRole = 'manager'
+    }
+  }
+
+  const requests = await Request.list(filters)
+
+  // Define CSV fields
+  const fields = [
+    { label: 'ID', value: 'id' },
+    { label: 'Type', value: 'type' },
+    { label: 'Status', value: 'status' },
+    { label: 'Requester', value: (row) => `${row.creatorFirstName || ''} ${row.creatorLastName || ''}`.trim() },
+    { label: 'Email', value: 'creatorEmail' },
+    { label: 'Submitted', value: (row) => row.submittedAt ? new Date(row.submittedAt).toISOString() : '' },
+    { label: 'Completed', value: (row) => row.completedAt ? new Date(row.completedAt).toISOString() : '' },
+    { label: 'Workflow', value: 'workflowName' },
+    { label: 'Current Step', value: (row) => {
+      if (row.status !== 'pending' || !row.steps) return ''
+      const currentStep = row.steps[row.currentStepIndex]
+      return currentStep ? currentStep.name || `Step ${row.currentStepIndex + 1}` : ''
+    }},
+    { label: 'Details', value: (row) => row.payload ? JSON.stringify(row.payload) : '' }
+  ]
+
+  const json2csvParser = new Parser({ fields })
+  const csv = json2csvParser.parse(requests)
+
+  // Set headers for file download
+  const filename = `requests-${new Date().toISOString().split('T')[0]}.csv`
+  res.setHeader('Content-Type', 'text/csv')
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+
+  logger.info('Requests exported to CSV', {
+    userId: req.user.id,
+    userRole: req.user.role,
+    requestCount: requests.length,
+    filename
+  })
+
+  return res.send(csv)
+}))
+
 // Get request history
 router.get('/:id/history', validateParams({ id: require('../middleware/validation').uuid() }), canActOnRequest, catchAsync(async (req, res) => {
   const history = await RequestHistory.findByRequestId(req.params.id)

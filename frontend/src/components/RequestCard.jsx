@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Clock,
@@ -12,9 +12,11 @@ import {
 } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { useAuth } from '../contexts/AuthContext'
+import CancelRequestModal from './CancelRequestModal'
 
 const RequestCard = ({ request, showCreator = false, showActions = true }) => {
   const { user } = useAuth()
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -210,8 +212,7 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
                 data-testid="cancel-button"
                 onClick={(e) => {
                   e.preventDefault()
-                  // TODO: Implement cancel functionality
-                  // Cancel functionality will be implemented in future story
+                  setIsCancelModalOpen(true)
                 }}
               >
                 Cancel
@@ -229,6 +230,13 @@ const RequestCard = ({ request, showCreator = false, showActions = true }) => {
           </div>
         </div>
       )}
+
+      {/* Cancel Request Modal */}
+      <CancelRequestModal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        request={request}
+      />
     </div>
   )
 }
