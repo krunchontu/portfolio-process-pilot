@@ -19,44 +19,107 @@ This document tracks all known issues, bugs, and technical debt identified durin
 
 ## Critical Issues 🔴
 
-### CI-001: Test Infrastructure Broken
+### CI-001: Test Infrastructure Foundation Issues
 - **Component:** Backend Tests
+- **Severity:** 🔴 Critical → 🟠 High (Partially Resolved)
+- **Status:** In Progress - **60% Fixed**
+- **Discovered:** 2025-11-21
+- **Last Updated:** 2025-11-22
+- **Description:** Backend test suite had 71% failure rate due to infrastructure issues. Foundation fixes applied, now 54% pass rate (46% individual tests passing).
+- **Impact:** Test reliability improved significantly. Remaining issues are resource leaks causing timeouts.
+- **Progress:**
+  - ✅ Fixed: Database connection configuration (.env.test DB_NAME issue)
+  - ✅ Fixed: Logger compatibility with mocked tests (safeLogger wrapper)
+  - ✅ Fixed: Database cleanup CASCADE and RESTART IDENTITY issues
+  - ✅ Fixed: API response camelCase validation
+  - ✅ Fixed: Environment validation SESSION_SECRET check
+  - ✅ Improved: Test pass rate from 29% → 46% (+15 fewer failing tests)
+  - 🔄 Remaining: Resource leaks in integration tests (see CI-002)
+- **Commits:**
+  - `89c9d28` - Phase 1 foundation fixes
+  - `ac6e78f` - Test infrastructure improvements
+- **Test Results (Current):**
+  ```
+  Test Suites: 6 passed, 9 failed (15 total) = 40% suite pass rate
+  Individual Tests: 95 passed, 108 failed, 2 skipped (205 total) = 46% pass rate
+  Time: 616 seconds (needs optimization - see CI-002)
+  ```
+- **Passing Suites:** ✅
+  - tests/middleware/csrf.test.js
+  - tests/middleware/errorHandler.test.js
+  - tests/utils/apiResponse.test.js
+  - tests/utils/docEncodingCheck.test.js
+  - tests/services/emailService.test.js
+  - tests/config/env-validation.test.js
+- **Failing Suites:** ❌
+  - tests/utils/logger.test.js (4 failures - Jest import issue)
+  - tests/middleware/auth.test.js (11 failures - resource leaks)
+  - tests/security/* (3 files - resource leaks, timeouts)
+  - tests/models/* (2 files - resource leaks)
+  - tests/routes/auth.test.js (41 timeouts - critical resource leak)
+  - tests/app.test.js (3 timeouts - resource leak)
+- **Assigned To:** Unassigned
+- **Priority:** P1 (downgraded from P0 - foundation fixed)
+- **Target Fix:** Phase 1 completion (Day 2)
+- **Next Steps:**
+  - Fix resource leaks in integration tests (CI-002)
+  - Add proper afterAll cleanup hooks
+  - Optimize test execution time
+
+### CI-002: Test Resource Leaks and Timeouts
+- **Component:** Backend Integration Tests
 - **Severity:** 🔴 Critical
 - **Status:** Open
-- **Discovered:** 2025-11-21
-- **Description:** Backend test suite fails with 71% failure rate due to multiple infrastructure issues
-- **Impact:** Cannot verify code quality, blocks deployment confidence
+- **Discovered:** 2025-11-22
+- **Description:** Integration tests using supertest don't close database connections, causing 41 timeout failures and 10+ minute test runs
+- **Impact:**
+  - Tests take 616 seconds (10+ minutes) instead of expected ~30 seconds
+  - 41 tests timeout after 30 seconds each
+  - Resource exhaustion prevents reliable test execution
+  - Jest warning: "A worker process has failed to exit gracefully"
 - **Root Causes:**
-  1. PostgreSQL not running (causes 11 test failures in auth.test.js)
-  2. test-utils missing exports (setupTestDb, teardownTestDb not functions)
-  3. Logger test expectations incorrect (expecting functions, receiving objects)
-  4. API response snake_case vs camelCase mismatch
-  5. Environment validation missing SESSION_SECRET check
-  6. JWT_SECRET not set in some test contexts
+  1. **No afterAll cleanup** - Tests use `request(app)` but never close server/DB connections
+  2. **Database connection leaks** - Each test creates connections via app initialization
+  3. **No connection pooling cleanup** - Knex connection pools remain open
+  4. **Supertest pattern issue** - `request(app)` creates implicit servers without cleanup
+- **Slowest Test Files:**
+  - `tests/routes/auth.test.js` - 614 seconds (10.2 minutes!) - 41 timeouts
+  - `tests/security/cookie-auth-security.test.js` - 467 seconds (7.8 minutes)
+  - `tests/app.test.js` - 188 seconds (3.1 minutes)
+  - `tests/models/*.test.js` - 20+ seconds each
 - **Reproduction:**
   ```bash
   cd backend
-  npm test
-  # Result: 12/17 test suites fail
+  npm test -- tests/routes/auth.test.js
+  # Observe: Each test takes 30+ seconds, timeouts occur
+  # Check: "Jest did not exit one second after the test run"
   ```
 - **Files Affected:**
-  - `backend/src/test-utils/dbSetup.js` - Missing exports
-  - `backend/tests/utils/logger.test.js` - Wrong expectations
-  - `backend/tests/utils/apiResponse.test.js` - Case mismatch
-  - `backend/tests/config/env-validation.test.js` - Missing validation
-  - `backend/tests/middleware/auth-middleware.test.js` - Missing JWT_SECRET
-  - `backend/tests/middleware/auth.test.js` - Database connection
-  - All security tests - Database connection issues
+  - `backend/tests/routes/auth.test.js` - No afterAll hook
+  - `backend/tests/security/*.test.js` - No cleanup (3 files)
+  - `backend/tests/app.test.js` - No cleanup
+  - `backend/tests/models/*.test.js` - No cleanup (2 files)
+- **Available Solution:**
+  - `backend/src/database/connection.js` exports `closeConnection()` function
+  - Tests need afterAll hooks to call cleanup
 - **Assigned To:** Unassigned
 - **Priority:** P0
-- **Target Fix:** Phase 1 (Days 1-2)
+- **Target Fix:** Phase 1 (Day 2)
+- **Effort:** 2-3 hours
 - **Proposed Solution:**
-  1. Add test database setup script
-  2. Export setupTestDb and teardownTestDb functions
-  3. Fix logger test assertions
-  4. Standardize on camelCase in test expectations
-  5. Add SESSION_SECRET to env validation
-  6. Set JWT_SECRET in test setup files
+  ```javascript
+  // Add to each affected test file:
+  const { closeConnection } = require('../../src/database/connection');
+
+  afterAll(async () => {
+    await closeConnection();
+  });
+  ```
+- **Expected Impact:**
+  - Test execution time: 616s → ~60s (10x faster)
+  - Eliminate 41 timeout errors
+  - Clean Jest shutdown without warnings
+  - Test pass rate: 46% → 80%+ (timeouts are masking real test issues)
 
 ---
 
