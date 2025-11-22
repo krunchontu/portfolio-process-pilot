@@ -238,7 +238,7 @@ describe('API Response Utilities', () => {
         error: 'Validation failed',
         code: 'VALIDATION_ERROR',
         details: {
-          validation_errors: errors
+          validationErrors: errors
         },
         meta: {
           timestamp: expect.any(String)
@@ -256,7 +256,7 @@ describe('API Response Utilities', () => {
         error: 'Validation failed',
         code: 'VALIDATION_ERROR',
         details: {
-          validation_errors: [error]
+          validationErrors: [error]
         },
         meta: {
           timestamp: expect.any(String)
