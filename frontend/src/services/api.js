@@ -150,9 +150,11 @@ export const usersAPI = {
 }
 
 export const analyticsAPI = {
-  getOverview: (params) => api.get('/analytics/overview', { params }),
-  getMetrics: (params) => api.get('/analytics/metrics', { params }),
-  getReports: (params) => api.get('/analytics/reports', { params })
+  getDashboard: (params) => api.get('/analytics/dashboard', { params }),
+  getRequests: (params) => api.get('/analytics/requests', { params }),
+  getWorkflows: (params) => api.get('/analytics/workflows', { params }),
+  getUsers: (params) => api.get('/analytics/users', { params }),
+  getDepartments: (params) => api.get('/analytics/departments', { params })
 }
 
 // Utility functions
