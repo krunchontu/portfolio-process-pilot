@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { useQuery } from 'react-query'
+import { useQuery, useMutation, useQueryClient } from 'react-query'
+import { toast } from 'react-hot-toast'
 import {
   Search,
   Plus,
@@ -14,9 +15,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { usersAPI } from '../services/api'
 import { useDebounce } from '../hooks/useDebounce'
 import LoadingSpinner from '../components/LoadingSpinner'
+import CreateUserModal from '../components/CreateUserModal'
+import EditUserModal from '../components/EditUserModal'
 
 const UsersPage = () => {
   const { user: currentUser, isAdmin } = useAuth()
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -24,6 +28,32 @@ const UsersPage = () => {
   const [editingUser, setEditingUser] = useState(null)
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation(
+    (userId) => usersAPI.delete(userId),
+    {
+      onSuccess: () => {
+        toast.success('User deleted successfully')
+        queryClient.invalidateQueries(['users'])
+      },
+      onError: (error) => {
+        const message = error.response?.data?.error || 'Failed to delete user'
+        toast.error(message)
+      }
+    }
+  )
+
+  const handleDeleteUser = (user) => {
+    if (user.id === currentUser?.id) {
+      toast.error('You cannot delete your own account')
+      return
+    }
+
+    if (window.confirm(`Are you sure you want to delete ${user.firstName} ${user.lastName}? This action cannot be undone.`)) {
+      deleteUserMutation.mutate(user.id)
+    }
+  }
 
   // Build query params
   const queryParams = {
@@ -281,12 +311,10 @@ const UsersPage = () => {
                       </button>
                       {user.id !== currentUser?.id && (
                         <button
-                          onClick={() => {
-                            // TODO: Implement delete with confirmation
-                            console.log('Delete user:', user.id)
-                          }}
+                          onClick={() => handleDeleteUser(user)}
                           className="text-error-600 hover:text-error-900"
                           title="Delete user"
+                          disabled={deleteUserMutation.isLoading}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -307,8 +335,17 @@ const UsersPage = () => {
         </div>
       )}
 
-      {/* TODO: Add CreateUserModal */}
-      {/* TODO: Add EditUserModal */}
+      {/* Modals */}
+      <CreateUserModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
+
+      <EditUserModal
+        isOpen={!!editingUser}
+        onClose={() => setEditingUser(null)}
+        user={editingUser}
+      />
     </div>
   )
 }
