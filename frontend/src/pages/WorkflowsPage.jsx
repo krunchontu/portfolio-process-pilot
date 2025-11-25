@@ -17,13 +17,16 @@ import { useAuth } from '../contexts/AuthContext'
 import { workflowsAPI } from '../services/api'
 import { useDebounce } from '../hooks/useDebounce'
 import LoadingSpinner from '../components/LoadingSpinner'
+import CreateWorkflowModal from '../components/CreateWorkflowModal'
+import EditWorkflowModal from '../components/EditWorkflowModal'
 
 const WorkflowsPage = () => {
   const { user: currentUser, isAdmin } = useAuth()
   const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [selectedWorkflow, setSelectedWorkflow] = useState(null)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [editingWorkflow, setEditingWorkflow] = useState(null)
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
@@ -166,7 +169,7 @@ const WorkflowsPage = () => {
           </button>
 
           <button
-            onClick={() => toast.info('Create Workflow - Coming in next task')}
+            onClick={() => setIsCreateModalOpen(true)}
             className="btn-primary"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -292,14 +295,14 @@ const WorkflowsPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
-                        onClick={() => toast.info('View Workflow - Coming in next task')}
+                        onClick={() => setEditingWorkflow(workflow)}
                         className="text-info-600 hover:text-info-900 mr-3"
-                        title="View workflow"
+                        title="View/Edit workflow"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => toast.info('Edit Workflow - Coming in next task')}
+                        onClick={() => setEditingWorkflow(workflow)}
                         className="text-primary-600 hover:text-primary-900 mr-3"
                         title="Edit workflow"
                       >
@@ -328,6 +331,18 @@ const WorkflowsPage = () => {
           Showing {workflows.length} workflow{workflows.length !== 1 ? 's' : ''}
         </div>
       )}
+
+      {/* Modals */}
+      <CreateWorkflowModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
+
+      <EditWorkflowModal
+        isOpen={!!editingWorkflow}
+        onClose={() => setEditingWorkflow(null)}
+        workflow={editingWorkflow}
+      />
     </div>
   )
 }
