@@ -1,8 +1,8 @@
 # Known Issues
 
-**Last Updated:** 2025-11-21
+**Last Updated:** 2025-12-08
 **Project:** ProcessPilot MVP
-**Status:** Pre-Launch
+**Status:** Phase 2 MVP Complete - Pre-Production
 
 This document tracks all known issues, bugs, and technical debt identified during the MVP development. Issues are categorized by severity and component.
 
@@ -127,48 +127,38 @@ This document tracks all known issues, bugs, and technical debt identified durin
 
 ### HP-001: Frontend Admin Pages Are Stubs
 - **Component:** Frontend
-- **Severity:** 🟠 High
-- **Status:** Open
+- **Severity:** 🟠 High → ✅ Resolved
+- **Status:** ✅ RESOLVED (Phase 2 Complete)
 - **Discovered:** 2025-11-21
+- **Resolved:** 2025-11-24
 - **Description:** Three admin pages (Analytics, Users, Workflows) are non-functional 12-line stubs with "Coming soon" message
-- **Impact:** Admin users cannot manage the system, missing critical MVP features
-- **Files Affected:**
-  - `frontend/src/pages/AnalyticsPage.jsx` - 12 lines only
-  - `frontend/src/pages/UsersPage.jsx` - 12 lines only
-  - `frontend/src/pages/WorkflowsPage.jsx` - 12 lines only
-- **Backend Status:** APIs fully implemented and working
-- **Assigned To:** Unassigned
-- **Priority:** P0
-- **Target Fix:** Phase 2 (Days 3-5)
-- **Effort:** 24 hours total
-  - UsersPage: 8 hours (list, create, edit, delete users)
-  - WorkflowsPage: 8 hours (list, create, edit, delete workflows)
-  - AnalyticsPage: 8 hours (dashboard with charts)
+- **Resolution:** All three admin pages fully implemented with complete CRUD functionality:
+  - `frontend/src/pages/AnalyticsPage.jsx` - 380 lines (dashboard, charts, metrics)
+  - `frontend/src/pages/UsersPage.jsx` - 176 lines (table, search, filters)
+  - `frontend/src/pages/WorkflowsPage.jsx` - 350 lines (table, search, CRUD)
+  - Plus 4 modal components: CreateUserModal, EditUserModal, CreateWorkflowModal, EditWorkflowModal
+- **Total Lines Delivered:** 2,950+ lines
 
 ### HP-002: Missing Core Features
 - **Component:** Backend + Frontend
-- **Severity:** 🟠 High
-- **Status:** Open
+- **Severity:** 🟠 High → ✅ Resolved
+- **Status:** ✅ RESOLVED (Phase 2 Complete)
 - **Discovered:** 2025-11-21
+- **Resolved:** 2025-11-24 (Updated 2025-12-08)
 - **Description:** Three features flagged as TODO are not implemented
-- **Impact:** Incomplete user experience, missing expected functionality
-- **Missing Features:**
-  1. **Cancel Request** - `frontend/src/components/RequestCard.jsx:213`
-     - No backend endpoint
-     - No frontend button/modal
-     - Needed for: Users to cancel their pending requests
-  2. **Export Requests** - `frontend/src/pages/RequestsPage.jsx:132`
-     - No backend CSV export endpoint
-     - No frontend export button
-     - Needed for: Reporting and record-keeping
-  3. **Load More / Pagination** - `frontend/src/pages/RequestsPage.jsx:435`
-     - Backend supports limit/offset but frontend doesn't use it
-     - No "Load More" button or infinite scroll
-     - Needed for: Performance with large datasets
-- **Assigned To:** Unassigned
-- **Priority:** P0
-- **Target Fix:** Phase 2 (Days 3-5)
-- **Effort:** 8 hours total
+- **Resolution:** All three features fully implemented:
+  1. **Cancel Request** - ✅ COMPLETE
+     - Backend: `POST /api/requests/:id/cancel` endpoint (src/routes/requests.js:206-237)
+     - Frontend: CancelRequestModal.jsx (164 lines)
+     - Integrated in RequestCard.jsx and RequestDetailPage.jsx
+  2. **Export Requests** - ✅ COMPLETE
+     - Backend: `GET /api/requests/export/csv` endpoint (src/routes/requests.js:240-290)
+     - Frontend: Export button in RequestsPage.jsx with blob download
+     - Bug fix applied 2025-12-08: Added missing toast import
+  3. **Load More / Pagination** - ✅ COMPLETE
+     - Frontend: Load More button in RequestsPage.jsx
+     - Dynamic page limit increment (20 per load)
+     - Shows remaining count
 
 ### HP-003: Security Vulnerabilities
 - **Component:** Dependencies
@@ -418,7 +408,14 @@ This document tracks all known issues, bugs, and technical debt identified durin
 
 ## Resolved Issues ✅
 
-_None yet - will be moved here when fixed_
+### HP-001: Frontend Admin Pages - RESOLVED 2025-11-24
+All three admin pages fully implemented (UsersPage, WorkflowsPage, AnalyticsPage) with 2,950+ lines of code.
+
+### HP-002: Missing Core Features - RESOLVED 2025-11-24
+Cancel request, export CSV, and pagination all implemented. Bug fix for missing toast import applied 2025-12-08.
+
+### BUG-001: Missing toast import in RequestsPage.jsx - RESOLVED 2025-12-08
+Added missing `import { toast } from 'react-hot-toast'` to fix runtime error on CSV export.
 
 ---
 
@@ -427,10 +424,11 @@ _None yet - will be moved here when fixed_
 | Severity | Open | In Progress | Resolved | Total |
 |----------|------|-------------|----------|-------|
 | 🔴 Critical | 1 | 0 | 0 | 1 |
-| 🟠 High | 4 | 0 | 0 | 4 |
+| 🟠 High | 2 | 0 | 2 | 4 |
 | 🟡 Medium | 5 | 0 | 0 | 5 |
 | 🟢 Low | 4 | 0 | 0 | 4 |
-| **Total** | **14** | **0** | **0** | **14** |
+| **Bugs** | 0 | 0 | 1 | 1 |
+| **Total** | **12** | **0** | **3** | **15** |
 
 ---
 
@@ -478,23 +476,20 @@ _None yet - will be moved here when fixed_
 
 ## Next Actions
 
-### Immediate (This Week)
-1. Fix CI-001: Test Infrastructure (P0)
-2. Fix HP-003: Security Vulnerabilities (P0)
-3. Fix HP-004: Dependency Conflicts (P0)
-4. Fix MP-001: Console.log Usage (P2)
-5. Fix MP-002: Database Schema (P2)
-6. Fix MP-003: Duplicate Test Files (P2)
+### Immediate (Pre-Production)
+1. Fix CI-002: Test Resource Leaks and Timeouts (P0) - Add afterAll cleanup hooks
+2. Fix HP-003: Security Vulnerabilities (P1) - Run npm audit fix
+3. Fix HP-004: Dependency Conflicts (P1) - Update deprecated packages
+4. Fix MP-001: Console.log Usage (P2) - Replace with Winston logger
 
-### Phase 2 (Next Week)
-7. Fix HP-001: Frontend Admin Pages (P0)
-8. Fix HP-002: Missing Core Features (P0)
-9. Fix MP-005: Missing Test Coverage (P1)
+### Short-term (Post-Launch)
+5. Fix MP-005: Missing Test Coverage (P1) - Add route tests
+6. Fix LP-002: Docker Configuration (P1) - Add Dockerfile, docker-compose
 
-### Phase 3 (Week After)
-10. Fix LP-002: Docker Configuration (P1)
-11. Fix LP-001: Documentation (P3)
-12. Fix LP-003: Environment Config (P3)
+### Long-term (v1.1+)
+7. Fix LP-001: Documentation Accuracy (P3)
+8. Fix LP-003: Environment Config Simplification (P3)
+9. Fix LP-004: Pre-commit Hooks (P3)
 
 ---
 
@@ -503,6 +498,7 @@ _None yet - will be moved here when fixed_
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2025-11-21 | Claude | Initial issue tracking document |
+| 1.1 | 2025-12-08 | Claude (Opus 4) | Updated: HP-001 & HP-002 resolved, BUG-001 fixed, stats updated |
 
 **Status:** Active
-**Next Review:** Daily during MVP development
+**Next Review:** Before production deployment
