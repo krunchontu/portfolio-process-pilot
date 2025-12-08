@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from 'react-query'
+import { toast } from 'react-hot-toast'
 import {
   Plus,
   Search,
